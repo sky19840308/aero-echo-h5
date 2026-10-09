@@ -8,16 +8,18 @@
  <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
  <title>裂空回响 · AERO ECHO</title>
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="style.css?v=14">
- <link rel="stylesheet" href="ui-art.css?v=14">
- <link rel="stylesheet" href="menu-layout.css?v=14">
+ <link rel="stylesheet" href="style.css?v=15">
+ <link rel="stylesheet" href="ui-art.css?v=15">
+ <link rel="stylesheet" href="menu-layout.css?v=15">
+ <link rel="stylesheet" href="online.css?v=15">
+ <link rel="stylesheet" href="ending.css?v=15">
 </head>
 <body class="language-pending">
  <div class="ambient-grid" aria-hidden="true"></div>
  <main class="shell">
   <aside class="left-panel">
    <a class="wordmark" href="./" aria-label="裂空回响首页"><span class="emblem">A</span><span>AERO ECHO<small>裂 空 回 响</small></span></a>
-   <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 14</div>
+   <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 15</div>
    <h1>拯救地球，<br>唤醒 X 星。</h1>
    <p class="intro-copy">X 星舰队即将入侵地球。<br>三位飞行员突破九道封锁，<br>让两个世界重获自由。</p>
    <nav class="side-nav" aria-label="游戏导航">
@@ -27,6 +29,8 @@
     <button data-open="hangar"><span>04</span> 机库 <b>↗</b></button>
     <button data-open="bosses"><span>05</span> BOSS挑战 <b>↗</b></button>
     <button data-open="archive"><span>06</span> 图库及成就 <b>↗</b></button>
+    <button data-open="online"><span>07</span> 双人协作 <b>↗</b></button>
+    <button data-open="account"><span>08</span> 账户与云存档 <b>↗</b></button>
    </nav>
    <div class="edition-foot"><span>09 / CHAPTERS</span><span>27 / MISSIONS</span><span>03 / FIGHTERS</span></div>
   </aside>
@@ -48,10 +52,13 @@
      <button class="menu-entry secondary" data-open="bosses"><span class="menu-index">05</span><span>BOSS挑战<small>BOSS CHALLENGE</small></span><b>↗</b></button>
      <button class="menu-entry secondary" data-open="archive"><span class="menu-index">06</span><span>图库及成就<small>GALLERY / ACHIEVEMENTS</small></span><b>↗</b></button>
     </nav>
-    <div class="lobby-note">九章故事 · 通关解锁 · 自动保存</div>
+    <div class="online-entry"><button data-open="online">双人协作 ↗</button><button data-open="account">账户与云存档 ↗</button></div>
+    <span id="account-badge" class="account-badge" role="status">游客 · 本机存档</span>
+    <div class="lobby-note">九章故事 · 账户独立 · 双人协作</div>
    </div>
    <div class="game-hud" id="game-hud" hidden>
     <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div>
+    <div id="coop-status" class="coop-status" aria-live="polite" hidden></div>
     <div class="vitals"><div class="vital-label"><span>机体 <b id="hp-value">1000</b></span><span>护盾 <b id="shield-value">350</b></span></div><div class="vital-bars"><div class="hp-bar"><i id="hp-fill"></i></div><div class="shield-bar"><i id="shield-fill"></i></div></div></div>
     <div class="mission-progress"><span id="wave-label">WAVE 01</span><i><b id="wave-fill"></b></i><span id="hud-time">00:00</span></div>
     <div class="boss-hud" id="boss-hud" hidden><div><span id="boss-name"></span><b id="boss-phase">PHASE 01</b></div><i><b id="boss-fill"></b></i></div>
@@ -73,6 +80,17 @@
   <div class="language-card"><div class="language-emblem" aria-hidden="true">A↗</div><div class="language-brand">AERO ECHO</div><h2 id="language-heading"><span>选择语言</span><span>言語を選択</span><span>Choose your language</span></h2><div class="language-options"><button data-language="zh" lang="zh-CN"><b>简体中文</b><span>进入游戏 →</span></button><button data-language="ja" lang="ja"><b>日本語</b><span>ゲームへ →</span></button><button data-language="en" lang="en"><b>English</b><span>Enter game →</span></button></div><div class="language-foot">09 / 27 / 03</div></div>
  </div>
  <input id="save-file" type="file" accept=".json,application/json" aria-label="导入存档" hidden>
- <script type="module" src="app.js?v=14"></script>
+ <section id="ending-screen" class="ending-screen" role="dialog" aria-modal="true" aria-labelledby="ending-title" tabindex="-1" hidden>
+  <h2 id="ending-title" class="sr-only"></h2>
+  <canvas id="ending-canvas" class="ending-canvas" aria-hidden="true"></canvas>
+  <div id="ending-roll" class="ending-roll"></div>
+  <div id="ending-finale" class="ending-finale" hidden></div>
+  <div id="ending-teaser" class="ending-teaser" hidden></div>
+  <p id="ending-hint" class="ending-hint" hidden></p>
+  <nav id="ending-controls" class="ending-controls">
+   <button id="ending-pause"></button><button id="ending-skip"></button><button id="ending-sound"></button><button id="ending-return" hidden></button>
+  </nav>
+ </section>
+ <script type="module" src="app.js?v=15"></script>
 </body>
 </html>

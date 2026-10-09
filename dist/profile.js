@@ -1,8 +1,8 @@
-import {SHIPS,DIFFICULTIES,TALENTS} from './data.js?v=14';
-import {weaponTier,researchLevel,RESEARCH} from './progression.js?v=14';
-import {AUDIO_DEFAULTS,audioVolume} from './audio-levels.js?v=14';
-import {ECONOMY_VERSION,normalizeEconomy} from './economy.js?v=14';
-import {ACHIEVEMENTS,latestClear,storyFrontier,storyUnlocked,missionAt,unlockAchievements} from './campaign.js?v=14';
+import {SHIPS,DIFFICULTIES,TALENTS,SKINS} from './data.js?v=15';
+import {weaponTier,researchLevel,RESEARCH} from './progression.js?v=15';
+import {AUDIO_DEFAULTS,audioVolume} from './audio-levels.js?v=15';
+import {ECONOMY_VERSION,normalizeEconomy} from './economy.js?v=15';
+import {ACHIEVEMENTS,latestClear,storyFrontier,storyUnlocked,missionAt,unlockAchievements} from './campaign.js?v=15';
 
 export const STORAGE='aero-echo.h5.v1',BACKUP_STORAGE=STORAGE+'.previous';
 export const SENSITIVITIES=[.75,1,1.25,1.5];
@@ -13,7 +13,7 @@ export function normalizeProfile(value){
  if(!object(value)||value.version!==1)return createProfile();const result=createProfile();
  result.language=['zh','ja','en'].includes(value.language)?value.language:null;
  result.credits=integer(value.credits,0,1e12,250);result.points=integer(value.points,0,18,0);
- for(const ship of SHIPS){result.levels[ship.id]=integer(value.levels?.[ship.id],1,50,1);result.skins[ship.id]=integer(value.skins?.[ship.id],0,5);result.weapons[ship.id]=weaponTier(value,ship.id);}
+ for(const ship of SHIPS){result.levels[ship.id]=integer(value.levels?.[ship.id],1,50,1);result.skins[ship.id]=integer(value.skins?.[ship.id],0,SKINS.length-1);result.weapons[ship.id]=weaponTier(value,ship.id);}
  for(const node of RESEARCH)result.research[node.id]=researchLevel(value,node.id);
  for(const talent of TALENTS)result.talents[talent.id]=integer(value.talents?.[talent.id],0,talent.max);
  for(const key of ['blueprint','data'])result.materials[key]=integer(value.materials?.[key],0,1e9);

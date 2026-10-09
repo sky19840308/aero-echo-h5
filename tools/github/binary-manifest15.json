@@ -1,0 +1,54 @@
+{
+  "files": [
+    {
+      "target": "dist/assets/music/ending-theme.mp3",
+      "parts": [
+        "tools/github/binary-build15/ending-music-000.b64",
+        "tools/github/binary-build15/ending-music-001.b64",
+        "tools/github/binary-build15/ending-music-002.b64",
+        "tools/github/binary-build15/ending-music-003.b64",
+        "tools/github/binary-build15/ending-music-004.b64",
+        "tools/github/binary-build15/ending-music-005.b64",
+        "tools/github/binary-build15/ending-music-006.b64",
+        "tools/github/binary-build15/ending-music-007.b64",
+        "tools/github/binary-build15/ending-music-008.b64",
+        "tools/github/binary-build15/ending-music-009.b64",
+        "tools/github/binary-build15/ending-music-010.b64",
+        "tools/github/binary-build15/ending-music-011.b64",
+        "tools/github/binary-build15/ending-music-012.b64",
+        "tools/github/binary-build15/ending-music-013.b64",
+        "tools/github/binary-build15/ending-music-014.b64",
+        "tools/github/binary-build15/ending-music-015.b64",
+        "tools/github/binary-build15/ending-music-016.b64",
+        "tools/github/binary-build15/ending-music-017.b64",
+        "tools/github/binary-build15/ending-music-018.b64",
+        "tools/github/binary-build15/ending-music-019.b64",
+        "tools/github/binary-build15/ending-music-020.b64",
+        "tools/github/binary-build15/ending-music-021.b64",
+        "tools/github/binary-build15/ending-music-022.b64",
+        "tools/github/binary-build15/ending-music-023.b64",
+        "tools/github/binary-build15/ending-music-024.b64",
+        "tools/github/binary-build15/ending-music-025.b64",
+        "tools/github/binary-build15/ending-music-026.b64",
+        "tools/github/binary-build15/ending-music-027.b64",
+        "tools/github/binary-build15/ending-music-028.b64",
+        "tools/github/binary-build15/ending-music-029.b64",
+        "tools/github/binary-build15/ending-music-030.b64"
+      ],
+      "sha256": "8b6739e55fefd05cd2807554991ae9eb4cb458d3e4d33966e7fe076aa33cd936"
+    },
+    {
+      "target": "tools/github/skin-manifest15.json",
+      "parts": [
+        "tools/github/binary-build15/skins-000.b64",
+        "tools/github/binary-build15/skins-001.b64",
+        "tools/github/binary-build15/skins-002.b64",
+        "tools/github/binary-build15/skins-003.b64",
+        "tools/github/binary-build15/skins-004.b64",
+        "tools/github/binary-build15/skins-005.b64",
+        "tools/github/binary-build15/skins-006.b64"
+      ],
+      "sha256": "06f709a4161ca9b1ce16e01d970e3435e90744ff545852d2dd6060fffa1feb45"
+    }
+  ]
+}

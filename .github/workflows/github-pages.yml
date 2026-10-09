@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 14
+name: Deploy AERO ECHO Build 15
 
 on:
   workflow_dispatch:
@@ -7,7 +7,8 @@ on:
     paths:
       - .github/workflows/github-pages.yml
       - dist/**
-      - runtime-build14.sha256
+      - runtime-build15.sha256
+      - tools/github/**
 
 permissions:
   contents: read
@@ -28,9 +29,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned Build 14 code and sprite corrections
+      - name: Check out the versioned Build 15 game
         uses: actions/checkout@v4
-      - name: Restore verified media and apply Build 14 corrections
+      - name: Restore verified media and apply Build 15
         shell: bash
         run: |
           set -euo pipefail
@@ -55,12 +56,42 @@ jobs:
           PY
           # Native-alpha atlas PNGs, embedded backups and code all come from the
           # same reviewed commit. The original large music/media bundle stays immutable.
+          python - "$GITHUB_WORKSPACE" <<'PY'
+          import base64, hashlib, json, sys
+          from pathlib import Path, PurePosixPath
+          root = Path(sys.argv[1])
+          transport = json.loads((root / 'tools/github/binary-manifest15.json').read_text())
+          for entry in transport['files']:
+              assert entry['target'] in {'dist/assets/music/ending-theme.mp3', 'tools/github/skin-manifest15.json'}
+              for part in entry['parts']:
+                  path = PurePosixPath(part)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  assert part.startswith('tools/github/binary-build15/')
+              payload = ''.join((root / part).read_text() for part in entry['parts'])
+              data = base64.b64decode(payload, validate=True)
+              assert hashlib.sha256(data).hexdigest() == entry['sha256']
+              target = root / entry['target']
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_bytes(data)
+          PY
           cp -a dist/. site/dist/
+          python - "$GITHUB_WORKSPACE/site/dist/assets/manifest.json" "$GITHUB_WORKSPACE/tools/github/skin-manifest15.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          target, patch = map(Path, sys.argv[1:])
+          manifest = json.loads(target.read_text())
+          update = json.loads(patch.read_text())
+          assert set(update) == {'players', 'skinSet'}
+          assert len(update['players']) == 3
+          assert all(len(skins) == 4 for skins in update['players'].values())
+          manifest.update(update)
+          target.write_text(json.dumps(manifest, ensure_ascii=False, separators=(',', ':')))
+          PY
           cd site
-          sha256sum --check "$GITHUB_WORKSPACE/runtime-build14.sha256"
+          sha256sum --check "$GITHUB_WORKSPACE/runtime-build15.sha256"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the verified Build 14 runtime
+      - name: Upload the verified Build 15 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist

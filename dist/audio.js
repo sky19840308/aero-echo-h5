@@ -1,6 +1,6 @@
-import {CHAPTER_MUSIC,BOSS_MUSIC,MENU_MUSIC} from './music.js?v=14';
-import {CombatAudio} from './combat-audio.js?v=14';
-import {audioVolume} from './audio-levels.js?v=14';
+import {CHAPTER_MUSIC,BOSS_MUSIC,MENU_MUSIC,ENDING_MUSIC} from './music.js?v=15';
+import {CombatAudio} from './combat-audio.js?v=15';
+import {audioVolume} from './audio-levels.js?v=15';
 
 export class AudioSynth {
  constructor(settings,{createMusic,onMusicIssue=()=>{},onSfxIssue=()=>{},sfxOptions={}}={}){
@@ -15,12 +15,12 @@ export class AudioSynth {
    media.addEventListener('error',()=>{this.musicPlaying=false;this.musicAttempted=true;if(this.isAudibleMusic()&&this.isEnabled())this.onMusicIssue('load');});return media;
   }catch{return null;}
  }
- wantsMusic(){return this.preparing||['lobby','battle','boss','story'].includes(this.mode);}
+ wantsMusic(){return this.preparing||['lobby','battle','boss','story','ending'].includes(this.mode);}
  isAudibleMusic(){return this.wantsMusic();}
  isEnabled(){return this.unlocked&&this.pageActive&&this.settings.sound&&this.settings.music;}
  pauseMusic(){this.musicRequest++;this.playPromise=null;this.musicPlaying=false;if(this.music&&!this.music.paused)this.music.pause();}
  selectTrack(chapter,reset=false,kind='chapter'){
-  const track=kind==='lobby'?MENU_MUSIC:(kind==='boss'?BOSS_MUSIC:CHAPTER_MUSIC)[chapter];if(!track)return false;const media=this.ensureMusic();if(!media)return false;chapter=kind==='lobby'?-1:chapter;
+  const track=kind==='ending'?ENDING_MUSIC:kind==='lobby'?MENU_MUSIC:(kind==='boss'?BOSS_MUSIC:CHAPTER_MUSIC)[chapter];if(!track)return false;const media=this.ensureMusic();if(!media)return false;chapter=kind==='lobby'?-1:chapter;media.loop=kind!=='ending';
   if(this.musicChapter!==chapter||this.musicKind!==kind){
    if(this.musicKind==='chapter'&&this.musicChapter===chapter)this.chapterPosition=media.currentTime||0;
    if(this.musicChapter!==chapter)this.chapterPosition=0;
@@ -71,7 +71,7 @@ export class AudioSynth {
   if(!buffer||bank!==this.sfx||!this.pageActive)return false;return Boolean(bank.play(id,buffer,{name:'shot',ship}));
  }
  syncSettings(){
-  if(this.wantsMusic()&&!this.music)this.selectTrack(this.chapter,false,this.mode==='lobby'?'lobby':this.mode==='boss'?'boss':'chapter');
+  if(this.wantsMusic()&&!this.music)this.selectTrack(this.chapter,false,this.mode==='ending'?'ending':this.mode==='lobby'?'lobby':this.mode==='boss'?'boss':'chapter');
   const enabled=this.isEnabled();if(enabled&&!this.previousEnabled)this.musicAttempted=false;this.previousEnabled=enabled;
   this.sfx?.syncSettings(this.pageActive);
   if(this.master)this.master.gain.value=(this.settings.sound&&this.settings.music&&this.pageActive)?.19*audioVolume(this.settings,'musicVolume'):0;
@@ -83,9 +83,9 @@ export class AudioSynth {
  effect(event){if(!this.context||!this.settings.sound||!this.settings.effects||!this.pageActive)return;this.sfx?.effect(typeof event==='string'?{name:event,ship:this.soundShip,chapter:this.chapter}:event);}
  setMode(mode,chapter=0){
   const previousMode=this.mode,changed=previousMode!==mode||this.chapter!==chapter,previouslyWanted=this.wantsMusic();this.mode=mode;this.chapter=chapter;this.preparing=false;
-  if(this.wantsMusic()){this.selectTrack(chapter,mode==='boss'&&previousMode!=='boss'&&previousMode!=='paused',mode==='lobby'?'lobby':mode==='boss'?'boss':'chapter');if(!previouslyWanted)this.musicAttempted=false;}
+  if(this.wantsMusic()){this.selectTrack(chapter,(mode==='boss'&&previousMode!=='boss'&&previousMode!=='paused')||(mode==='ending'&&previousMode!=='ending'&&previousMode!=='ending-paused'),mode==='ending'?'ending':mode==='lobby'?'lobby':mode==='boss'?'boss':'chapter');if(!previouslyWanted)this.musicAttempted=false;}
   else this.pauseMusic();
-  if(mode==='paused'||mode==='lobby')this.sfx?.stopAll();
+  if(['paused','lobby','ending','ending-paused','silent'].includes(mode))this.sfx?.stopAll();
   if(changed){if(this.context)this.nextBeat=this.context.currentTime+.08;this.beat=0;}this.syncSettings();
  }
  update(game=null){

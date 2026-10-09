@@ -1,11 +1,11 @@
-import {STORY} from './story-content.js?v=14';
+import {STORY} from './story-content.js?v=15';
 export const W = 450, H = 800;
 export const SHIPS = [
  {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', hp:1000, shield:350, dps:120, speed:85, armor:0, cooldown:18, skill:'超频齐射', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。持续命中提高射速，超频获得穿透；日冕射线贯穿战场。', skillText:'7 秒射速 +45%，脉冲获得穿透。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
  {id:'Bastion3', name:'堡垒-3', english:'BASTION / 03', role:'防御生存', color:'#f8bf69', hp:1350, shield:600, dps:100, speed:71, armor:.10, cooldown:22, skill:'磁场穹顶', ultimate:'重力轰击', passive:'反应装甲', description:'五联重型霰炮与防御僚机。护盾破裂触发保护，磁场吸收弹幕；重力轰击覆盖前方。', skillText:'5 秒磁场，减伤 60%，吸收附近普通敌弹。', ultText:'5 秒连续区域轰击，每轮清除普通敌弹。'},
  {id:'WraithX', name:'幽蓝-X', english:'WRAITH / X', role:'相位擦弹', color:'#bf9cff', hp:800, shield:250, dps:145, speed:99, armor:0, cooldown:14, skill:'相位穿梭', ultimate:'奇点切割', passive:'擦弹相位', description:'穿透激光针与链状电弧。擦弹积累相位数据，穿梭避开弹幕；奇点切割锁定多个目标。', skillText:'1.2 秒相位无敌，移动轨迹留下攻击残影。', ultText:'锁定至多 6 个目标，普通敌弹减速 40%，持续 3 秒。'}
 ];
-export const SKINS = ['量子武士','极光晶翼','深海幽灵','赤金龙翼','霓虹夜巡','旧世王牌'];
+export const SKINS = ['原装机体','战地涂装','战术涂装','特装机体'];
 export const CHAPTERS = [
  {name:'静默海岸', english:'SILENT COAST', color:'#52d9ed', bg:['#031626','#13384b'], subtitle:'来自 17 年后的求救信号', boss:'灯塔吞噬者 · 弗洛', hp:18000, enemies:[[1,2,7],[1,3,12],[2,7,12]], locations:['海上废弃防线','风暴撤离航道','沉没灯塔'], stories:['检测到求救信标。时间戳……竟然来自 17 年后。','未知信号使用了我方的加密协议。它认识我们。','信号呼号与我完全一致。继续追踪。'], hazard:'交叉火网'},
  {name:'赤沙熔城', english:'RED SAND FORGE', color:'#ffa060', bg:['#211016','#492722'], subtitle:'失效的人类识别代码', boss:'赤砂铸虎机', hp:28000, enemies:[[3,4,13],[4,8,17],[8,13,17]], locations:['沙海工业带','熔炼塔群','地热核心'], stories:['敌机应答了早已停用的人类识别代码。','装甲残片上发现了人类制造编号。','解密完成：ECHO PROJECT。是谁隐藏了这个项目？'], hazard:'地热爆发'},

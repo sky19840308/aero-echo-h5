@@ -1,12 +1,12 @@
 // Resolve against the deployed module, independent of the page's navigation path.
-export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','14');return url.href;};
+export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','15');return url.href;};
 
 export class AssetLoadError extends Error {
- constructor(src,kind='load'){super('Asset load failed: '+src);this.name='AssetLoadError';this.src=src;this.kind=kind;}
+ constructor(src,kind='load'){super('Asset load failed: '+(src.startsWith('data:')?'embedded image':src));this.name='AssetLoadError';this.src=src;this.kind=kind;}
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=14';
+ const src='assets/manifest.json?v=15';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
@@ -57,7 +57,7 @@ export class AssetStore {
   const image=new Image();image.decoding='async';let settled=false;
   const abort=()=>finish(new AssetLoadError(src,'cancelled'));
   const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',abort);image.onload=image.onerror=null;if(error){try{image.src='';}catch{}reject(error);}else resolve(image);};
-  const timer=setTimeout(()=>finish(new AssetLoadError(src,'timeout')),this.timeoutMs);
+  const timer=setTimeout(()=>finish(new AssetLoadError(src,'timeout')),src.startsWith('data:')?Math.max(1500,this.timeoutMs):this.timeoutMs);
   signal.addEventListener('abort',abort,{once:true});if(signal.aborted){abort();return;}
   image.onload=()=>finish();image.onerror=()=>finish(new AssetLoadError(src));
   const url=new URL(resourceUrl(src));if(attempt&&url.protocol!=='data:')url.searchParams.set('retry',String(attempt));
@@ -72,17 +72,19 @@ export class AssetStore {
    try{await this.load(meta.src);}catch{}
   }));return this.menuReady;
  }
- async forStage(stage,ship,skin,progress=()=>{}){
+ async forStage(stage,ship,skin,progress=()=>{},additionalPlayers=[]){
   const epoch=++this.stageEpoch;
   // Abort active decorative downloads as well as queued ones. A slow optional
   // atlas must not occupy every request slot when the player enters the next mission.
   this.cancelOptional();
-  const m=this.manifest,boss=stage.boss?m.bosses[stage.chapter+1]:null,required=[m.players[ship][skin],m.backgrounds[stage.chapter+1],...stage.enemies.map(id=>m.enemies[id]),...(boss?[boss]:[]),m.projectiles.PRJ_Blue_Pulse_01,m.projectiles.PRJ_Orange_Lance_01,m.projectiles.PRJ_Blue_Lance_01,...Object.values(m.items?.atlases||{})];
+  const m=this.manifest,boss=stage.boss?m.bosses[stage.chapter+1]:null,required=[m.players[ship]?.[skin]||m.players[ship]?.[0],m.backgrounds[stage.chapter+1],...stage.enemies.map(id=>m.enemies[id]),...(boss?[boss]:[]),m.projectiles.PRJ_Blue_Pulse_01,m.projectiles.PRJ_Orange_Lance_01,m.projectiles.PRJ_Blue_Lance_01,...Object.values(m.items?.atlases||{})];
+  for(const pilot of additionalPlayers.slice(0,1)){const meta=m.players[pilot.ship]?.[pilot.skin]||m.players[pilot.ship]?.[0];if(meta)required.push(meta);}
+  const pilotShips=[ship,...additionalPlayers.slice(0,1).map(p=>p.ship)];
   const playerAtlases=Object.values(m.playerWeapons?.atlases||{});required.push(...playerAtlases);
   const generalAtlas=m.weapons?.atlases?.GENERAL;if(generalAtlas?.fallback)required.push(generalAtlas);
   const backgroundFrames=m.backgrounds[stage.chapter+1].frames||[];
   const bossAtlases=Object.entries(m.weapons?.atlases||{}).filter(([group,meta])=>meta.fallback&&stage.boss&&(group==='shared_boss_support'||group.startsWith('BOSS_'+String(stage.chapter+1).padStart(2,'0')+'_'))).map(([,meta])=>meta);required.push(...bossAtlases);
-  const resources=[...new Map(required.map(meta=>[meta.src,meta])).values()],paths=resources.map(meta=>meta.fallback||meta.src),weaponAtlases=Object.entries(m.weapons?.atlases||{}).filter(([group])=>group==='GENERAL'||(stage.boss&&(group==='shared_boss_support'||group.startsWith('BOSS_'+String(stage.chapter+1).padStart(2,'0')+'_')))).map(([,meta])=>meta.src),effects=[...weaponAtlases,...Object.entries(m.fx).filter(([name])=>(name==='WraithX_Phase_Dash'&&stage.enemies.includes(6))||!['Dawn7_','Bastion3_','WraithX_'].some(prefix=>name.startsWith(prefix))||name.startsWith(ship+'_')).map(([,f])=>f.src)],keep=new Set([...paths,...effects,...resources.map(meta=>meta.src),...backgroundFrames.flatMap(frame=>[frame.src,frame.fallback])]);
+  const resources=[...new Map(required.map(meta=>[meta.src,meta])).values()],paths=resources.map(meta=>meta.fallback||meta.src),weaponAtlases=Object.entries(m.weapons?.atlases||{}).filter(([group])=>group==='GENERAL'||(stage.boss&&(group==='shared_boss_support'||group.startsWith('BOSS_'+String(stage.chapter+1).padStart(2,'0')+'_')))).map(([,meta])=>meta.src),effects=[...weaponAtlases,...Object.entries(m.fx).filter(([name])=>(name==='WraithX_Phase_Dash'&&stage.enemies.includes(6))||!['Dawn7_','Bastion3_','WraithX_'].some(prefix=>name.startsWith(prefix))||pilotShips.some(id=>name.startsWith(id+'_'))).map(([,f])=>f.src)],keep=new Set([...paths,...effects,...resources.map(meta=>meta.src),...backgroundFrames.flatMap(frame=>[frame.src,frame.fallback])]);
   // Release textures from previous chapters instead of retaining every decoded background.
   for(const src of this.images.keys())if(!keep.has(src)){const job=this.jobs.get(src);if(job)this.cancelJob(job);else this.images.delete(src);}
   for(const src of this.fallbacks.keys())if(!keep.has(src))this.fallbacks.delete(src);
