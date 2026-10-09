@@ -1,9 +1,10 @@
 # AERO ECHO · 裂空回响
 
-[立即试玩 / Play](https://sky19840308.github.io/aero-echo-h5/) · [Build 13 发布包](https://github.com/sky19840308/aero-echo-h5/releases/tag/build-13)
+[立即试玩 / Play](https://sky19840308.github.io/aero-echo-h5/) · [原媒体发布包](https://github.com/sky19840308/aero-echo-h5/releases/tag/build-13)
 
-H5 纵向射击游戏，支持简体中文、日本語和 English；9 个章节、27 个小关、3 位飞行员及 9 位 BOSS。
+当前版本 **Build 14**。H5 纵向射击游戏，支持简体中文、日本語和 English；9 个章节、27 个小关、3 位飞行员及 9 位 BOSS。
 
+- 全部 221 项现用武器逐项复查，修复 45 项裁切问题；定位爆炸不再混入导弹或锁定预警，英雄技能与清弹环引用修正。详情见 [BUILD14.md](BUILD14.md)。
 - 最新九章地表素材切成 54 帧，持续向下滚动，并叠加实时天气与光效；加载失败或超时有内嵌备用图。
 - 主界面仅显示飞行员头像。故事模式通关后飞出屏幕进入机库，升级后继续下一关。
 - 六个入口：故事模式、继续战斗、关卡选择、机库、BOSS 挑战、图库及成就。重玩关卡和 BOSS 需先通关解锁。
@@ -20,8 +21,9 @@ H5 纵向射击游戏，支持简体中文、日本語和 English；9 个章节�
 
 ## 发布与验证
 
-完整运行代码和素材位于 Release 的 `aero-echo-build13-fixed-github.zip` 内 `dist/`，共 928 个运行文件。Pages 工作流校验完整发布包的 SHA-256，并应用本仓库 `dist/index.html`、`dist/i18n.js` 中已提交的修正；每次部署均保留对应 Git 提交记录。最初发布包保留作版本记录。
+原始音乐/媒体包保留在 Release 的 `aero-echo-build13-fixed-github.zip` 内。Build 14 的代码、重新切割的原生透明 PNG 及备用图由本仓库 Git 提交记录；Pages 工作流恢复已校验原媒体包、应用同一提交的全部修正，并检查 `runtime-build14.sha256` 中每个运行文件，整套文件完全一致才允许上线。原版本不删除、不覆盖。
 
 已修复 GitHub Pages 项目子目录的资源路径，并在公网页面验证三语切换、三位英雄反复切换与出击、九章缩略图和九位 BOSS 头像、100%/20% 默认音量、暂停与未通关内容锁定。27 个小关与 9 场 BOSS 的自动化战斗模拟、背景故障恢复、成长预算、存档迁移及音频逻辑检查通过。实际手机与扬声器试听尚未验证。
 
 详细成长预算与实现说明见 [BUILD13.md](BUILD13.md)。
+

@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 13
+name: Deploy AERO ECHO Build 14
 
 on:
   workflow_dispatch:
@@ -6,10 +6,8 @@ on:
     branches: [main]
     paths:
       - .github/workflows/github-pages.yml
-      - dist/index.html
-      - dist/i18n.js
-  release:
-    types: [published]
+      - dist/**
+      - runtime-build14.sha256
 
 permissions:
   contents: read
@@ -30,9 +28,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned runtime corrections
+      - name: Check out the versioned Build 14 code and sprite corrections
         uses: actions/checkout@v4
-      - name: Download the verified Build 13 bundle
+      - name: Restore verified media and apply Build 14 corrections
         shell: bash
         run: |
           set -euo pipefail
@@ -47,20 +45,22 @@ jobs:
           root = Path(destination)
           with ZipFile(archive) as bundle:
               members = [m for m in bundle.infolist() if m.filename.startswith('dist/')]
-              assert members, 'The game bundle has no dist/ runtime'
+              assert members, 'The media bundle has no dist/ runtime'
               for member in members:
                   path = PurePosixPath(member.filename)
                   assert not path.is_absolute() and '..' not in path.parts
                   bundle.extract(member, root)
           assert (root / 'dist/index.html').is_file(), 'The game entry point is missing'
-          print(f'Prepared {len(members)} runtime files')
+          print(f'Restored {len(members)} base runtime files')
           PY
-          # Keep the complete asset bundle immutable; apply reviewed text corrections from this commit.
-          cp dist/index.html site/dist/index.html
-          cp dist/i18n.js site/dist/i18n.js
+          # Native-alpha atlas PNGs, embedded backups and code all come from the
+          # same reviewed commit. The original large music/media bundle stays immutable.
+          cp -a dist/. site/dist/
+          cd site
+          sha256sum --check "$GITHUB_WORKSPACE/runtime-build14.sha256"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the game runtime
+      - name: Upload the verified Build 14 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist
