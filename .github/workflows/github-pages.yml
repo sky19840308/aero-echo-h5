@@ -1,0 +1,62 @@
+name: Deploy AERO ECHO Build 13
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/github-pages.yml
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-github.zip
+      BUNDLE_SHA256: 1f71163485ac4085a44cb31aa60ad9ba04c68eed96484926a316b07636248302
+    steps:
+      - name: Download the verified Build 13 bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/aero-echo-build13-github.zip"
+          curl --fail --location --retry 3 --retry-delay 3 "$BUNDLE_URL" -o "$archive"
+          printf '%s  %s\n' "$BUNDLE_SHA256" "$archive" | sha256sum --check -
+          python - "$archive" "$GITHUB_WORKSPACE" <<'PY'
+          import sys
+          from pathlib import Path, PurePosixPath
+          from zipfile import ZipFile
+          archive, destination = sys.argv[1:]
+          root = Path(destination)
+          with ZipFile(archive) as bundle:
+              members = [m for m in bundle.infolist() if m.filename.startswith('dist/')]
+              assert members, 'The game bundle has no dist/ runtime'
+              for member in members:
+                  path = PurePosixPath(member.filename)
+                  assert not path.is_absolute() and '..' not in path.parts
+                  bundle.extract(member, root)
+          assert (root / 'dist/index.html').is_file(), 'The game entry point is missing'
+          print(f'Prepared {len(members)} runtime files')
+          PY
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload the game runtime
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
