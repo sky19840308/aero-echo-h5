@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - .github/workflows/github-pages.yml
+      - dist/index.html
+      - dist/i18n.js
   release:
     types: [published]
 
@@ -28,6 +30,8 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
+      - name: Check out the versioned runtime corrections
+        uses: actions/checkout@v4
       - name: Download the verified Build 13 bundle
         shell: bash
         run: |
@@ -35,7 +39,7 @@ jobs:
           archive="$RUNNER_TEMP/aero-echo-build13-fixed-github.zip"
           curl --fail --location --retry 3 --retry-delay 3 "$BUNDLE_URL" -o "$archive"
           printf '%s  %s\n' "$BUNDLE_SHA256" "$archive" | sha256sum --check -
-          python - "$archive" "$GITHUB_WORKSPACE" <<'PY'
+          python - "$archive" "$GITHUB_WORKSPACE/site" <<'PY'
           import sys
           from pathlib import Path, PurePosixPath
           from zipfile import ZipFile
@@ -51,12 +55,15 @@ jobs:
           assert (root / 'dist/index.html').is_file(), 'The game entry point is missing'
           print(f'Prepared {len(members)} runtime files')
           PY
+          # Keep the complete asset bundle immutable; apply reviewed text corrections from this commit.
+          cp dist/index.html site/dist/index.html
+          cp dist/i18n.js site/dist/i18n.js
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload the game runtime
         uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: site/dist
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
