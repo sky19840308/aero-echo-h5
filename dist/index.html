@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+ <meta charset="utf-8">
+ <base href="./">
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+ <meta name="theme-color" content="#06111a">
+ <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
+ <title>裂空回响 · AERO ECHO</title>
+ <link rel="icon" href="icon.svg" type="image/svg+xml">
+ <link rel="stylesheet" href="style.css?v=13">
+ <link rel="stylesheet" href="ui-art.css?v=13">
+ <link rel="stylesheet" href="menu-layout.css?v=13">
+</head>
+<body class="language-pending">
+ <div class="ambient-grid" aria-hidden="true"></div>
+ <main class="shell">
+  <aside class="left-panel">
+   <a class="wordmark" href="./" aria-label="裂空回响首页"><span class="emblem">A</span><span>AERO ECHO<small>裂 空 回 响</small></span></a>
+   <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 13</div>
+   <h1>拯救地球，<br>唤醒 X 星。</h1>
+   <p class="intro-copy">X 星舰队即将入侵地球。<br>三位飞行员突破九道封锁，<br>让两个世界重获自由。</p>
+   <nav class="side-nav" aria-label="游戏导航">
+    <button data-open="story-mode"><span>01</span> 故事模式 <b>↗</b></button>
+    <button data-open="continue"><span>02</span> 继续战斗 <b>↗</b></button>
+    <button data-open="missions"><span>03</span> 关卡选择 <b>↗</b></button>
+    <button data-open="hangar"><span>04</span> 机库 <b>↗</b></button>
+    <button data-open="bosses"><span>05</span> BOSS挑战 <b>↗</b></button>
+    <button data-open="archive"><span>06</span> 图库及成就 <b>↗</b></button>
+   </nav>
+   <div class="edition-foot"><span>09 / CHAPTERS</span><span>27 / MISSIONS</span><span>03 / FIGHTERS</span></div>
+  </aside>
+  <section class="stage" id="stage" aria-label="飞机射击游戏">
+   <canvas id="canvas" width="450" height="800" aria-label="战场：按住拖拽移动，战机自动开火" tabindex="0"></canvas>
+   <div class="stage-vignette" aria-hidden="true"></div>
+   <div id="lobby" class="lobby">
+    <div class="lobby-top"><span><i class="status-light"></i> ECHO FLIGHT COMMAND</span><div><button class="icon-button locale-toggle" id="language-toggle" aria-label="语言">🌐</button><button class="icon-button" id="sound-toggle" aria-label="切换声音"></button><button class="icon-button" data-open="settings" aria-label="设置">⚙</button></div></div>
+    <div class="title-block"><div class="eyebrow">裂 空 回 响</div><div class="game-title">AERO<span>ECHO<i>↗</i></span></div><p>突入 X 星 · 自由的回响</p></div>
+    <div id="lobby-wallet" class="lobby-wallet"></div>
+    <div class="ship-switcher"><button id="previous-ship" aria-label="上一位飞行员">‹</button><button id="ship-info" data-open="hangar"><span id="ship-name">宇宙人</span><small id="ship-role">均衡火力</small></button><button id="next-ship" aria-label="下一位飞行员">›</button></div>
+    <div id="pilot-strip" class="pilot-strip" aria-label="选择飞行员"></div>
+    <button class="mission-preview" data-open="story-mode"><span class="mission-number" id="mission-number">01—01</span><span class="mission-label"><small>当前航线 / SELECT MISSION</small><strong id="mission-name">静默海岸</strong><span id="mission-place">海上废弃防线 · 快速试飞</span></span><span class="mission-arrow">↗</span></button>
+    <nav class="main-menu" aria-label="手机游戏导航">
+     <button class="menu-entry launch-button" id="launch"><span class="menu-index">01</span><span>故事模式<small>STORY MODE</small></span><b>↗</b></button>
+     <button class="menu-entry secondary" id="continue-menu" data-open="continue"><span class="menu-index">02</span><span>继续战斗<small id="continue-route">尚无通关存档</small></span><b>↗</b></button>
+     <button class="menu-entry secondary" data-open="missions"><span class="menu-index">03</span><span>关卡选择<small>STAGE SELECT</small></span><b>↗</b></button>
+     <button class="menu-entry secondary" data-open="hangar"><span class="menu-index">04</span><span>机库<small>HANGAR</small></span><b>↗</b></button>
+     <button class="menu-entry secondary" data-open="bosses"><span class="menu-index">05</span><span>BOSS挑战<small>BOSS CHALLENGE</small></span><b>↗</b></button>
+     <button class="menu-entry secondary" data-open="archive"><span class="menu-index">06</span><span>图库及成就<small>GALLERY / ACHIEVEMENTS</small></span><b>↗</b></button>
+    </nav>
+    <div class="lobby-note">九章故事 · 通关解锁 · 自动保存</div>
+   </div>
+   <div class="game-hud" id="game-hud" hidden>
+    <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div>
+    <div class="vitals"><div class="vital-label"><span>机体 <b id="hp-value">1000</b></span><span>护盾 <b id="shield-value">350</b></span></div><div class="vital-bars"><div class="hp-bar"><i id="hp-fill"></i></div><div class="shield-bar"><i id="shield-fill"></i></div></div></div>
+    <div class="mission-progress"><span id="wave-label">WAVE 01</span><i><b id="wave-fill"></b></i><span id="hud-time">00:00</span></div>
+    <div class="boss-hud" id="boss-hud" hidden><div><span id="boss-name"></span><b id="boss-phase">PHASE 01</b></div><i><b id="boss-fill"></b></i></div>
+    <div class="battle-message" id="battle-message"><img id="message-avatar" alt=""><div><small id="message-speaker"></small><span id="message-text"></span></div></div>
+    <div class="flight-tip" id="flight-tip">按住任意位置拖拽 · 自动开火</div>
+    <div class="battle-bottom"><div class="weapon-status"><span id="weapon-level">火控 LV.1</span><small id="graze-label">擦弹 0</small></div><div class="ability-buttons"><button id="ability" class="ability"><span class="ability-icon" id="ability-art"></span><b id="ability-label">超频</b><small id="ability-timer">就绪</small><i id="ability-cooldown"></i></button><button id="bomb" class="ability bomb"><span class="ability-icon" id="bomb-art"></span><b>爆弹</b><small id="bomb-count">× 2</small></button><button id="ultimate" class="ability ultimate"><span class="ability-icon" id="ultimate-art"></span><b id="ultimate-label">日冕</b><small id="ultimate-energy">0%</small><i id="ultimate-charge"></i></button></div></div>
+   </div>
+   <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal"><header><div><small id="modal-kicker">FLIGHT COMMAND</small><h2 id="modal-title"></h2></div><button id="close-modal" class="icon-button" aria-label="关闭">×</button></header><div id="modal-body" class="modal-body"></div></div></div>
+   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+   <div id="loading" class="loading" hidden><span class="spinner" id="loading-spinner"></span><strong id="loading-title">正在接入战场</strong><small id="loading-progress">准备飞行资源</small><button class="secondary" id="loading-retry" hidden>重试加载</button><button class="text-button" id="loading-dismiss" hidden>返回基地</button></div>
+  </section>
+  <aside class="right-panel">
+   <div class="briefing"><span class="eyebrow">MISSION BRIEFING</span><span class="chapter-index" id="side-chapter">01 / 09</span><h2 id="side-name">静默海岸</h2><p id="side-story">迷雾背后的求救声</p><div class="briefing-line"></div><dl><div><dt>飞行员</dt><dd id="side-pilot">宇宙人</dd></div><div><dt>当前战机</dt><dd id="side-ship">曙光-7</dd></div><div><dt>任务难度</dt><dd id="side-difficulty">标准</dd></div><div><dt>信用点</dt><dd id="side-credits">1,000</dd></div></dl><button class="text-button" data-open="missions">更换航线 <span>→</span></button></div>
+   <div class="flight-manual"><span class="eyebrow">FLIGHT MANUAL</span><div><b>拖拽 / WASD / 方向键</b><p>移动与闪避，主炮自动开火。</p></div><div><kbd>Q</kbd><span>主动技</span><kbd>E</kbd><span>战术爆弹</span></div><div><kbd>SPACE</kbd><span>终极技</span><kbd>P</kbd><span>暂停</span></div><p class="manual-note">靠近敌弹，擦过发光碰撞核心；<br>击杀、擦弹与破坏弱点积累能量。</p></div>
+   <button class="help-link" data-open="help">第一次出击？查看飞行指南 ↗</button>
+  </aside>
+ </main>
+ <div class="language-screen" id="language-screen" role="dialog" aria-modal="true" aria-labelledby="language-heading">
+  <div class="language-card"><div class="language-emblem" aria-hidden="true">A↗</div><div class="language-brand">AERO ECHO</div><h2 id="language-heading"><span>选择语言</span><span>言語を選択</span><span>Choose your language</span></h2><div class="language-options"><button data-language="zh" lang="zh-CN"><b>简体中文</b><span>进入游戏 →</span></button><button data-language="ja" lang="ja"><b>日本語</b><span>ゲームへ →</span></button><button data-language="en" lang="en"><b>English</b><span>Enter game →</span></button></div><div class="language-foot">09 / 27 / 03</div></div>
+ </div>
+ <input id="save-file" type="file" accept=".json,application/json" aria-label="导入存档" hidden>
+ <script type="module" src="app.js?v=13"></script>
+</body>
+</html>
