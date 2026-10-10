@@ -37,6 +37,15 @@ export class GoogleSignIn {
         container.textContent = this.text('googlePending');
         container.classList.add('google-pending'); return;
       }
+      if (this.account.crossOrigin) {
+        container.textContent = ''; container.classList.remove('google-pending');
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'primary'; button.textContent = this.text('signIn');
+        button.addEventListener('click', () => this.startPopup(container, locale, active));
+        container.appendChild(button);
+        const note = document.createElement('p'); note.className = 'tiny-note'; note.textContent = this.text('googlePopupNote'); container.appendChild(note);
+        return;
+      }
       const [google, challenge] = await Promise.all([library(locale), this.prepare()]);
       if (!active()) return;
       container.textContent = ''; container.classList.remove('google-pending');
@@ -57,8 +66,33 @@ export class GoogleSignIn {
         width: Math.max(180, Math.min(320, Math.floor(container.getBoundingClientRect().width))), locale: locale === 'zh' ? 'zh-CN' : locale});
     } catch { if (active()) container.textContent = this.text('googleError'); }
   }
+  startPopup(container, locale, active) {
+    if (this.busy) return;
+    this.cancelPopup?.();
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const state = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const url = this.account.origin + '/google-signin#' + new URLSearchParams({state, lang: locale});
+    const popup = globalThis.open(url, '_blank', 'popup=yes,width=480,height=720');
+    if (!popup) { container.appendChild(document.createTextNode(this.text('googlePopupBlocked'))); return; }
+    let exchanged = false;
+    const cleanup = () => { clearTimeout(timer); globalThis.removeEventListener('message', receive); this.cancelPopup = null; };
+    const receive = async event => {
+      if (!active() || exchanged || event.origin !== this.account.origin || event.source !== popup || event.data?.type !== 'aero-google-handoff' || event.data.state !== state || !/^[A-Za-z0-9_-]{43}$/.test(event.data.code)) return;
+      exchanged = true; cleanup(); this.busy = true; container.setAttribute('aria-busy', 'true');
+      try {
+        const session = await this.account.request('/api/auth/exchange', {method: 'POST', body: {state, code: event.data.code}});
+        this.account.setSession(session);
+        popup.close(); await this.account.initialize(); await this.onSuccess();
+      } catch { if (active()) container.textContent = this.text('googleError'); }
+      finally { this.busy = false; container.removeAttribute('aria-busy'); }
+    };
+    const timer = setTimeout(() => { cleanup(); if (active()) container.appendChild(document.createTextNode(this.text('googlePopupRetry'))); }, 5 * 60 * 1000);
+    this.cancelPopup = () => { cleanup(); popup.close(); };
+    globalThis.addEventListener('message', receive);
+  }
   async signOut() {
     await this.account.request('/api/auth/signout', {method: 'POST', body: {}});
+    this.cancelPopup?.(); this.account.clearSession();
     ++this.generation; this.challenge = null;
     globalThis.google?.accounts?.id?.disableAutoSelect();
     await this.account.initialize();

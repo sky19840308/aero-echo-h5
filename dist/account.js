@@ -1,18 +1,32 @@
-import {createProfile, normalizeProfile, STORAGE} from './profile.js?v=16';
+import {createProfile, normalizeProfile, STORAGE} from './profile.js?v=17';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
 const revision = value => Number.isInteger(value) && value >= 0 ? value : 0;
+export const GITHUB_ORIGIN = 'https://sky19840308.github.io';
+export const SITE_ORIGIN = 'https://aero-echo-sky.spy-liver.chatgpt.site';
+const SESSION_KEY = 'aero-echo.google-session';
+const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 export class AccountError extends Error {
   constructor(status, data) { super(data?.error || `http-${status}`); this.status = status; this.data = data; this.code = data?.error; }
 }
 
 export class Account {
-  constructor({fetcher = globalThis.fetch?.bind(globalThis), storage, origin, enabled, onChange, onProfile, onIssue} = {}) {
+  constructor({fetcher = globalThis.fetch?.bind(globalThis), storage, sessionStorage, origin, enabled, onChange, onProfile, onIssue} = {}) {
     let browserStorage; try { browserStorage = globalThis.localStorage; } catch { browserStorage = null; }
+    let browserSession; try { browserSession = globalThis.sessionStorage; } catch { browserSession = null; }
     this.fetcher = fetcher; this.storage = storage ?? browserStorage;
-    this.origin = new URL(origin ?? globalThis.location?.origin ?? 'http://localhost').origin;
-    this.enabled = enabled ?? new URL(this.origin).hostname.endsWith('.chatgpt.site');
+    this.frontendOrigin = new URL(origin ?? globalThis.location?.origin ?? 'http://localhost').origin;
+    this.crossOrigin = this.frontendOrigin === GITHUB_ORIGIN;
+    this.origin = this.crossOrigin ? SITE_ORIGIN : this.frontendOrigin;
+    this.enabled = enabled ?? (this.crossOrigin || new URL(this.origin).hostname.endsWith('.chatgpt.site'));
+    this.sessionStorage = sessionStorage ?? browserSession;
+    this.accessToken = null; this.expiresAt = 0;
+    if (this.crossOrigin) {
+      try { const saved = JSON.parse(this.sessionStorage?.getItem(SESSION_KEY) || 'null');
+        if (TOKEN.test(saved?.accessToken) && saved.expiresAt > Date.now()) { this.accessToken = saved.accessToken; this.expiresAt = saved.expiresAt; }
+      } catch {}
+    }
     this.onChange = onChange ?? (() => {}); this.onProfile = onProfile ?? (() => {}); this.onIssue = onIssue ?? (() => {});
     this.user = null; this.status = this.enabled ? 'loading' : 'disabled'; this.revision = 0;
     this.profile = createProfile(); this.conflict = null; this.epoch = 0;
@@ -21,6 +35,15 @@ export class Account {
   get key() { return this.user ? `aero-echo.h5.account.${encodeURIComponent(this.user.id)}` : null; }
   get personalKey() { return this.key; }
   get backupKey() { return this.key ? `${this.key}.previous` : null; }
+  setSession(value) {
+    if (!this.crossOrigin || !TOKEN.test(value?.accessToken) || !(value.expiresAt > Date.now())) throw new AccountError(400, {error: 'invalid-session'});
+    ++this.epoch; this._clearPending(); this.accessToken = value.accessToken; this.expiresAt = value.expiresAt;
+    try { this.sessionStorage?.setItem(SESSION_KEY, JSON.stringify({accessToken: this.accessToken, expiresAt: this.expiresAt})); } catch {}
+  }
+  clearSession() {
+    this.accessToken = null; this.expiresAt = 0;
+    try { this.sessionStorage?.removeItem(SESSION_KEY); } catch {}
+  }
   _read(key) { try { return JSON.parse(this.storage?.getItem(key) ?? 'null'); } catch { return null; } }
   _write(key, value) { if (!key) return; try { this.storage?.setItem(key, JSON.stringify(value)); } catch (error) { this.onIssue(error, {kind: 'local-storage'}); } }
   _cache(profile = this.profile, dirty = !!this.pending) {
@@ -54,12 +77,16 @@ export class Account {
       const id = accountId ?? this.user?.id;
       if (id) headers.set('X-Aero-Account', id);
     }
+    if (this.crossOrigin && this.accessToken) {
+      if (this.expiresAt <= Date.now()) this.clearSession();
+      else headers.set('Authorization', 'Bearer ' + this.accessToken);
+    }
     const currentEpoch = this.epoch;
-    const response = await this.fetcher(url.href, {method, headers, credentials: 'same-origin', cache: 'no-store', signal, ...(body !== undefined ? {body: JSON.stringify(body)} : {})});
+    const response = await this.fetcher(url.href, {method, headers, credentials: this.crossOrigin ? 'omit' : 'same-origin', cache: 'no-store', signal, ...(body !== undefined ? {body: JSON.stringify(body)} : {})});
     let data; try { data = await response.json(); } catch { data = {error: 'invalid-server-response'}; }
     if (!response.ok) {
       if (currentEpoch === this.epoch && response.status === 419) this._identityChanged(data.user);
-      else if (currentEpoch === this.epoch && response.status === 401 && this.user) this._guest('identity-changed');
+      else if (currentEpoch === this.epoch && response.status === 401) { this.clearSession(); if (this.user) this._guest('identity-changed'); }
       throw new AccountError(response.status, data);
     }
     return data;

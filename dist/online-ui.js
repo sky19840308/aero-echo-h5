@@ -1,5 +1,5 @@
-import {SHIPS,SKINS} from './data.js?v=16';
-import {getLocale} from './i18n.js?v=16';
+import {SHIPS,SKINS} from './data.js?v=17';
+import {getLocale} from './i18n.js?v=17';
 
 const text={
  account:['账户与云存档','アカウントとクラウド保存','Account & Cloud Save'],
@@ -20,6 +20,9 @@ const text={
  googleLoading:['正在连接 Google 登录…','Google ログインに接続中…','Connecting to Google sign-in…'],
  googlePending:['Google 登录暂未启用。你可以先以游客身份游玩。','Google ログインは準備中です。ゲストとしてプレイできます。','Google sign-in is not enabled yet. You can play as a guest.'],
  googleError:['Google 登录暂时无法连接，请重试。','Google ログインに接続できません。もう一度お試しください。','Could not connect to Google sign-in. Please retry.'],
+ googlePopupNote:['将在安全弹窗中使用 Google 登录，完成后返回本游戏。','安全な別ウィンドウで Google にログインし、このゲームに戻ります。','Sign in with Google in a secure popup, then return to this game.'],
+ googlePopupBlocked:['浏览器拦截了登录弹窗。请允许弹窗后重试，或用 Safari / Chrome 打开。','ポップアップがブロックされました。許可して再試行するか、Safari / Chrome で開いてください。','The sign-in popup was blocked. Allow popups and retry, or open in Safari / Chrome.'],
+ googlePopupRetry:['登录尚未完成，请再次点击 Google 登录。','ログインが完了していません。もう一度 Google ログインを押してください。','Sign-in did not finish. Click Sign in with Google again.'],
  nickname:['飞行员昵称','パイロット名','Pilot Name'],
  rename:['保存昵称','名前を保存','Save Name'],
  retry:['重新连接','再接続','Reconnect'],
