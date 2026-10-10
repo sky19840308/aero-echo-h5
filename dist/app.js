@@ -1,26 +1,26 @@
-import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=17';
-import {Game,AssetStore} from './engine.js?v=17';
-import {Renderer} from './renderer.js?v=17';
-import {AudioSynth} from './audio.js?v=17';
-import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=17';
-import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=17';
-import {volumeSettingsHtml} from './audio-levels.js?v=17';
-import {readManifest,resourceUrl} from './asset-loader.js?v=17';
-import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=17';
-import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=17';
-import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=17';
-import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=17';
-import {progressionHtml} from './progression-ui.js?v=17';
-import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=17';
-import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=17';
-import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=17';
-import {STORY,STORY_UI} from './story-content.js?v=17';
-import {Account} from './account.js?v=17';
-import {CoopSession} from './coop.js?v=17';
-import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=17';
-import {GoogleSignIn} from './google-signin.js?v=17';
-import {EndingPlayer} from './ending-player.js?v=17';
-import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=17';
+import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=18';
+import {Game,AssetStore} from './engine.js?v=18';
+import {Renderer} from './renderer.js?v=18';
+import {AudioSynth} from './audio.js?v=18';
+import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=18';
+import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=18';
+import {volumeSettingsHtml} from './audio-levels.js?v=18';
+import {readManifest,resourceUrl} from './asset-loader.js?v=18';
+import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=18';
+import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=18';
+import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=18';
+import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=18';
+import {progressionHtml} from './progression-ui.js?v=18';
+import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=18';
+import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=18';
+import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=18';
+import {STORY,STORY_UI} from './story-content.js?v=18';
+import {Account} from './account.js?v=18';
+import {CoopSession} from './coop.js?v=18';
+import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=18';
+import {GoogleSignIn} from './google-signin.js?v=18';
+import {EndingPlayer} from './ending-player.js?v=18';
+import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=18';
 
 const $=id=>document.getElementById(id),number=n=>Math.round(n).toLocaleString({zh:'zh-CN',ja:'ja-JP',en:'en-US'}[getLocale()]),pad=n=>String(n).padStart(2,'0');
 const duration=t=>`${pad(Math.floor(t/60))}:${pad(Math.floor(t)%60)}`;
@@ -279,4 +279,4 @@ function animationFrame(now){if(ending.active){if(coop)coop.update(0);ending.upd
  if(renderer)renderer.draw(game,clock,selection.chapter,game?.skin??profile.skins[SHIPS[selection.ship].id]);if(now-lastHud>70){updateHud();lastHud=now;}audio.update(game);requestAnimationFrame(animationFrame);}
 
 async function initialize(){if(busy)return;beginLoading();try{manifest=await readManifest();imageFallbacks.clear();indexImageFallbacks(manifest);assets=new AssetStore(manifest);if(renderer)renderer.assets=assets;else renderer=new Renderer($('canvas'),assets,settings);updateLobby();audio.setMode('lobby',selection.chapter);if(!loopStarted){loopStarted=true;requestAnimationFrame(animationFrame);}$('loading').hidden=true;}catch(error){showLoadFailure(error,'initialize');}finally{busy=false;$('launch').disabled=!assets;tryEndingPreview();}}
-setLocale(profile.language||'zh');applyStaticLocale(document);showLanguageGate();const initialized=initialize();void account.initialize().then(()=>{accountReady=true;accountChanged();const query=new URLSearchParams(globalThis.location?.search||'');if(query.has('account')&&profile.language&&!coop)showModal('account');tryEndingPreview();});
+setLocale(profile.language||'zh');applyStaticLocale(document);showLanguageGate();const loginReturn=googleSignIn.completeRedirect();const initialized=initialize();void loginReturn.then(async result=>{await account.initialize();accountReady=true;accountChanged();const query=new URLSearchParams(globalThis.location?.search||'');if((query.has('account')||result.attempted)&&profile.language&&!coop)showModal('account');tryEndingPreview();});

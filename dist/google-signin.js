@@ -1,5 +1,7 @@
 // Load Google's maintained sign-in button only when the account panel is opened.
 let libraryPromise;
+const LOGIN_STATE_KEY = 'aero-echo.google-return-state';
+const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 function library(locale) {
   if (globalThis.google?.accounts?.id) return Promise.resolve(globalThis.google.accounts.id);
   if (!libraryPromise) libraryPromise = new Promise((resolve, reject) => {
@@ -41,9 +43,9 @@ export class GoogleSignIn {
         container.textContent = ''; container.classList.remove('google-pending');
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'primary'; button.textContent = this.text('signIn');
-        button.addEventListener('click', () => this.startPopup(container, locale, active));
+        button.addEventListener('click', () => this.startRedirect(container, locale));
         container.appendChild(button);
-        const note = document.createElement('p'); note.className = 'tiny-note'; note.textContent = this.text('googlePopupNote'); container.appendChild(note);
+        const note = document.createElement('p'); note.className = 'tiny-note'; note.textContent = this.text(this.returnError || 'googlePopupNote'); container.appendChild(note);
         return;
       }
       const [google, challenge] = await Promise.all([library(locale), this.prepare()]);
@@ -66,33 +68,46 @@ export class GoogleSignIn {
         width: Math.max(180, Math.min(320, Math.floor(container.getBoundingClientRect().width))), locale: locale === 'zh' ? 'zh-CN' : locale});
     } catch { if (active()) container.textContent = this.text('googleError'); }
   }
-  startPopup(container, locale, active) {
+  startRedirect(container, locale) {
     if (this.busy) return;
-    this.cancelPopup?.();
     const bytes = crypto.getRandomValues(new Uint8Array(32));
     const state = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    const url = this.account.origin + '/google-signin#' + new URLSearchParams({state, lang: locale});
-    const popup = globalThis.open(url, '_blank', 'popup=yes,width=480,height=720');
-    if (!popup) { container.appendChild(document.createTextNode(this.text('googlePopupBlocked'))); return; }
-    let exchanged = false;
-    const cleanup = () => { clearTimeout(timer); globalThis.removeEventListener('message', receive); this.cancelPopup = null; };
-    const receive = async event => {
-      if (!active() || exchanged || event.origin !== this.account.origin || event.source !== popup || event.data?.type !== 'aero-google-handoff' || event.data.state !== state || !/^[A-Za-z0-9_-]{43}$/.test(event.data.code)) return;
-      exchanged = true; cleanup(); this.busy = true; container.setAttribute('aria-busy', 'true');
-      try {
-        const session = await this.account.request('/api/auth/exchange', {method: 'POST', body: {state, code: event.data.code}});
-        this.account.setSession(session);
-        popup.close(); await this.account.initialize(); await this.onSuccess();
-      } catch { if (active()) container.textContent = this.text('googleError'); }
-      finally { this.busy = false; container.removeAttribute('aria-busy'); }
-    };
-    const timer = setTimeout(() => { cleanup(); if (active()) container.appendChild(document.createTextNode(this.text('googlePopupRetry'))); }, 5 * 60 * 1000);
-    this.cancelPopup = () => { cleanup(); popup.close(); };
-    globalThis.addEventListener('message', receive);
+    try {
+      const pending = JSON.stringify({state, createdAt: Date.now()});
+      this.account.sessionStorage?.setItem(LOGIN_STATE_KEY, pending);
+      if (this.account.sessionStorage?.getItem(LOGIN_STATE_KEY) !== pending) throw new Error('storage-unavailable');
+      // Navigate the current tab: mobile/in-app browsers need not retain window.opener.
+      const url = this.account.origin + '/google-signin?' + new URLSearchParams({mode: 'redirect', state, lang: locale});
+      globalThis.location.assign(url);
+    } catch { container.textContent = this.text('googleStorageError'); }
+  }
+  async completeRedirect() {
+    if (!this.account.crossOrigin) return {attempted: false};
+    const params = new URLSearchParams(globalThis.location?.hash?.slice(1) || '');
+    if (!params.has('aero_login')) return {attempted: false};
+    const state = params.get('state'), code = params.get('code');
+    // Remove the one-use handoff before any account/asset work. Never expose the bearer in a URL.
+    for (const key of ['aero_login', 'state', 'code']) params.delete(key);
+    const rest = params.toString();
+    globalThis.history.replaceState(globalThis.history.state, '', globalThis.location.pathname + globalThis.location.search + (rest ? '#' + rest : ''));
+    try {
+      const pending = JSON.parse(this.account.sessionStorage?.getItem(LOGIN_STATE_KEY) || 'null');
+      this.account.sessionStorage?.removeItem(LOGIN_STATE_KEY);
+      if (!TOKEN.test(state || '') || !TOKEN.test(code || '') || pending?.state !== state || !Number.isFinite(pending.createdAt) || pending.createdAt > Date.now() || Date.now() - pending.createdAt > 10 * 60 * 1000) {
+        this.returnError = 'googleReturnExpired'; return {attempted: true, error: this.returnError};
+      }
+      const session = await this.account.request('/api/auth/exchange', {method: 'POST', body: {state, code}});
+      this.account.setSession(session); this.returnError = null;
+      return {attempted: true, authenticated: true};
+    } catch (error) {
+      this.returnError = error.status === 401 ? 'googleReturnExpired' : 'googleError';
+      return {attempted: true, error: this.returnError};
+    }
   }
   async signOut() {
     await this.account.request('/api/auth/signout', {method: 'POST', body: {}});
-    this.cancelPopup?.(); this.account.clearSession();
+    this.account.clearSession();
+    try { this.account.sessionStorage?.removeItem(LOGIN_STATE_KEY); } catch {}
     ++this.generation; this.challenge = null;
     globalThis.google?.accounts?.id?.disableAutoSelect();
     await this.account.initialize();
