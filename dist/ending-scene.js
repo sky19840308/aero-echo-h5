@@ -1,4 +1,4 @@
-import {resourceUrl} from './asset-loader.js?v=18';
+import {resourceUrl} from './asset-loader.js?v=19';
 
 export const ENDING_ASSETS=Object.freeze({background:'assets/ending/earth-dawn.png',fighters:'assets/ending/fighters.png',fallback:'assets/ending/homecoming-original.jpg'});
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));

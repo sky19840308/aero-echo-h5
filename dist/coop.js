@@ -1,6 +1,7 @@
-import {Game} from './engine.js?v=18';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=18';
-import {hazardImpactArt} from './weapons.js?v=18';
+import {Game} from './engine.js?v=19';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=19';
+import {hazardImpactArt} from './weapons.js?v=19';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=19';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -155,6 +156,7 @@ export class CoopGame extends Game {
   return {crew,game};
  }
  restore(snapshot){
+  snapshot=unpackCoopSnapshot(snapshot);if(!snapshot)throw new Error('Invalid co-op frame');
   for(const key of WORLD_KEYS)if(snapshot.game?.[key]!==undefined)this[key]=snapshot.game[key];
   for(const key of WORLD_ARRAYS){const items=Array.isArray(snapshot.game?.[key])?snapshot.game[key]:[];this[key]=items.map(item=>({...item}));}
   for(const enemy of this.enemies)enemy.cfg=ENEMIES[enemy.type-1]||ENEMIES[0];for(const bullet of this.bullets){bullet.hit=new Set((Array.isArray(bullet.hitIds)?bullet.hitIds:[]).filter(id=>integer(id,0,Number.MAX_SAFE_INTEGER)).slice(0,120));delete bullet.hitIds;}
@@ -170,6 +172,7 @@ export class CoopSession {
  constructor({account,onEvent=()=>{},onChange=()=>{},onStage=async()=>{},now=()=>Date.now(),autoSync=true,interval=200}={}){
   if(!account)throw new Error('A signed-in account is required');this.account=account;this.emit=onEvent;this.onChange=onChange;this.onStage=onStage;this.now=now;this.autoSync=autoSync;this.interval=clamp(interval,100,2000);
   this.state='closed';this.baseState='closed';this.role=null;this.room=null;this.code='';this.game=null;this.local=null;this.mission=0;this.seq=0;this.lastSnapshotSeq=-1;this.lastGuestSeq=-1;this.commands=[];this.commandSeq=0;this.readyRequested=false;this.pauseFlags={host:false,guest:false};this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;this.failureReason='';this.transitionLeft=0;this.target=null;this.identity=null;this.inflight=null;this.closedEpoch=0;this.stageEpoch=0;this.snapshotAge=0;this.interpolation=[];this.lastPeerAt=this.now();this.lastSuccessAt=this.now();this.stageLoading=null;this.lastStamp='';
+  this.guestCompact=false;this.peerEventAck=0;this.serverSamples=new Map();this.rtt=0;this.inputTimer=null;this.lastInputSendAt=-Infinity;
   this.eventSerial=0;this.lastEventSerial=0;this.eventLog=[];this.soundTimes=new Map();const dispatch=this.emit;this.localDispatch=dispatch;this.emit=event=>{
    if(this.role==='host'&&RELAY_EVENTS.has(event.type)){
     const key=event.type==='sound'&&NOISY_SOUNDS.has(event.name)?`${event.name}:${event.ship||event.boss||event.enemy||''}`:null,now=this.now();
@@ -189,16 +192,17 @@ export class CoopSession {
  async connect(path,body){
   if(this.code&&this.baseState!=='closed')await this.close();this.identity=this.signedIn();const epoch=++this.closedEpoch;const result=await this.request(path,body);if(epoch!==this.closedEpoch||!this.assertIdentity())return null;
   this.game=null;this.local=null;this.interpolation=[];++this.stageEpoch;
+  this.guestCompact=false;this.peerEventAck=0;this.serverSamples.clear();
   this.eventSerial=0;this.lastEventSerial=0;this.eventLog=[];this.soundTimes.clear();
   this.room=result.room||result;this.role=this.room.role||((String(this.room.host?.id)===this.identity)?'host':'guest');this.code=this.room.code;this.mission=this.room.mission||0;this.baseState=this.room.status==='playing'?'loading':'waiting';this.state=this.baseState;this.failureReason='';this.pauseFlags={host:!!this.room.hostPaused,guest:!!this.room.guestPaused};this.seq=Number(this.room[this.role==='host'?'hostSeq':'guestSeq'])||0;this.lastSnapshotSeq=-1;this.lastGuestSeq=-1;this.commands=[];this.commandSeq=0;this.readyRequested=false;this.receivedFailed=false;this.receivedFinished=false;this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;this.target=null;this.lastPeerAt=this.now();this.lastSuccessAt=this.now();this.refresh();this.startTimer();
   if(result.snapshot)this.applySnapshot(result.snapshot,result.snapshotSeq||0);if(this.role==='host'&&result.guestInput){this.lastGuestSeq=Number(result.guestSeq)||0;this.receiveInput(result.guestInput,'guest');}return this.room;
  }
  async start(){if(this.role!=='host'||this.baseState!=='waiting')return false;const result=await this.request(`/api/rooms/${this.code}/start`);if(!this.assertIdentity())return false;this.room=result.room||result;this.beginStage(0);this.refresh();await this.sync();return true;}
  startTimer(){this.stopTimer();if(this.autoSync)this.timer=setInterval(()=>{this.checkNetwork();void this.sync().catch(()=>{});},this.interval);}
- stopTimer(){if(this.timer)clearInterval(this.timer);this.timer=null;}
+ stopTimer(){if(this.timer)clearInterval(this.timer);this.timer=null;if(this.inputTimer)clearTimeout(this.inputTimer);this.inputTimer=null;}
  beginStage(mission){
   const old=this.game?.crew;if(old&&mission%3===0){for(const pilot of old)if(!pilot.alive){pilot.alive=true;pilot.player.hp=pilot.player.maxHp;pilot.player.shield=pilot.baseShield;pilot.player.bombs=2;pilot.player.energy=0;pilot.player.skillCd=0;pilot.player.armorCd=0;this.emit({type:'coop-revive',role:pilot.role,mission});}}
-  this.mission=mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.snapshotAge=0;this.baseState='loading';this.transitionLeft=0;
+  this.mission=mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.serverSamples.clear();this.snapshotAge=0;this.baseState='loading';this.transitionLeft=0;
   this.game=new CoopGame({mission,room:this.room,crew:old,localRole:this.role,onEvent:event=>this.gameEvent(event)});this.local=this.game.selectPilot(this.role);this.loadStage();this.refresh();
  }
  loadStage(){
@@ -239,27 +243,29 @@ export class CoopSession {
  async sync(){
   if(this.inflight)return this.inflight;if(!this.code||this.baseState==='closed'||!this.assertIdentity())return null;
   const epoch=this.closedEpoch,seq=++this.seq,mission=this.mission;
-  const input={target:this.target?{...this.target}:null,commands:this.commands.slice(0,24).map(item=>({...item})),pause:!!this.pauseFlags[this.role],ready:this.readyRequested||!!this.local?.ready,ack:this.local?.ack??-1};
-  const body={seq,mission,input};if(this.role==='host'&&this.game)body.snapshot=this.snapshot();
+  const sentAt=this.now();this.lastInputSendAt=sentAt;
+  const input={target:this.target?{...this.target}:null,commands:this.commands.slice(0,24).map(item=>({...item})),pause:!!this.pauseFlags[this.role],ready:this.readyRequested||!!this.local?.ready,ack:this.local?.ack??-1,protocol:2,eventAck:this.lastEventSerial};
+  const body={seq,mission,input};if(this.role==='guest')body.after=this.lastSnapshotSeq;if(this.role==='host'&&this.game)body.snapshot=this.snapshot(this.guestCompact);
   const controller=new AbortController();this.syncController=controller;const timeout=setTimeout(()=>controller.abort(),3500);timeout?.unref?.();
   const task=(async()=>{
    try{
     const result=await this.request(`/api/rooms/${this.code}/sync`,body,{signal:controller.signal});if(epoch!==this.closedEpoch||!this.assertIdentity())return null;
     if(result.room){this.room=result.room;if(this.room.status==='closed'){this.fail('room-closed');return result;}}
-    const now=this.now();this.lastSuccessAt=now;const serverTime=Number(result.serverTime),seen=Number(result.peerSeenAt);if(Number.isFinite(seen)&&seen>0){const age=Number.isFinite(serverTime)?Math.max(0,serverTime-seen):Math.max(0,now-seen);this.lastPeerAt=now-age;}
+    const now=this.now(),roundTrip=Math.max(0,now-sentAt);this.rtt=this.rtt?this.rtt*.75+roundTrip*.25:roundTrip;this.lastSuccessAt=now;const serverTime=Number(result.serverTime),seen=Number(result.peerSeenAt);if(Number.isFinite(seen)&&seen>0){const age=Number.isFinite(serverTime)?Math.max(0,serverTime-seen):Math.max(0,now-seen);this.lastPeerAt=now-age;}
     if(this.role==='host'){
      if(this.game&&result.guestInput&&Number(result.guestSeq)>this.lastGuestSeq){this.lastGuestSeq=Number(result.guestSeq);if((this.room.mission??mission)===this.mission&&mission===this.mission)this.receiveInput(result.guestInput,'guest');}
-    }else if(result.snapshot)this.applySnapshot(result.snapshot,Number(result.snapshotSeq)||0);
+    }else if(result.snapshot)this.applySnapshot(result.snapshot,Number(result.snapshotSeq)||0,{age:Number.isFinite(serverTime)&&seen>0?clamp((Math.max(0,serverTime-seen)+roundTrip/2)/1000,0,.8):0});
     this.checkNetwork();this.refresh();if((this.role==='guest'&&['finished','failed'].includes(this.baseState))||(this.role==='host'&&['finished','failed'].includes(body.snapshot?.state)&&body.snapshot.state===this.baseState))this.stopTimer();return result;
    }catch(error){
     if(epoch!==this.closedEpoch)return null;
     if([401,419].includes(error?.status)){this.fail('identity-changed');this.stopTimer();}else if(error?.status===404){this.fail('room-closed');this.stopTimer();}else{this.checkNetwork();this.emit({type:'coop-issue',message:String(error?.message||error),temporary:true});}
     throw error;
-   }finally{clearTimeout(timeout);if(this.syncController===controller)this.syncController=null;if(this.inflight===task)this.inflight=null;}
+   }finally{clearTimeout(timeout);if(this.syncController===controller)this.syncController=null;if(this.inflight===task)this.inflight=null;if(this.target&&(this.target.x!==input.target?.x||this.target.y!==input.target?.y))this.queueInput();}
   })();this.inflight=task;return task;
  }
  receiveInput(input,role){
   const pilot=this.game?.crew.find(item=>item.role===role);if(!pilot)return;
+  if(role==='guest'){this.guestCompact=input.protocol===2;if(integer(input.eventAck,0,Number.MAX_SAFE_INTEGER))this.peerEventAck=Math.min(this.eventSerial,input.eventAck);}
   this.pauseFlags[role]=!!input.pause;if(input.ack===this.mission)pilot.ack=this.mission;if(this.baseState==='intermission')pilot.ready=!!input.ready;
   if(pilot.alive&&Number.isFinite(input.target?.x)&&Number.isFinite(input.target?.y)){pilot.player.targetX=clamp(input.target.x,20,W-20);pilot.player.targetY=clamp(input.target.y,155,H-93);}
   this.refresh();for(const command of (Array.isArray(input.commands)?input.commands:[]).slice(0,24)){
@@ -269,7 +275,11 @@ export class CoopSession {
   }
   this.refresh();
  }
- moveTo(x,y){if(this.state!=='playing'||!this.local?.alive||!Number.isFinite(x)||!Number.isFinite(y))return;this.target={x:clamp(x,20,W-20),y:clamp(y,155,H-93)};this.local.player.targetX=this.target.x;this.local.player.targetY=this.target.y;}
+ moveTo(x,y){if(this.state!=='playing'||!this.local?.alive||!Number.isFinite(x)||!Number.isFinite(y))return;const next={x:clamp(x,20,W-20),y:clamp(y,155,H-93)},changed=!this.target||next.x!==this.target.x||next.y!==this.target.y;this.target=next;this.local.player.targetX=next.x;this.local.player.targetY=next.y;if(changed)this.queueInput();}
+ queueInput(){
+  if(!this.autoSync||this.role!=='guest'||this.inputTimer||this.inflight||this.state!=='playing')return;
+  const epoch=this.closedEpoch;this.inputTimer=setTimeout(()=>{this.inputTimer=null;if(epoch===this.closedEpoch&&this.state==='playing')void this.sync().catch(()=>{});},Math.max(0,100-(this.now()-this.lastInputSendAt)));this.inputTimer?.unref?.();
+ }
  action(type,node){
   if(!this.assertIdentity()||!this.game)return false;
   if(type==='ready'){if(this.baseState!=='intermission')return false;this.readyRequested=true;this.local.ready=true;this.refresh();return true;}
@@ -277,7 +287,7 @@ export class CoopSession {
   else if(!['skill','bomb','ultimate'].includes(type)||this.state!=='playing'||!this.local.alive)return false;
   if(this.role==='host'){const used=type==='upgrade'?this.game.upgrade(this.role,node):this.game.use(this.role,type);if(used&&type==='upgrade')this.emit({type:'coop-upgrades',role:this.role,node});this.refresh();return used;}
   if(this.commands.length>=24)return false;
-  const seq=++this.commandSeq;this.commands.push({id:`${this.role}:${this.mission}:${seq}`,seq,type,...(type==='upgrade'?{node}:{})});return true;
+  const seq=++this.commandSeq;this.commands.push({id:`${this.role}:${this.mission}:${seq}`,seq,type,...(type==='upgrade'?{node}:{})});this.queueInput();return true;
  }
  pause(){if(!this.code)return;this.pauseFlags[this.role]=true;this.refresh();if(this.autoSync)void this.sync().catch(()=>{});}
  resume(){if(!this.code)return;this.pauseFlags[this.role]=false;this.refresh();if(this.autoSync)void this.sync().catch(()=>{});}
@@ -292,31 +302,58 @@ export class CoopSession {
   this.refresh();
  }
  predict(dt){
-  this.snapshotAge=Math.min(.30,this.snapshotAge+dt);this.game.clock+=dt;this.game.time+=dt;
-  for(const {item,x,y,vx,vy}of this.interpolation){const t=Math.min(1,dt*15);item.x+=(x+vx*this.snapshotAge-item.x)*t;item.y+=(y+vy*this.snapshotAge-item.y)*t;}
-  for(const key of ['hazards','effects','weaponEffects','particles','texts','lootBursts'])for(const item of this.game[key])if(Number.isFinite(item.age))item.age+=dt;
-  const p=this.local.player;if(this.target&&this.local.alive){const dx=this.target.x-p.x,dy=this.target.y-p.y,len=Math.hypot(dx,dy),step=Math.min(len,p.speed*dt*1.5);if(len>0){p.x+=dx/len*step;p.y+=dy/len*step;}p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);}
+  this.snapshotAge=Math.min(1.25,this.snapshotAge+dt);this.game.clock+=dt;this.game.time+=dt;
+  for(const entry of this.interpolation){
+   if(entry.item===this.local.player&&this.target&&this.local.alive)continue;
+   const {item,x,y,vx,vy}=entry,travel=Math.max(0,this.snapshotAge-(entry.hold||0));let nextX=x+vx*travel,nextY=y+vy*travel;
+   if(entry.target){nextX=clamp(nextX,Math.min(x,entry.target.x),Math.max(x,entry.target.x));nextY=clamp(nextY,Math.min(y,entry.target.y),Math.max(y,entry.target.y));}
+   entry.errorX*=Math.exp(-dt*18);entry.errorY*=Math.exp(-dt*18);item.x=nextX+entry.errorX;item.y=nextY+entry.errorY;
+  }
+  for(const key of ['enemies','bullets','hazards'])for(const item of this.game[key])if(Number.isFinite(item.age))item.age+=dt;
+  this.game.updateVisuals(dt);
+  this.game.bullets=this.game.bullets.filter(b=>b.age<=10&&b.x>-100&&b.x<W+100&&b.y>-120&&b.y<H+100&&(!b.burstAt||b.age<b.burstAt));
+  const p=this.local.player;if(this.target&&this.local.alive){const dx=this.target.x-p.x,dy=this.target.y-p.y,len=Math.hypot(dx,dy),slow=this.game.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1,step=Math.min(len,p.speed*slow*dt*1.5),oldX=p.x,oldY=p.y;if(len>0){p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.targetX=this.target.x;p.targetY=this.target.y;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);}
+  for(const pilot of this.game.crew)for(const key of ['invulnerable','skillCd','skillTime','ultTime','armorCd'])if(Number.isFinite(pilot.player[key]))pilot.player[key]=Math.max(0,pilot.player[key]-dt);
  }
- snapshot(){
+ snapshot(compact=false){
   const snapshot={v:1,mission:this.mission,state:this.baseState,pauseFlags:{...this.pauseFlags},networkPaused:this.networkPaused,failureReason:this.failureReason,transitionLeft:this.transitionLeft,...this.game.snapshot(),events:this.eventLog.map(record=>({...record,event:{...record.event}}))};
   // Keep the complete authoritative combat data below the relay's 400 KiB cap.
   // Only expendable cosmetic particles are discarded, never live projectiles.
   if(new TextEncoder().encode(JSON.stringify(snapshot)).byteLength>390000){snapshot.game.particles=[];snapshot.game.texts=[];snapshot.game.effects=snapshot.game.effects.slice(-24);snapshot.game.weaponEffects=snapshot.game.weaponEffects.slice(-24);snapshot.events=snapshot.events.filter(record=>record.event.type!=='sound').slice(-24);}
-  return snapshot;
+  if(compact)snapshot.events=snapshot.events.filter(record=>record.serial>this.peerEventAck);
+  return compact?packCoopSnapshot(snapshot):snapshot;
  }
- applySnapshot(snapshot,seq){
+ applySnapshot(snapshot,seq,{age=0}={}){
+  snapshot=unpackCoopSnapshot(snapshot);
   if(!snapshot||snapshot.v!==1||!integer(snapshot.mission,0,26)||seq<=this.lastSnapshotSeq||!Array.isArray(snapshot.crew)||!snapshot.game)return false;
   const states=['loading','playing','transition','intermission','finished','failed'];if(!states.includes(snapshot.state))return false;this.lastSnapshotSeq=seq;
-  const initial=!this.game,changed=initial||snapshot.mission!==this.mission,previousBoss=changed?null:this.game.boss&&{dead:this.game.boss.dead,phase:this.game.boss.phase};const oldPositions=new Map();if(!changed){for(const key of ['enemies','bullets','pickups'])for(const item of this.game[key])oldPositions.set(`${key}:${item.id}`,{x:item.x,y:item.y});for(const pilot of this.game.crew)oldPositions.set(`pilot:${pilot.role}`,{x:pilot.player.x,y:pilot.player.y});}
+  const initial=!this.game,changed=initial||snapshot.mission!==this.mission,previousBoss=changed?null:this.game.boss&&{dead:this.game.boss.dead,phase:this.game.boss.phase};const oldPositions=new Map();if(!changed){for(const key of ['enemies','bullets','pickups'])for(const item of this.game[key])oldPositions.set(`${key}:${item.id}`,{x:item.x,y:item.y});for(const pilot of this.game.crew)oldPositions.set(`pilot:${pilot.role}`,{x:pilot.player.x,y:pilot.player.y});if(this.game.boss)oldPositions.set('boss',{x:this.game.boss.x,y:this.game.boss.y});}
   const ownPause=this.pauseFlags[this.role];
-  if(changed){this.mission=snapshot.mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.game=new CoopGame({mission:this.mission,room:this.room,localRole:this.role,onEvent:this.role==='host'?event=>this.gameEvent(event):()=>{}});this.local=this.game.selectPilot(this.role);this.loadStage();}
+  if(changed){this.mission=snapshot.mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.serverSamples.clear();this.game=new CoopGame({mission:this.mission,room:this.room,localRole:this.role,onEvent:this.role==='host'?event=>this.gameEvent(event):()=>{}});this.local=this.game.selectPilot(this.role);this.loadStage();}
   const ownAck=this.local.ack;this.game.restore(snapshot);this.local=this.game.selectPilot(this.role);if(ownAck===this.mission)this.local.ack=ownAck;
   if(changed)this.local.ack=-1;this.baseState=changed&&snapshot.state==='playing'?'loading':snapshot.state;this.failureReason=String(snapshot.failureReason||'');this.transitionLeft=Number(snapshot.transitionLeft)||0;this.pauseFlags={host:!!snapshot.pauseFlags?.host,guest:!!snapshot.pauseFlags?.guest};this.pauseFlags[this.role]=ownPause;this.remoteNetworkPaused=this.role==='guest'&&!!snapshot.networkPaused;
   if(this.readyRequested&&this.baseState==='intermission')this.local.ready=true;
-  this.commands=this.commands.filter(command=>command.seq>this.local.commandAck);this.commandSeq=Math.max(this.commandSeq,this.local.commandAck||0);this.snapshotAge=0;this.interpolation=[];
-  if(!changed){for(const key of ['enemies','bullets','pickups'])for(const item of this.game[key]){const old=oldPositions.get(`${key}:${item.id}`);if(old&&Number.isFinite(item.x)&&Number.isFinite(item.y)){this.interpolation.push({item,x:item.x,y:item.y,vx:key==='bullets'?item.vx||0:0,vy:key==='bullets'?item.vy||0:0});item.x=old.x;item.y=old.y;}}
-   for(const pilot of this.game.crew){const old=oldPositions.get(`pilot:${pilot.role}`);if(old&&pilot.alive){if(pilot.role===this.role&&this.target&&Math.hypot(pilot.player.x-old.x,pilot.player.y-old.y)<100){pilot.player.x=old.x;pilot.player.y=old.y;}else{this.interpolation.push({item:pilot.player,x:pilot.player.x,y:pilot.player.y,vx:0,vy:0});pilot.player.x=old.x;pilot.player.y=old.y;}}}
+  this.commands=this.commands.filter(command=>command.seq>this.local.commandAck);this.commandSeq=Math.max(this.commandSeq,this.local.commandAck||0);this.snapshotAge=clamp(Number(age)||0,0,.8);this.interpolation=[];
+  const samples=new Map(),sampleTime=Number(snapshot.game.clock)||0;
+  const track=(key,item,{vx,vy,target,hold=0}={})=>{
+   if(!item||!Number.isFinite(item.x)||!Number.isFinite(item.y))return;
+   const prior=this.serverSamples.get(key),elapsed=prior?sampleTime-prior.time:0,x=item.x,y=item.y;
+   samples.set(key,{x,y,time:sampleTime});
+   if(vx===undefined)vx=elapsed>.001&&Math.abs(x-prior.x)<250?clamp((x-prior.x)/elapsed,-900,900):0;
+   if(vy===undefined)vy=elapsed>.001&&Math.abs(y-prior.y)<300?clamp((y-prior.y)/elapsed,-1200,1200):key.startsWith('pickups:')?50:0;
+   const travel=Math.max(0,this.snapshotAge-hold),old=oldPositions.get(key),predictedX=x+vx*travel,predictedY=y+vy*travel;
+   const entry={item,x,y,vx,vy,target,hold,errorX:old?old.x-predictedX:0,errorY:old?old.y-predictedY:0};this.interpolation.push(entry);item.x=old?.x??predictedX;item.y=old?.y??predictedY;
+  };
+  for(const key of ['enemies','bullets','pickups'])for(const item of this.game[key])track(`${key}:${item.id}`,item,key==='bullets'?{vx:item.vx||0,vy:item.vy||0,hold:Math.max(0,(item.hold||0)-(item.age||0))}:{});
+  if(this.game.boss)track('boss',this.game.boss);
+  for(const pilot of this.game.crew){const old=oldPositions.get(`pilot:${pilot.role}`);if(!pilot.alive)continue;
+   // Only movement is predicted. Health, death, skill costs and damage always
+   // come from the host. Never interpolate a local input back toward an old pose.
+   if(pilot.role===this.role&&this.target&&old){pilot.player.x=old.x;pilot.player.y=old.y;pilot.player.targetX=this.target.x;pilot.player.targetY=this.target.y;}
+   else track(`pilot:${pilot.role}`,pilot.player,{vx:pilot.player.vx||0,vy:pilot.player.vy||0,target:{x:pilot.player.targetX,y:pilot.player.targetY}});
   }
+  this.serverSamples=samples;
+  if(this.baseState==='playing'&&!this.pauseFlags.host&&!this.pauseFlags.guest&&!this.remoteNetworkPaused){this.game.clock+=this.snapshotAge;this.game.time+=this.snapshotAge;}
   this.deliverEvents(snapshot.events,initial,previousBoss);
   if(this.baseState==='finished'&&!this.receivedFinished){this.receivedFinished=true;this.emit({type:'coop-over',win:true,mission:this.mission});}
   if(this.baseState==='failed'&&!this.receivedFailed){this.receivedFailed=true;this.emit({type:'coop-over',win:false,reason:this.failureReason,mission:this.mission});}
