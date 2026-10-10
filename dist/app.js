@@ -1,25 +1,26 @@
-import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=15';
-import {Game,AssetStore} from './engine.js?v=15';
-import {Renderer} from './renderer.js?v=15';
-import {AudioSynth} from './audio.js?v=15';
-import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=15';
-import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=15';
-import {volumeSettingsHtml} from './audio-levels.js?v=15';
-import {readManifest,resourceUrl} from './asset-loader.js?v=15';
-import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=15';
-import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=15';
-import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=15';
-import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=15';
-import {progressionHtml} from './progression-ui.js?v=15';
-import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=15';
-import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=15';
-import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=15';
-import {STORY,STORY_UI} from './story-content.js?v=15';
-import {Account} from './account.js?v=15';
-import {CoopSession} from './coop.js?v=15';
-import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=15';
-import {EndingPlayer} from './ending-player.js?v=15';
-import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=15';
+import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=16';
+import {Game,AssetStore} from './engine.js?v=16';
+import {Renderer} from './renderer.js?v=16';
+import {AudioSynth} from './audio.js?v=16';
+import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=16';
+import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=16';
+import {volumeSettingsHtml} from './audio-levels.js?v=16';
+import {readManifest,resourceUrl} from './asset-loader.js?v=16';
+import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=16';
+import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=16';
+import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=16';
+import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=16';
+import {progressionHtml} from './progression-ui.js?v=16';
+import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=16';
+import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=16';
+import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=16';
+import {STORY,STORY_UI} from './story-content.js?v=16';
+import {Account} from './account.js?v=16';
+import {CoopSession} from './coop.js?v=16';
+import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=16';
+import {GoogleSignIn} from './google-signin.js?v=16';
+import {EndingPlayer} from './ending-player.js?v=16';
+import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=16';
 
 const $=id=>document.getElementById(id),number=n=>Math.round(n).toLocaleString({zh:'zh-CN',ja:'ja-JP',en:'en-US'}[getLocale()]),pad=n=>String(n).padStart(2,'0');
 const duration=t=>`${pad(Math.floor(t/60))}:${pad(Math.floor(t)%60)}`;
@@ -50,7 +51,7 @@ function save(){unlockAchievements(profile);if(saveBlocked||!accountReady)return
 function toast(text){$('toast').textContent=tr(text);$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),2300);}
 function updateSoundIcon(){$('sound-toggle').textContent=tr(settings.sound?'♫':'♪');$('sound-toggle').classList.toggle('muted',!settings.sound);$('sound-toggle').setAttribute('aria-label',tr(settings.sound?'关闭声音':'开启声音'));}
 function currentStage(){return stageConfig(selection.chapter,selection.substage,selection.mode,selection.pace);}
-function updateLobby(){const ship=SHIPS[selection.ship],ch=CHAPTERS[selection.chapter],stage=currentStage();$('ship-name').textContent=storyText(pilotForShip(selection.ship).name);$('ship-role').textContent=tr(ship.role);$('mission-number').textContent=tr(`${pad(selection.chapter+1)}—${pad(selection.mode==='boss'?3:selection.substage+1)}`);$('mission-name').textContent=tr(ch.name);$('mission-place').textContent=tr(selection.mode==='boss'?ch.boss+' · Boss 直达':stage.name+' · '+(selection.pace==='quick'?'快速试飞':'完整波次'));$('side-chapter').textContent=tr(pad(selection.chapter+1)+' / 09');$('side-name').textContent=tr(ch.name);$('side-story').textContent=tr(ch.subtitle);$('side-ship').textContent=tr(ship.name);$('side-difficulty').textContent=tr(DIFFICULTIES.find(d=>d.id===selection.difficulty).name);$('side-credits').textContent=tr(number(profile.credits));document.documentElement.style.setProperty('--cyan',ship.color);$('pilot-strip').innerHTML=pilotChoices(manifest,selection.ship);$('lobby-wallet').innerHTML=`<span title="${tr('信用点')}">${gameIcon(manifest,'currency_coin')}${number(profile.credits)}</span><span title="${tr('回声数据')}">${gameIcon(manifest,'currency_data')}${number(profile.materials.data)}</span><span title="${tr('可用天赋点')}">${gameIcon(manifest,'crystal')}${profile.points}</span>`;if(assets&&!game)void assets.forMenu();$('side-pilot').textContent=storyText(pilotForShip(selection.ship).name);const checkpoint=latestClear(profile);$('continue-route').textContent=checkpoint?tr('已通关')+' '+pad(checkpoint.chapter+1)+'—'+pad(checkpoint.substage+1):tr('尚无通关存档');updateSoundIcon();document.body.classList.toggle('no-motion',!settings.shake);document.body.classList.toggle('left-controls',settings.handedness==='left');if(assets)assets.load(assets.manifest.backgrounds[selection.chapter+1].src).catch(()=>{});save();}
+function updateLobby(){const ship=SHIPS[selection.ship],ch=CHAPTERS[selection.chapter],stage=currentStage();$('ship-name').textContent=storyText(pilotForShip(selection.ship).name);$('ship-role').textContent=tr(ship.role);$('side-chapter').textContent=tr(pad(selection.chapter+1)+' / 09');$('side-name').textContent=tr(ch.name);$('side-story').textContent=tr(ch.subtitle);$('side-ship').textContent=tr(ship.name);$('side-difficulty').textContent=tr(DIFFICULTIES.find(d=>d.id===selection.difficulty).name);$('side-credits').textContent=tr(number(profile.credits));document.documentElement.style.setProperty('--cyan',ship.color);$('pilot-strip').innerHTML=pilotChoices(manifest,selection.ship);$('lobby-wallet').innerHTML=`<span title="${tr('信用点')}">${gameIcon(manifest,'currency_coin')}${number(profile.credits)}</span><span title="${tr('回声数据')}">${gameIcon(manifest,'currency_data')}${number(profile.materials.data)}</span><span title="${tr('可用天赋点')}">${gameIcon(manifest,'crystal')}${profile.points}</span>`;if(assets&&!game)void assets.forMenu();$('side-pilot').textContent=storyText(pilotForShip(selection.ship).name);const checkpoint=latestClear(profile);$('continue-route').textContent=checkpoint?tr('已通关')+' '+pad(checkpoint.chapter+1)+'—'+pad(checkpoint.substage+1):tr('尚无通关存档');updateSoundIcon();document.body.classList.toggle('no-motion',!settings.shake);document.body.classList.toggle('left-controls',settings.handedness==='left');if(assets)assets.load(assets.manifest.backgrounds[selection.chapter+1].src).catch(()=>{});save();}
 
 function selectRoute(m,flow){if(!m)return;selectedFlow=flow;Object.assign(selection,m,{mode:flow==='boss'?'boss':'campaign'});updateLobby();}
 function openModal(kind){if(busy||!profile.language)return;if(game?.state==='playing')pauseFlight();
@@ -61,7 +62,7 @@ function openModal(kind){if(busy||!profile.language)return;if(game?.state==='pla
  else if(kind==='archive')archiveTab='gallery';}
  showModal(kind);
 }
-function showModal(kind){const previous=modalKind;modalKind=kind;if(!$('overlay').classList.contains('open'))focusBefore=document.activeElement;const names={account:['ACCOUNT / CLOUD',onlineText('account')],online:['ONLINE / CO-OP',onlineText('online')],'story-mode':['STORY / 故事航线','故事模式'],continue:['SAVE / 最新通关','继续战斗'],bosses:['BOSS / 挑战航线','BOSS挑战'],missions:['CAMPAIGN / 航线选择','关卡选择'],hangar:['HANGAR / 飞行准备','战机机库'],archive:['ECHO / DATABASE','图库及成就'],settings:['FLIGHT / PREFERENCES','飞行设置'],help:['PILOT / MANUAL','飞行指南'],pause:['FLIGHT / PAUSED','暂停作战'],result:['MISSION / REPORT','战斗报告'],import:['SAVE / RESTORE','恢复存档'],story:['AERO ECHO',storyText(STORY_UI.storyModal)],art:['AERO ECHO',storyText(STORY_UI.gallery)]};const [kicker,title]=names[kind];$('modal-kicker').textContent=tr(kicker);$('modal-title').textContent=tr(title);$('modal-body').innerHTML=localizeHtml(kind==='account'?accountHtml():kind==='online'?onlineHtml():kind==='story'?storySceneHtml(storyContext,manifest):kind==='art'?storyArtHtml(currentArt):kind==='story-mode'?storyModeHtml(profile,selection):kind==='continue'?continueHtml(profile,selection):kind==='bosses'?bossChallengeHtml(profile,selection,manifest):kind==='missions'?missionHtml():kind==='hangar'?hangarHtml():kind==='archive'?archiveHtml():kind==='settings'?settingsHtml():kind==='help'?helpHtml():kind==='pause'?pauseHtml():kind==='import'?importHtml():resultHtml());$('overlay').classList.add('open');$('overlay').classList.toggle('story-open',kind==='story');$('close-modal').hidden=false;if(previous!==kind)$('modal-body').scrollTop=0;$('close-modal').focus({preventScroll:true});}
+function showModal(kind){const previous=modalKind;modalKind=kind;if(!$('overlay').classList.contains('open'))focusBefore=document.activeElement;const names={account:['ACCOUNT / CLOUD',onlineText('account')],online:['ONLINE / CO-OP',onlineText('online')],'story-mode':['STORY / 故事航线','故事模式'],continue:['SAVE / 最新通关','继续战斗'],bosses:['BOSS / 挑战航线','BOSS挑战'],missions:['CAMPAIGN / 航线选择','关卡选择'],hangar:['HANGAR / 飞行准备','战机机库'],archive:['ECHO / DATABASE','图库及成就'],settings:['FLIGHT / PREFERENCES','飞行设置'],help:['PILOT / MANUAL','飞行指南'],pause:['FLIGHT / PAUSED','暂停作战'],result:['MISSION / REPORT','战斗报告'],import:['SAVE / RESTORE','恢复存档'],story:['AERO ECHO',storyText(STORY_UI.storyModal)],art:['AERO ECHO',storyText(STORY_UI.gallery)]};const [kicker,title]=names[kind];$('modal-kicker').textContent=tr(kicker);$('modal-title').textContent=tr(title);$('modal-body').innerHTML=localizeHtml(kind==='account'?accountHtml():kind==='online'?onlineHtml():kind==='story'?storySceneHtml(storyContext,manifest):kind==='art'?storyArtHtml(currentArt):kind==='story-mode'?storyModeHtml(profile,selection):kind==='continue'?continueHtml(profile,selection):kind==='bosses'?bossChallengeHtml(profile,selection,manifest):kind==='missions'?missionHtml():kind==='hangar'?hangarHtml():kind==='archive'?archiveHtml():kind==='settings'?settingsHtml():kind==='help'?helpHtml():kind==='pause'?pauseHtml():kind==='import'?importHtml():resultHtml());$('overlay').classList.add('open');$('overlay').classList.toggle('story-open',kind==='story');$('close-modal').hidden=false;if(previous!==kind)$('modal-body').scrollTop=0;$('close-modal').focus({preventScroll:true});if((kind==='account'||kind==='online')&&!account.user)void googleSignIn.mount($('google-signin'),getLocale());}
 function rerender(){if(!modalKind)return;const scroll=$('modal-body').scrollTop;showModal(modalKind);$('modal-body').scrollTop=scroll;}
 function closeModal(){if(coop?.state==='paused'){resumeCoop();return;}if(coop&&['loading','intermission','failed','finished'].includes(coop.state)&&modalKind==='online'){showModal('online');return;}if(modalKind==='story'){finishStory();return;}if(modalKind==='art'){showModal('archive');return;}if(modalKind==='import'){pendingImport=null;showModal('settings');return;}if(modalKind==='result'){goHome();return;}if(game?.state==='paused'){if(modalKind!=='pause'){showModal('pause');return;}game.resume();}hideModal();}
 function hideModal(){$('overlay').classList.remove('open','story-open');modalKind='';focusBefore?.focus?.({preventScroll:true});}
@@ -99,9 +100,9 @@ function updateHud(){if(!game)return;const p=game.player;if(coop&&$('coop-status
 
 
 function cloudUrl(){return CLOUD_GAME+'?account=1';}
-function authUrl(signOut=false){return new URL((signOut?'/signout-with-chatgpt':'/signin-with-chatgpt')+'?return_to='+encodeURIComponent('/game?account=1'),account.origin).href;}
-function accountHtml(){let guestAvailable=false;try{guestAvailable=!!localStorage.getItem(STORAGE);}catch{}return accountPanel(account,{cloudUrl:cloudUrl(),signinUrl:authUrl(),signoutUrl:authUrl(true),guestAvailable});}
-function onlineHtml(){return coopPanel(account,coop,{cloudUrl:cloudUrl(),signinUrl:authUrl(),choice:coopChoice,busy:onlineBusy});}
+const googleSignIn=new GoogleSignIn(account,{text:onlineText,onSuccess:()=>{accountReady=true;accountChanged();}});
+function accountHtml(){let guestAvailable=false;try{guestAvailable=!!localStorage.getItem(STORAGE);}catch{}return accountPanel(account,{cloudUrl:cloudUrl(),guestAvailable});}
+function onlineHtml(){return coopPanel(account,coop,{cloudUrl:cloudUrl(),choice:coopChoice,busy:onlineBusy});}
 function accountChanged(){
  if($('account-badge'))$('account-badge').textContent=accountBadge(account);
  const stamp=JSON.stringify([account.user,account.status,!!account.conflict]);
@@ -205,6 +206,7 @@ $('ultimate').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropag
 for(const id of ['ability','bomb','ultimate'])$(id).addEventListener('click',e=>{if(e.detail===0){if(id==='ability')flightAction('skill');else if(id==='bomb')flightAction('bomb');else flightAction('ultimate');}});
 $('modal-body').addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button||button.disabled)return;const action=button.dataset.action,v=button.dataset.value;if(action!=='resume')audio.effect({name:'ui',action});switch(action){
  case 'account-retry':await account.initialize();break;
+ case 'account-signout':try{await googleSignIn.signOut();}catch{toast(onlineText('error'));}break;
  case 'account-sync':if(await account.flush())toast(onlineText('saved'));else if(account.status!=='synced')toast(onlineText('syncError'));break;
  case 'account-nickname':try{await account.nickname($('account-name')?.value||'');toast(onlineText('nicknameSaved'));}catch{toast(onlineText('error'));}break;
  case 'account-guest-import':try{const text=localStorage.getItem(STORAGE);if(!text){toast(onlineText('emptyGuest'));break;}pendingImport=parseBackup(text);showModal('import');}catch{toast('存档无效或版本不兼容，当前进度未改变。');}break;

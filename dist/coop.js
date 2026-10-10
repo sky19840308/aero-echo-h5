@@ -1,6 +1,6 @@
-import {Game} from './engine.js?v=15';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=15';
-import {hazardImpactArt} from './weapons.js?v=15';
+import {Game} from './engine.js?v=16';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=16';
+import {hazardImpactArt} from './weapons.js?v=16';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.

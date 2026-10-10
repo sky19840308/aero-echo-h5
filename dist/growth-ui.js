@@ -1,4 +1,4 @@
-import {trainingLevel,levelExperience,fleetLevel,completedChapters,canUpgradeHull} from './economy.js?v=15';
+import {trainingLevel,levelExperience,fleetLevel,completedChapters,canUpgradeHull} from './economy.js?v=16';
 export function trainingHtml(profile){
  const level=trainingLevel(profile),xp=profile.experience||0,min=levelExperience(level),next=levelExperience(Math.min(50,level+1)),percent=level===50?100:Math.round((xp-min)/(next-min)*100);
  return `<section class="training-card"><div><span>飞行训练 · 全英雄共享</span><b>LV.${level} / 50</b></div><div class="training-progress" role="progressbar" aria-label="训练经验" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div><p>训练经验 <b>${xp.toLocaleString('en-US')} / ${next.toLocaleString('en-US')}</b></p><p>当前机体等级 <b>LV.${fleetLevel(profile)}</b> · 可强化上限 <b>LV.${level}</b></p><p class="tiny-note">小关首通获得经验与材料。每个大关的三个小关全部首通后获得 2 点天赋。重玩与 BOSS 挑战不发经验、天赋或材料。</p><p class="tiny-note">已通关大关 <b>${completedChapters(profile)} / 9</b> · 总计 18 点天赋，九大关逐步成长至 LV.50。</p>${canUpgradeHull(profile)?'<button class="secondary" data-action="upgrade-five">连续强化 · 最多 5 级</button>':''}</section>`;

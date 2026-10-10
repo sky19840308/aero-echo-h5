@@ -6,7 +6,7 @@ export class AssetLoadError extends Error {
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=15';
+ const src='assets/manifest.json?v=16';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{

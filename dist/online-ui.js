@@ -1,5 +1,5 @@
-import {SHIPS,SKINS} from './data.js?v=15';
-import {getLocale} from './i18n.js?v=15';
+import {SHIPS,SKINS} from './data.js?v=16';
+import {getLocale} from './i18n.js?v=16';
 
 const text={
  account:['账户与云存档','アカウントとクラウド保存','Account & Cloud Save'],
@@ -14,9 +14,12 @@ const text={
  accountNote:['登录后，各账户的单人进度分别保存在云端；切换账户不会合并进度。','ログイン後、ソロ進行はアカウントごとに保存されます。アカウント間で進行を混ぜません。','Sign in to keep separate cloud saves for each account. Switching accounts never merges progress.'],
  staticNote:['此链接是静态试玩版。账户、云存档和联网协作在账户版中使用。','このリンクは静的体験版です。アカウント版でクラウド保存とオンライン協力を利用できます。','This is the static edition. Accounts, cloud saves and online co-op are available in the account edition.'],
  openCloud:['打开账户版','アカウント版を開く','Open Account Edition'],
- signIn:['使用 ChatGPT 登录','ChatGPT でログイン','Sign in with ChatGPT'],
+ signIn:['使用 Google 登录','Google でログイン','Sign in with Google'],
  signOut:['退出账户','ログアウト','Sign Out'],
- googleNote:['目前未配置直接 Google 登录。','Google 直接ログインは未設定です。','Direct Google sign-in is not configured.'],
+ googleNote:['使用 Google 账户保存进度，并与另一位玩家联网协作。','Google アカウントで進行を保存し、他のプレイヤーとオンライン協力できます。','Use a Google account for cloud saves and online co-op.'],
+ googleLoading:['正在连接 Google 登录…','Google ログインに接続中…','Connecting to Google sign-in…'],
+ googlePending:['Google 登录暂未启用。你可以先以游客身份游玩。','Google ログインは準備中です。ゲストとしてプレイできます。','Google sign-in is not enabled yet. You can play as a guest.'],
+ googleError:['Google 登录暂时无法连接，请重试。','Google ログインに接続できません。もう一度お試しください。','Could not connect to Google sign-in. Please retry.'],
  nickname:['飞行员昵称','パイロット名','Pilot Name'],
  rename:['保存昵称','名前を保存','Save Name'],
  retry:['重新连接','再接続','Reconnect'],
@@ -83,7 +86,7 @@ const text={
  nicknameSaved:['昵称已保存','名前を保存しました','Pilot Name Saved'],
  chapter:['章','章','Chapter'],
  accountLoading:['正在加载账户存档，请稍候。','アカウント保存を読込中です。','Loading your account save. Please wait.'],
- unsupportedGoogle:['可使用 ChatGPT 账户登录，但未配置直接 Google 登录。','ChatGPT ログインを利用できます。Google 直接ログインは未設定です。','ChatGPT sign-in is available; direct Google sign-in is not configured.'],
+ unsupportedGoogle:['Google 登录暂未启用。','Google ログインは準備中です。','Google sign-in is not enabled yet.'],
  upgradeCap:['每项最多 8 级，仅本次协作有效。','各8レベルまで。この協力プレイ中のみ有効。','Up to 8 levels per upgrade, valid only for this run.'],
  accountFailure:['账户服务暂时不可用','アカウントサービスが利用できません','Account Service Temporarily Unavailable'],
  connectingNote:['请保持两个游戏页面都在前台。离开前台会暂停协作。','両方のゲーム画面を前面に保ってください。バックグラウンドに移ると一時停止します。','Keep both game pages in the foreground. Backgrounding a page pauses co-op.'],
@@ -118,16 +121,17 @@ export const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&a
 const t=onlineText,e=escapeHtml;
 const button=(action,label,disabled=false,value='')=>`<button class="secondary" data-action="${action}" ${value?`data-value="${e(value)}"`:''} ${disabled?'disabled':''}>${t(label)}</button>`;
 const link=(url,label)=>`<a class="primary cloud-link" href="${e(url)}" target="_top">${t(label)} ↗</a>`;
+const googleButton=()=>`<div id="google-signin" class="google-signin" role="status" aria-label="${e(t('signIn'))}">${t('googleLoading')}</div>`;
 export function accountBadge(account){return account.user?`${account.user.name} · ${t(account.status==='disabled'?'guest':account.status)}`:t(account.status==='disabled'||account.status==='guest'?'guest':account.status);}
 export function accountPanel(account,{cloudUrl,signinUrl,signoutUrl,guestAvailable=false}={}){
  if(!account.enabled)return `<p class="modal-note">${t('staticNote')}</p>${link(cloudUrl,'openCloud')}<p class="tiny-note">${t('googleNote')}</p>`;
- if(!account.user)return `<p class="modal-note">${t('accountNote')}</p><p class="save-warning">${t(account.status==='loading'?'accountLoading':account.status==='offline'?'accountUnknown':'guest')}</p>${link(signinUrl,'signIn')}${button('account-retry','checkLogin',account.status==='loading')}<p class="tiny-note">${t('googleNote')}</p>`;
+ if(!account.user)return `<p class="modal-note">${t('accountNote')}</p><p class="save-warning">${t(account.status==='loading'?'accountLoading':account.status==='offline'?'accountUnknown':'guest')}</p>${googleButton()}${button('account-retry','checkLogin',account.status==='loading')}<p class="tiny-note">${t('googleNote')}</p>`;
  const conflict=account.conflict;
- return `<div class="account-card"><small>${t('account')}</small><h3>${e(account.user.name)}</h3><p>${e(accountBadge(account))}</p></div><p class="modal-note">${t('accountNote')}</p>${conflict?`<p class="save-warning">${t('conflictNote')}</p><div class="result-stats">${[['cloud',conflict.remote],['backup',conflict.local]].map(([label,p])=>`<div><span>${t(label)}</span><b>${Number(p?.credits||0).toLocaleString()} ${t('credits')}</b><small>${Object.keys(p?.clears||{}).length} / 27</small></div>`).join('')}</div>${button('account-conflict','useCloud',false,'cloud')}${button('account-conflict','useLocal',false,'local')}`:`${button('account-sync','syncNow',account.status==='loading')}${button('account-retry','retry',account.status==='loading')}`}<label class="online-field">${t('nickname')}<input id="account-name" maxlength="24" value="${e(account.user.name)}" autocomplete="nickname"></label>${button('account-nickname','rename')}<span class="selection-label">${t('guestImport')}</span><p class="tiny-note">${t('importNote')}</p>${button('account-guest-import','guestImport',!guestAvailable||!!conflict)}${button('export-save','export')}<p class="tiny-note">${t('googleNote')}</p>${link(signoutUrl,'signOut')}`;
+ return `<div class="account-card"><small>${t('account')}</small><h3>${e(account.user.name)}</h3><p>${e(accountBadge(account))}</p></div><p class="modal-note">${t('accountNote')}</p>${conflict?`<p class="save-warning">${t('conflictNote')}</p><div class="result-stats">${[['cloud',conflict.remote],['backup',conflict.local]].map(([label,p])=>`<div><span>${t(label)}</span><b>${Number(p?.credits||0).toLocaleString()} ${t('credits')}</b><small>${Object.keys(p?.clears||{}).length} / 27</small></div>`).join('')}</div>${button('account-conflict','useCloud',false,'cloud')}${button('account-conflict','useLocal',false,'local')}`:`${button('account-sync','syncNow',account.status==='loading')}${button('account-retry','retry',account.status==='loading')}`}<label class="online-field">${t('nickname')}<input id="account-name" maxlength="24" value="${e(account.user.name)}" autocomplete="nickname"></label>${button('account-nickname','rename')}<span class="selection-label">${t('guestImport')}</span><p class="tiny-note">${t('importNote')}</p>${button('account-guest-import','guestImport',!guestAvailable||!!conflict)}${button('export-save','export')}<p class="tiny-note">${t('googleNote')}</p>${button('account-signout','signOut')}`;
 }
 export function coopPanel(account,session,{cloudUrl,signinUrl,choice={shipIndex:0,skin:0},busy=false}={}){
  if(!account.enabled)return `<p class="modal-note">${t('staticNote')}</p>${link(cloudUrl,'openCloud')}<p class="tiny-note">${t('rules')}</p>`;
- if(!account.user)return `<p class="modal-note">${t('loginRequired')}</p>${link(signinUrl,'signIn')}${button('account-retry','retry',account.status==='loading')}`;
+ if(!account.user)return `<p class="modal-note">${t('loginRequired')}</p>${googleButton()}${button('account-retry','retry',account.status==='loading')}`;
  if(!session?.code)return `<p class="modal-note coop-rules">${t('rules')}</p><span class="selection-label">${t('chooseShip')}</span><div class="segmented">${SHIPS.map((ship,i)=>`<button data-action="coop-ship" data-value="${i}" class="${i===choice.shipIndex?'active':''}" ${busy?'disabled':''}>${e(ship.name)}</button>`).join('')}</div><span class="selection-label">${t('chooseSkin')}</span><div class="skin-grid">${SKINS.map((skin,i)=>`<button data-action="coop-skin" data-value="${i}" class="${i===choice.skin?'active':''}" ${busy?'disabled':''}>${e(skin)}</button>`).join('')}</div><button class="primary" data-action="coop-create" ${busy?'disabled':''}>${t(busy?'busy':'create')} ↗</button><label class="online-field">${t('code')}<input id="coop-code" maxlength="8" minlength="8" pattern="[A-HJ-NP-Z2-9]{8}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXXXXXX"></label>${button('coop-join',busy?'busy':'join',busy)}<p class="tiny-note">${t('connectingNote')}</p>`;
  const state=session.state,local=session.local,crew=session.game?.crew||[],room=session.room;
  const roster=['host','guest'].map(role=>{const member=room?.[role],pilot=crew.find(p=>p.role===role);return `<div class="coop-pilot"><span>${t(role==='host'?'host':'partner')}</span><strong>${member?e(member.name):t('waiting')}</strong><small>${pilot?t(pilot.alive?'alive':'fallen'):member?e(SHIPS[member.choice?.shipIndex??0]?.name):'—'}</small></div>`;}).join('');
