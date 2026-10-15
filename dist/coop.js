@@ -1,7 +1,8 @@
-import {Game} from './engine.js?v=19';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=19';
-import {hazardImpactArt} from './weapons.js?v=19';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=19';
+import {Game} from './engine.js?v=20';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=20';
+import {hazardImpactArt} from './weapons.js?v=20';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=20';
+import {CoopPeer} from './coop-peer.js?v=20';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -10,9 +11,9 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const integer=(n,a,b)=>Number.isSafeInteger(n)&&n>=a&&n<=b;
 const PILOT_KEYS=['ship','player','talents','growth','dps','level','weaponLevel','weaponTier','weaponXp','bombFragments','energyAnnounced'];
-const WORLD_KEYS=['state','time','clock','nextWave','wave','uid','bossAnnounced','bossDefeated','score','combo','lastKill','kills','spawned','grazes','hits','coins','lastSupply','nextHazard','shake','flash','ending'];
+const WORLD_KEYS=['state','time','clock','nextWave','wave','uid','bossAnnounced','bossDefeated','score','combo','lastKill','kills','spawned','grazes','hits','coins','lastSupply','nextHazard','shake','shock','flash','ending'];
 const WORLD_ARRAYS=['enemies','bullets','pickups','hazards','effects','weaponEffects','particles','texts','lootBursts'];
-const RELAY_EVENTS=new Set(['boss','boss-end','phase','message','toast','haptic','sound','coop-death','coop-revive','coop-upgrades']);
+const RELAY_EVENTS=new Set(['boss','boss-end','phase','message','toast','haptic','sound','camera-impact','coop-death','coop-revive','coop-upgrades']);
 const NOISY_SOUNDS=new Set(['shot','enemy-hit','boss-hit','shield-hit','graze','sprite','enemy-fire']);
 const OMIT=new Set(['cfg','target','hit','volley','ship','_poolId']);
 const choiceOf=value=>({shipIndex:clamp(Math.floor(Number(value?.shipIndex??value?.ship)||0),0,2),skin:clamp(Math.floor(Number(value?.skin)||0),0,3)});
@@ -58,7 +59,7 @@ export class CoopGame extends Game {
  targetPilot(){const living=this.living();return living[Math.floor(this.clock*1.7)%Math.max(1,living.length)]||this.crew[0];}
  start(){super.start();this.selectPilot(this.localRole);}
  update(dt){
-  if(this.state!=='playing'&&this.state!=='ending')return;dt=clamp(Number(dt)||0,0,.05);this.time+=dt;this.clock+=dt;this.shake=Math.max(0,this.shake-dt*12);this.flash=Math.max(0,this.flash-dt*2.5);
+  if(this.state!=='playing'&&this.state!=='ending')return;dt=clamp(Number(dt)||0,0,.05);this.time+=dt;this.clock+=dt;this.shake=Math.max(0,this.shake-dt*18);this.shock=Math.max(0,(this.shock||0)-dt);this.flash=Math.max(0,this.flash-dt*2.5);
   if(this.state==='playing'){
    this.updatePlayer(dt);
    if(this.stage.mode!=='boss'&&this.time<this.stage.duration-(this.stage.boss?8:4)&&this.time>=this.nextWave)this.spawnWave();
@@ -158,11 +159,11 @@ export class CoopGame extends Game {
  restore(snapshot){
   snapshot=unpackCoopSnapshot(snapshot);if(!snapshot)throw new Error('Invalid co-op frame');
   for(const key of WORLD_KEYS)if(snapshot.game?.[key]!==undefined)this[key]=snapshot.game[key];
-  for(const key of WORLD_ARRAYS){const items=Array.isArray(snapshot.game?.[key])?snapshot.game[key]:[];this[key]=items.map(item=>({...item}));}
-  for(const enemy of this.enemies)enemy.cfg=ENEMIES[enemy.type-1]||ENEMIES[0];for(const bullet of this.bullets){bullet.hit=new Set((Array.isArray(bullet.hitIds)?bullet.hitIds:[]).filter(id=>integer(id,0,Number.MAX_SAFE_INTEGER)).slice(0,120));delete bullet.hitIds;}
+  for(const key of WORLD_ARRAYS){const items=Array.isArray(snapshot.game?.[key])?snapshot.game[key]:[],reuse=this.localRole==='guest'&&['enemies','bullets','pickups'].includes(key)?new Map(this[key].map(item=>[item.id,item])):null;this[key]=items.map(item=>{const old=reuse?.get(item.id);return old?Object.assign(old,item):{...item};});}
+  for(const enemy of this.enemies)enemy.cfg=ENEMIES[enemy.type-1]||ENEMIES[0];for(const bullet of this.bullets){if(this.localRole==='host')bullet.hit=new Set((Array.isArray(bullet.hitIds)?bullet.hitIds:[]).filter(id=>integer(id,0,Number.MAX_SAFE_INTEGER)).slice(0,120));delete bullet.hitIds;}
   this.boss=snapshot.game?.boss?{...snapshot.game.boss,parts:(snapshot.game.boss.parts||[]).map(part=>({...part}))}:null;
   for(const incoming of snapshot.crew||[]){const pilot=this.crew.find(item=>item.role===incoming.role);if(!pilot)continue;for(const key of ['alive','points','ready','ack','commandAck','weaponLevel','weaponXp','bombFragments','energyAnnounced'])if(incoming[key]!==undefined)pilot[key]=incoming[key];
-   pilot.upgrades={fire:clamp(incoming.upgrades?.fire||0,0,8),shield:clamp(incoming.upgrades?.shield||0,0,8),cooldown:clamp(incoming.upgrades?.cooldown||0,0,8)};pilot.talents={...pilot.upgrades};pilot.dps=pilot.baseDps*(1+.10*pilot.upgrades.fire);pilot.player={...pilot.player,...incoming.player};
+   pilot.upgrades={fire:clamp(incoming.upgrades?.fire||0,0,8),shield:clamp(incoming.upgrades?.shield||0,0,8),cooldown:clamp(incoming.upgrades?.cooldown||0,0,8)};pilot.talents={...pilot.upgrades};pilot.dps=pilot.baseDps*(1+.10*pilot.upgrades.fire);Object.assign(pilot.player,incoming.player);
   }for(const bullet of this.bullets)if(bullet.homing){bullet.target=bullet.targetPilot?this.crew.find(p=>p.role===bullet.targetPilot)?.player:bullet.targetBoss?this.boss:bullet.targetEnemy?this.enemies.find(e=>e.id===bullet.targetEnemy):bullet.targetPoint;if(!bullet.target)bullet.homing=false;}
   this.bulletCounts={enemy:this.bullets.filter(b=>b.owner==='enemy').length,player:this.bullets.filter(b=>b.owner==='player').length};this.selectPilot(this.localRole);
  }
@@ -173,6 +174,7 @@ export class CoopSession {
   if(!account)throw new Error('A signed-in account is required');this.account=account;this.emit=onEvent;this.onChange=onChange;this.onStage=onStage;this.now=now;this.autoSync=autoSync;this.interval=clamp(interval,100,2000);
   this.state='closed';this.baseState='closed';this.role=null;this.room=null;this.code='';this.game=null;this.local=null;this.mission=0;this.seq=0;this.lastSnapshotSeq=-1;this.lastGuestSeq=-1;this.commands=[];this.commandSeq=0;this.readyRequested=false;this.pauseFlags={host:false,guest:false};this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;this.failureReason='';this.transitionLeft=0;this.target=null;this.identity=null;this.inflight=null;this.closedEpoch=0;this.stageEpoch=0;this.snapshotAge=0;this.interpolation=[];this.lastPeerAt=this.now();this.lastSuccessAt=this.now();this.stageLoading=null;this.lastStamp='';
   this.guestCompact=false;this.peerEventAck=0;this.serverSamples=new Map();this.rtt=0;this.inputTimer=null;this.lastInputSendAt=-Infinity;
+  this.peer=null;this.lastHTTPAt=-Infinity;this.directFrameSeq=0;this.lastDirectSnapshotSeq=-1;this.directInputSeq=0;this.lastDirectInputSeq=-1;this.peerFrameTime=0;this.peerInputTime=0;
   this.eventSerial=0;this.lastEventSerial=0;this.eventLog=[];this.soundTimes=new Map();const dispatch=this.emit;this.localDispatch=dispatch;this.emit=event=>{
    if(this.role==='host'&&RELAY_EVENTS.has(event.type)){
     const key=event.type==='sound'&&NOISY_SOUNDS.has(event.name)?`${event.name}:${event.ship||event.boss||event.enemy||''}`:null,now=this.now();
@@ -195,8 +197,22 @@ export class CoopSession {
   this.guestCompact=false;this.peerEventAck=0;this.serverSamples.clear();
   this.eventSerial=0;this.lastEventSerial=0;this.eventLog=[];this.soundTimes.clear();
   this.room=result.room||result;this.role=this.room.role||((String(this.room.host?.id)===this.identity)?'host':'guest');this.code=this.room.code;this.mission=this.room.mission||0;this.baseState=this.room.status==='playing'?'loading':'waiting';this.state=this.baseState;this.failureReason='';this.pauseFlags={host:!!this.room.hostPaused,guest:!!this.room.guestPaused};this.seq=Number(this.room[this.role==='host'?'hostSeq':'guestSeq'])||0;this.lastSnapshotSeq=-1;this.lastGuestSeq=-1;this.commands=[];this.commandSeq=0;this.readyRequested=false;this.receivedFailed=false;this.receivedFinished=false;this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;this.target=null;this.lastPeerAt=this.now();this.lastSuccessAt=this.now();this.refresh();this.startTimer();
-  if(result.snapshot)this.applySnapshot(result.snapshot,result.snapshotSeq||0);if(this.role==='host'&&result.guestInput){this.lastGuestSeq=Number(result.guestSeq)||0;this.receiveInput(result.guestInput,'guest');}return this.room;
+  if(result.snapshot)this.applySnapshot(result.snapshot,result.snapshotSeq||0);if(this.role==='host'&&result.guestInput){this.lastGuestSeq=Number(result.guestSeq)||0;this.receiveInput(result.guestInput,'guest');}this.openPeer();return this.room;
  }
+ openPeer(){
+  this.peer?.close();this.lastDirectSnapshotSeq=-1;this.lastDirectInputSeq=-1;this.directFrameSeq=0;this.directInputSeq=0;
+  if(!this.autoSync||!globalThis.RTCPeerConnection)return;
+  this.peer=new CoopPeer({role:this.role,code:this.code,now:this.now,request:body=>this.request(`/api/rooms/${this.code}/signal`,body),onState:()=>this.onChange(this),onPacket:packet=>{
+   if(!this.assertIdentity()||packet.code!==this.code)return;this.lastPeerAt=this.now();this.peerStale=false;
+   if(packet.type==='leave'){this.fail('room-closed');return;}
+   if(this.role==='host'&&packet.type==='input'&&packet.mission===this.mission&&integer(packet.seq,0,Number.MAX_SAFE_INTEGER)&&packet.seq>this.lastDirectInputSeq){this.lastDirectInputSeq=packet.seq;this.receiveInput(packet.input,'guest');}
+   if(this.role==='guest'&&packet.type==='frame')this.applySnapshot(packet.snapshot,packet.seq,{source:'direct',age:clamp(this.peer.rtt/2000,0,.15)});
+   this.refresh();
+  }});void this.peer.start().catch(()=>{if(this.peer)this.peer.state='relay';});
+ }
+ peerHealthy(){return !!this.peer?.open&&this.now()-this.peer.lastSeen<2000;}
+ inputPacket(){return {target:this.target?{...this.target}:null,commands:this.commands.slice(0,24).map(item=>({...item})),pause:!!this.pauseFlags[this.role],ready:this.readyRequested||!!this.local?.ready,ack:this.local?.ack??-1,protocol:2,eventAck:this.lastEventSerial};}
+ sendPeerInput(){return this.peer?.send({type:'input',seq:++this.directInputSeq,mission:this.mission,input:this.inputPacket()});}
  async start(){if(this.role!=='host'||this.baseState!=='waiting')return false;const result=await this.request(`/api/rooms/${this.code}/start`);if(!this.assertIdentity())return false;this.room=result.room||result;this.beginStage(0);this.refresh();await this.sync();return true;}
  startTimer(){this.stopTimer();if(this.autoSync)this.timer=setInterval(()=>{this.checkNetwork();void this.sync().catch(()=>{});},this.interval);}
  stopTimer(){if(this.timer)clearInterval(this.timer);this.timer=null;if(this.inputTimer)clearTimeout(this.inputTimer);this.inputTimer=null;}
@@ -238,23 +254,25 @@ export class CoopSession {
  }
  checkNetwork(){
   if(!this.code||['closed','finished','failed','waiting'].includes(this.baseState)||!this.room?.guest)return;
+  if(this.peerHealthy()){this.lastPeerAt=this.now();this.peerStale=false;this.refresh();return;}
   const age=this.now()-this.lastPeerAt;this.peerStale=age>5000;if(age>45000)this.fail('peer-timeout');else this.refresh();
  }
  async sync(){
   if(this.inflight)return this.inflight;if(!this.code||this.baseState==='closed'||!this.assertIdentity())return null;
+  if(this.peerHealthy()&&this.now()-this.lastHTTPAt<1800)return null;this.lastHTTPAt=this.now();
   const epoch=this.closedEpoch,seq=++this.seq,mission=this.mission;
   const sentAt=this.now();this.lastInputSendAt=sentAt;
-  const input={target:this.target?{...this.target}:null,commands:this.commands.slice(0,24).map(item=>({...item})),pause:!!this.pauseFlags[this.role],ready:this.readyRequested||!!this.local?.ready,ack:this.local?.ack??-1,protocol:2,eventAck:this.lastEventSerial};
+  const input=this.inputPacket();
   const body={seq,mission,input};if(this.role==='guest')body.after=this.lastSnapshotSeq;if(this.role==='host'&&this.game)body.snapshot=this.snapshot(this.guestCompact);
   const controller=new AbortController();this.syncController=controller;const timeout=setTimeout(()=>controller.abort(),3500);timeout?.unref?.();
   const task=(async()=>{
    try{
     const result=await this.request(`/api/rooms/${this.code}/sync`,body,{signal:controller.signal});if(epoch!==this.closedEpoch||!this.assertIdentity())return null;
     if(result.room){this.room=result.room;if(this.room.status==='closed'){this.fail('room-closed');return result;}}
-    const now=this.now(),roundTrip=Math.max(0,now-sentAt);this.rtt=this.rtt?this.rtt*.75+roundTrip*.25:roundTrip;this.lastSuccessAt=now;const serverTime=Number(result.serverTime),seen=Number(result.peerSeenAt);if(Number.isFinite(seen)&&seen>0){const age=Number.isFinite(serverTime)?Math.max(0,serverTime-seen):Math.max(0,now-seen);this.lastPeerAt=now-age;}
+    const now=this.now(),roundTrip=Math.max(0,now-sentAt);this.rtt=this.rtt?this.rtt*.75+roundTrip*.25:roundTrip;this.lastSuccessAt=now;const serverTime=Number(result.serverTime),seen=Number(result.peerSeenAt);if(!this.peerHealthy()&&Number.isFinite(seen)&&seen>0){const age=Number.isFinite(serverTime)?Math.max(0,serverTime-seen):Math.max(0,now-seen);this.lastPeerAt=now-age;}
     if(this.role==='host'){
-     if(this.game&&result.guestInput&&Number(result.guestSeq)>this.lastGuestSeq){this.lastGuestSeq=Number(result.guestSeq);if((this.room.mission??mission)===this.mission&&mission===this.mission)this.receiveInput(result.guestInput,'guest');}
-    }else if(result.snapshot)this.applySnapshot(result.snapshot,Number(result.snapshotSeq)||0,{age:Number.isFinite(serverTime)&&seen>0?clamp((Math.max(0,serverTime-seen)+roundTrip/2)/1000,0,.8):0});
+     if(!this.peerHealthy()&&this.game&&result.guestInput&&Number(result.guestSeq)>this.lastGuestSeq){this.lastGuestSeq=Number(result.guestSeq);if((this.room.mission??mission)===this.mission&&mission===this.mission)this.receiveInput(result.guestInput,'guest');}
+    }else if(result.snapshot&&!this.peerHealthy())this.applySnapshot(result.snapshot,Number(result.snapshotSeq)||0,{age:Number.isFinite(serverTime)&&seen>0?clamp((Math.max(0,serverTime-seen)+roundTrip/2)/1000,0,.8):0});
     this.checkNetwork();this.refresh();if((this.role==='guest'&&['finished','failed'].includes(this.baseState))||(this.role==='host'&&['finished','failed'].includes(body.snapshot?.state)&&body.snapshot.state===this.baseState))this.stopTimer();return result;
    }catch(error){
     if(epoch!==this.closedEpoch)return null;
@@ -264,6 +282,7 @@ export class CoopSession {
   })();this.inflight=task;return task;
  }
  receiveInput(input,role){
+  if(!input||typeof input!=='object'||Array.isArray(input))return;
   const pilot=this.game?.crew.find(item=>item.role===role);if(!pilot)return;
   if(role==='guest'){this.guestCompact=input.protocol===2;if(integer(input.eventAck,0,Number.MAX_SAFE_INTEGER))this.peerEventAck=Math.min(this.eventSerial,input.eventAck);}
   this.pauseFlags[role]=!!input.pause;if(input.ack===this.mission)pilot.ack=this.mission;if(this.baseState==='intermission')pilot.ready=!!input.ready;
@@ -277,6 +296,7 @@ export class CoopSession {
  }
  moveTo(x,y){if(this.state!=='playing'||!this.local?.alive||!Number.isFinite(x)||!Number.isFinite(y))return;const next={x:clamp(x,20,W-20),y:clamp(y,155,H-93)},changed=!this.target||next.x!==this.target.x||next.y!==this.target.y;this.target=next;this.local.player.targetX=next.x;this.local.player.targetY=next.y;if(changed)this.queueInput();}
  queueInput(){
+  if(this.peerHealthy()){if(this.role==='guest')this.sendPeerInput();return;}
   if(!this.autoSync||this.role!=='guest'||this.inputTimer||this.inflight||this.state!=='playing')return;
   const epoch=this.closedEpoch;this.inputTimer=setTimeout(()=>{this.inputTimer=null;if(epoch===this.closedEpoch&&this.state==='playing')void this.sync().catch(()=>{});},Math.max(0,100-(this.now()-this.lastInputSendAt)));this.inputTimer?.unref?.();
  }
@@ -289,8 +309,8 @@ export class CoopSession {
   if(this.commands.length>=24)return false;
   const seq=++this.commandSeq;this.commands.push({id:`${this.role}:${this.mission}:${seq}`,seq,type,...(type==='upgrade'?{node}:{})});this.queueInput();return true;
  }
- pause(){if(!this.code)return;this.pauseFlags[this.role]=true;this.refresh();if(this.autoSync)void this.sync().catch(()=>{});}
- resume(){if(!this.code)return;this.pauseFlags[this.role]=false;this.refresh();if(this.autoSync)void this.sync().catch(()=>{});}
+ pause(){if(!this.code)return;this.pauseFlags[this.role]=true;this.sendPeerInput();this.refresh();if(this.autoSync)void this.sync().catch(()=>{});}
+ resume(){if(!this.code)return;this.pauseFlags[this.role]=false;this.sendPeerInput();this.refresh();if(this.autoSync)void this.sync().catch(()=>{});}
  update(dt){
   if(!this.assertIdentity())return;this.checkNetwork();dt=clamp(Number(dt)||0,0,.05);
   if(this.role==='host'){
@@ -300,6 +320,11 @@ export class CoopSession {
    else if(this.baseState==='intermission'&&this.game?.crew.every(pilot=>pilot.ready)&&!this.networkPaused&&!this.pauseFlags.host&&!this.pauseFlags.guest)this.beginStage(this.mission+1);
   }else if(this.game&&this.state==='playing')this.predict(dt);
   this.refresh();
+  if(this.peer?.open){
+   this.peerInputTime+=dt;this.peerFrameTime+=dt;
+   if(this.role==='guest'&&this.peerInputTime>=.05){this.peerInputTime=0;this.sendPeerInput();}
+   if(this.role==='host'&&this.game&&this.peerFrameTime>=1/15){this.peerFrameTime=0;void this.peer.sendFrame({type:'frame',seq:++this.directFrameSeq,snapshot:this.snapshot(true)});}
+  }
  }
  predict(dt){
   this.snapshotAge=Math.min(1.25,this.snapshotAge+dt);this.game.clock+=dt;this.game.time+=dt;
@@ -311,6 +336,7 @@ export class CoopSession {
   }
   for(const key of ['enemies','bullets','hazards'])for(const item of this.game[key])if(Number.isFinite(item.age))item.age+=dt;
   this.game.updateVisuals(dt);
+  this.game.shake=Math.max(0,(this.game.shake||0)-dt*18);this.game.shock=Math.max(0,(this.game.shock||0)-dt);
   this.game.bullets=this.game.bullets.filter(b=>b.age<=10&&b.x>-100&&b.x<W+100&&b.y>-120&&b.y<H+100&&(!b.burstAt||b.age<b.burstAt));
   const p=this.local.player;if(this.target&&this.local.alive){const dx=this.target.x-p.x,dy=this.target.y-p.y,len=Math.hypot(dx,dy),slow=this.game.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1,step=Math.min(len,p.speed*slow*dt*1.5),oldX=p.x,oldY=p.y;if(len>0){p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.targetX=this.target.x;p.targetY=this.target.y;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);}
   for(const pilot of this.game.crew)for(const key of ['invulnerable','skillCd','skillTime','ultTime','armorCd'])if(Number.isFinite(pilot.player[key]))pilot.player[key]=Math.max(0,pilot.player[key]-dt);
@@ -323,10 +349,10 @@ export class CoopSession {
   if(compact)snapshot.events=snapshot.events.filter(record=>record.serial>this.peerEventAck);
   return compact?packCoopSnapshot(snapshot):snapshot;
  }
- applySnapshot(snapshot,seq,{age=0}={}){
+ applySnapshot(snapshot,seq,{age=0,source='relay'}={}){
   snapshot=unpackCoopSnapshot(snapshot);
-  if(!snapshot||snapshot.v!==1||!integer(snapshot.mission,0,26)||seq<=this.lastSnapshotSeq||!Array.isArray(snapshot.crew)||!snapshot.game)return false;
-  const states=['loading','playing','transition','intermission','finished','failed'];if(!states.includes(snapshot.state))return false;this.lastSnapshotSeq=seq;
+  if(!snapshot||snapshot.v!==1||!integer(snapshot.mission,0,26)||!integer(seq,0,Number.MAX_SAFE_INTEGER)||seq<=(source==='direct'?this.lastDirectSnapshotSeq:this.lastSnapshotSeq)||!Array.isArray(snapshot.crew)||!snapshot.game)return false;
+  const states=['loading','playing','transition','intermission','finished','failed'];if(!states.includes(snapshot.state))return false;if(source==='direct')this.lastDirectSnapshotSeq=seq;else this.lastSnapshotSeq=seq;
   const initial=!this.game,changed=initial||snapshot.mission!==this.mission,previousBoss=changed?null:this.game.boss&&{dead:this.game.boss.dead,phase:this.game.boss.phase};const oldPositions=new Map();if(!changed){for(const key of ['enemies','bullets','pickups'])for(const item of this.game[key])oldPositions.set(`${key}:${item.id}`,{x:item.x,y:item.y});for(const pilot of this.game.crew)oldPositions.set(`pilot:${pilot.role}`,{x:pilot.player.x,y:pilot.player.y});if(this.game.boss)oldPositions.set('boss',{x:this.game.boss.x,y:this.game.boss.y});}
   const ownPause=this.pauseFlags[this.role];
   if(changed){this.mission=snapshot.mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.serverSamples.clear();this.game=new CoopGame({mission:this.mission,room:this.room,localRole:this.role,onEvent:this.role==='host'?event=>this.gameEvent(event):()=>{}});this.local=this.game.selectPilot(this.role);this.loadStage();}
@@ -372,7 +398,7 @@ export class CoopSession {
   if(boss?.dead&&!previousBoss?.dead&&!delivered.has('boss-end'))restoreLocal({type:'boss-end',result:'victory',chapter:this.game.stage.chapter});
  }
  async close(){
-  const code=this.code,owned=String(this.account.user?.id||'')===this.identity;this.stopTimer();++this.closedEpoch;++this.stageEpoch;this.syncController?.abort();this.syncController=null;this.inflight=null;this.stageLoading=null;this.code='';this.baseState='closed';this.state='closed';this.target=null;this.commands=[];this.interpolation=[];this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;if(this.game)this.game.state='finished';this.refresh();
+  const code=this.code,owned=String(this.account.user?.id||'')===this.identity;this.peer?.send({type:'leave'});this.peer?.close();this.peer=null;this.stopTimer();++this.closedEpoch;++this.stageEpoch;this.syncController?.abort();this.syncController=null;this.inflight=null;this.stageLoading=null;this.code='';this.baseState='closed';this.state='closed';this.target=null;this.commands=[];this.interpolation=[];this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;if(this.game)this.game.state='finished';this.refresh();
   if(code&&owned){try{await this.request(`/api/rooms/${code}/leave`);}catch(error){this.emit({type:'coop-issue',message:String(error?.message||error)});}}
  }
 }

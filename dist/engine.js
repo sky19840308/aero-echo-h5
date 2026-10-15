@@ -1,8 +1,8 @@
-import {chapterCalibration} from './economy.js?v=19';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=19';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=19';
-import {growthStats,weaponTier} from './progression.js?v=19';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=19';
+import {chapterCalibration} from './economy.js?v=20';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=20';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=20';
+import {growthStats,weaponTier} from './progression.js?v=20';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=20';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -17,7 +17,7 @@ class BulletPool {
 export class Game {
  constructor({stage,ship=0,profile={},difficulty='normal',pace='quick',seed=Date.now(),onEvent=()=>{}}){
   this.stage=stage;this.ship=SHIPS[ship];this.chapter=CHAPTERS[stage.chapter];this.difficulty=DIFFICULTIES.find(d=>d.id===difficulty)||DIFFICULTIES[1];this.pace=pace;this.emit=onEvent;this.random=randomGenerator(seed);this.pool=new BulletPool();this.bulletCounts={enemy:0,player:0};this.uid=0;
-  this.state='ready';this.time=0;this.clock=0;this.nextWave=.7;this.wave=0;this.enemies=[];this.bullets=[];this.pickups=[];this.hazards=[];this.effects=[];this.weaponEffects=[];this.particles=[];this.texts=[];this.boss=null;this.bossAnnounced=false;this.bossDefeated=false;this.seen=new Set();this.score=0;this.combo=1;this.lastKill=0;this.kills=0;this.spawned=0;this.grazes=0;this.hits=0;this.coins=0;this.weaponXp=0;this.weaponLevel=1;this.bombFragments=0;this.lastSupply=0;this.energyAnnounced=false;this.nextHazard=24;this.shake=0;this.flash=0;this.ending=0;
+  this.state='ready';this.time=0;this.clock=0;this.nextWave=.7;this.wave=0;this.enemies=[];this.bullets=[];this.pickups=[];this.hazards=[];this.effects=[];this.weaponEffects=[];this.particles=[];this.texts=[];this.boss=null;this.bossAnnounced=false;this.bossDefeated=false;this.seen=new Set();this.score=0;this.combo=1;this.lastKill=0;this.kills=0;this.spawned=0;this.grazes=0;this.hits=0;this.coins=0;this.weaponXp=0;this.weaponLevel=1;this.bombFragments=0;this.lastSupply=0;this.energyAnnounced=false;this.nextHazard=24;this.shake=0;this.shock=0;this.flash=0;this.ending=0;
   this.talents=profile.talents||{};this.level=clamp(profile.levels?.[this.ship.id]||1,1,50);
   this.materials={blueprint:0,data:0};this.lootBursts=[];this.growth=growthStats(profile,this.ship.id);this.weaponTier=weaponTier(profile,this.ship.id);
   const hp=this.ship.hp*(1+.035*(this.level-1));const shield=this.ship.shield*(1+.032*(this.level-1))*(1+.06*(this.talents.shield||0));
@@ -32,7 +32,7 @@ export class Game {
  moveTo(x,y){if(this.state!=='playing')return;this.player.targetX=clamp(x,20,W-20);this.player.targetY=clamp(y,155,H-93);}
  energy(amount){this.player.energy=clamp(this.player.energy+amount*(1+.05*(this.talents.energy||0))*this.growth.charge,0,1000);if(this.player.energy>=1000&&!this.energyAnnounced){this.energyAnnounced=true;this.combatSound('ready');this.emit({type:'toast',text:'终极技已就绪'});}}
  skill(){const p=this.player;if(this.state!=='playing'||p.skillCd>0)return false;p.skillCd=this.ship.cooldown*(1-.06*(this.talents.cooldown||0));p.skillTime=this.ship.id==='Dawn7'?7:this.ship.id==='Bastion3'?5:1.2;if(this.ship.id==='WraithX')p.invulnerable=Math.max(p.invulnerable,1.2);this.weaponEffect(this.ship.id==='WraithX'?'P_WRAITH_target':playerEffectArt(this.ship.id,'muzzle'),p.x,p.y,80,.5,-Math.PI/2);this.effect(this.ship.id==='Dawn7'?'Dawn7_Overclock':this.ship.id==='Bastion3'?'Bastion3_Magnetic_Dome':'WraithX_Phase_Dash',p.x,p.y,130,.7);this.combatSound('skill');this.emit({type:'toast',text:this.ship.skill+' · 已启动'});return true;}
- bomb(){const p=this.player;if(this.state!=='playing'||p.bombs<=0||p.bombPending>0||p.bombTime>0)return false;p.bombs--;p.bombPending=.25;p.invulnerable=1.5;this.weaponEffect(playerEffectArt(this.ship.id,'bomb'),p.x,p.y-35,35,.25);this.effect('Bomb_Clear_Ring',p.x,p.y,90,.3);this.combatSound('charge');return true;}
+ bomb(){const p=this.player;if(this.state!=='playing'||p.bombs<=0||p.bombPending>0||p.bombTime>0)return false;p.bombs--;p.bombPending=.25;p.invulnerable=1.5;this.weaponEffect(playerEffectArt(this.ship.id,'bomb'),p.x,p.y-35,35,.25);this.effect('Bomb_Clear_Ring',p.x,p.y,90,.3);this.shake=Math.max(this.shake,4);this.combatSound('charge');return true;}
  ultimate(){const p=this.player;if(this.state!=='playing'||p.energy<1000||p.ultTime>0)return false;p.energy=0;this.energyAnnounced=false;p.ultTick=0;p.ultTime=this.ship.id==='Dawn7'?4:this.ship.id==='Bastion3'?5:3;p.invulnerable=Math.max(p.invulnerable,1.1);this.combatSound('ultimate');this.emit({type:'message',speaker:this.ship.english,text:this.ship.ultimate+' / 系统全功率',duration:2});
   if(this.ship.id==='WraithX'){const targets=this.enemies.filter(e=>e.alive).slice(0,6);if(this.boss&&!this.bossDefeated){this.damageBoss(this.dps*10.5,this.boss.x,this.boss.y);this.effect('WraithX_Singularity',this.boss.x,this.boss.y,310,1);for(let i=0;i<5;i++)this.hazards.push({type:'slash',x:this.boss.x+(i-2)*27,y:this.boss.y,age:0,warn:0,duration:.5,r:130,visual:true});}else for(const e of targets){this.damageEnemy(e,this.dps*10.5/Math.max(1,targets.length));this.effect('WraithX_Singularity',e.x,e.y,155,.8);}}
   return true;
@@ -55,7 +55,7 @@ export class Game {
   this.nextWave=this.time+Math.max(.72,1.62-t*.62-this.stage.chapter*.045)/this.difficulty.rate;
  }
  spawnBoss(){if(this.boss)return;const hp=this.chapter.hp*this.difficulty.hp*2.35;const count=this.stage.chapter===4?3:this.stage.chapter===7?3:2;this.boss={x:W/2,y:-175,baseY:185,age:0,hp,maxHp:hp,w:Math.min(335,285+this.stage.chapter*6),h:242,phase:1,pattern:0,fireTimer:2.5,flash:0,weakTime:0,chargeTime:0,chargeWarning:0,armored:false,dead:false,teleport:0,lDamage:0,rDamage:0,parts:Array.from({length:count},(_,i)=>({x:(i-(count-1)/2)*.23,y:.28,hp:hp*.035,maxHp:hp*.035,dead:false}))};this.emit({type:'boss',name:this.chapter.boss});this.combatSound('boss-intro',{boss:this.stage.chapter+1});this.emit({type:'message',speaker:'WARNING / 巨型目标',text:this.chapter.boss,duration:3});}
- update(dt){if(this.state!=='playing'&&this.state!=='ending')return;dt=Math.min(dt,.05);this.time+=dt;this.clock+=dt;this.shake=Math.max(0,this.shake-dt*12);this.flash=Math.max(0,this.flash-dt*2.5);
+ update(dt){if(this.state!=='playing'&&this.state!=='ending')return;dt=Math.min(dt,.05);this.time+=dt;this.clock+=dt;this.shake=Math.max(0,this.shake-dt*18);this.shock=Math.max(0,(this.shock||0)-dt);this.flash=Math.max(0,this.flash-dt*2.5);
   if(this.state==='playing'){
    this.updatePlayer(dt);
    if(this.stage.mode!=='boss'&&this.time<this.stage.duration-(this.stage.boss?8:4)&&this.time>=this.nextWave)this.spawnWave();
@@ -73,7 +73,7 @@ export class Game {
  updatePlayer(dt){const p=this.player,oldX=p.x,oldY=p.y;let slow=this.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1;const dx=p.targetX-p.x,dy=p.targetY-p.y,len=Math.hypot(dx,dy);if(len>0){const step=Math.min(len,p.speed*slow*dt*1.5);p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);
   p.invulnerable=Math.max(0,p.invulnerable-dt);p.skillCd=Math.max(0,p.skillCd-dt);p.skillTime=Math.max(0,p.skillTime-dt);p.ultTime=Math.max(0,p.ultTime-dt);p.armorCd=Math.max(0,p.armorCd-dt);
   if(this.time-p.lastHit>4)p.shield=Math.min(p.maxShield,p.shield+p.maxShield*.07*dt);
-  if(p.bombPending>0){p.bombPending-=dt;if(p.bombPending<=0){p.bombTime=1.2;this.effect('Bomb_Detonation',p.x,p.y-70,380,.85);this.effect('Bomb_Clear_Ring',p.x,p.y,750,1.2);this.shake=5;this.flash=.12;for(const e of this.enemies)if(e.alive)this.damageEnemy(e,this.dps*4.5*(this.talents.bomb>=3?1.2:1));if(this.boss&&!this.bossDefeated)this.damageBoss(this.dps*4.5*(this.talents.bomb>=3?1.2:1),this.boss.x,this.boss.y);this.combatSound('bomb');}}
+  if(p.bombPending>0){p.bombPending-=dt;if(p.bombPending<=0){p.bombTime=1.2;this.effect('Bomb_Detonation',p.x,p.y-70,380,.85);this.effect('Bomb_Clear_Ring',p.x,p.y,750,1.2);this.shake=Math.max(this.shake,18);this.shock=.9;this.flash=.18;this.emit({type:'camera-impact',strength:18,duration:.9});for(const e of this.enemies)if(e.alive)this.damageEnemy(e,this.dps*4.5*(this.talents.bomb>=3?1.2:1));if(this.boss&&!this.bossDefeated)this.damageBoss(this.dps*4.5*(this.talents.bomb>=3?1.2:1),this.boss.x,this.boss.y);this.combatSound('bomb');}}
   if(p.bombTime>0){p.bombTime-=dt;this.clearBullets();}
   if(this.ship.id==='Dawn7'&&this.time-p.lastShotHit>2&&p.consecutive>0)p.consecutive=Math.max(0,p.consecutive-dt*18);
   if(this.ship.id==='Bastion3'&&p.skillTime>0){for(const b of this.bullets)if(b.alive&&b.owner==='enemy'&&!b.unclearable&&dist(b,p)<71){b.alive=false;this.energy(Math.min(3,dt*55));}}
@@ -286,4 +286,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=19';
+export {AssetStore} from './asset-loader.js?v=20';

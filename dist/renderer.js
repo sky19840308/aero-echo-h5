@@ -1,8 +1,8 @@
-import {tr} from './i18n.js?v=19';
-import {W,H,CHAPTERS} from './data.js?v=19';
-import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=19';
-import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=19';
-import {drawChapterBackground} from './chapter-background.js?v=19';
+import {tr} from './i18n.js?v=20';
+import {W,H,CHAPTERS} from './data.js?v=20';
+import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=20';
+import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=20';
+import {drawChapterBackground} from './chapter-background.js?v=20';
 const TAU=Math.PI*2;
 export class Renderer {
  constructor(canvas,assets,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.assets=assets;this.settings=settings;this.stars=Array.from({length:75},(_,i)=>({x:(i*97.23)%W,y:(i*139.71)%H,size:.5+(i%4)*.35,speed:8+(i%5)*4}));this.resize();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);}
@@ -13,7 +13,7 @@ export class Renderer {
  weaponEffect(f){const t=f.age/f.duration;this.weapon(f.art,f.x,f.y,f.size*(.75+t*.5),undefined,f.angle||0,Math.min(1,(1-t)*1.5));}
  lootBurst(effect){const meta=this.assets.manifest.items?.effects[effect.name],t=effect.age/effect.duration;this.atlasSprite(meta,effect.x,effect.y,effect.size*(.75+t*.65),undefined,0,.65*(1-t),'lighter');}
  frame(name,x,y,size,age,duration,rotation=0){if(EFFECT_ART[name]&&this.weapon(EFFECT_ART[name],x,y,size*(.8+age/duration*.4),undefined,rotation,Math.min(1,(1-age/duration)*1.5)))return;const meta=this.assets.manifest.fx[name];if(!meta)return;const im=this.assets.get(meta.src);if(!im)return;const frame=Math.min(meta.frames-1,Math.floor(age/duration*meta.frames)),s=meta.frameSize;const ctx=this.ctx;ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.88;ctx.drawImage(im,frame%meta.columns*s,Math.floor(frame/meta.columns)*s,s,s,-size/2,-size/2,size,size);ctx.restore();}
- draw(game,clock,chapter=0,skin=0){const ctx=this.ctx;ctx.setTransform(this.sx,0,0,this.sy,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);ctx.save();if(game&&this.settings.shake&&game.shake>0&&game.state!=='paused')ctx.translate(Math.sin(clock*78)*game.shake,Math.cos(clock*93)*game.shake*.6);
+ draw(game,clock,chapter=0,skin=0){const ctx=this.ctx;ctx.setTransform(this.sx,0,0,this.sy,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);ctx.save();if(game&&this.settings.shake&&game.shake>0&&game.state!=='paused'&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){const impact=Math.min(1,(game.shock||0)/.9);ctx.translate(W/2,H/2);ctx.rotate(Math.sin(clock*43)*impact*.009);ctx.scale(1+impact*.014,1+impact*.014);ctx.translate(-W/2+Math.sin(clock*67)*game.shake,-H/2+Math.cos(clock*89)*game.shake*.72);}
   this.background(game?.stage.chapter??chapter,game?game.clock:clock,!!game);
   if(game){for(const h of game.hazards)this.hazard(h,clock,false);for(const e of game.enemies)this.enemy(e,game,clock);if(game.boss)this.boss(game.boss,game,clock);for(const b of game.bullets)if(b.alive&&b.owner==='enemy')this.bullet(b,clock);for(const i of game.pickups)this.pickup(i,clock,game);this.players(game,skin,clock);for(const b of game.bullets)if(b.alive&&b.owner==='player')this.bullet(b,clock);this.ultimates(game,clock);for(const f of game.effects)(f.art?this.weaponEffect(f):this.frame(f.name,f.x,f.y,f.size,f.age,f.duration,f.rotation));for(const f of game.weaponEffects||[])this.weaponEffect(f);for(const f of game.lootBursts||[])this.lootBurst(f);for(const p of game.particles){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);}ctx.globalAlpha=1;for(const h of game.hazards)this.hazard(h,clock,true);if(this.settings.numbers){ctx.font='bold 12px monospace';ctx.textAlign='center';for(const t of game.texts){ctx.globalAlpha=1-t.age/.85;ctx.fillStyle=t.color;ctx.fillText(tr(t.text),t.x,t.y);}ctx.globalAlpha=1;}if(this.settings.flash&&game.flash>0){ctx.fillStyle=`rgba(110,205,255,${game.flash*.65})`;ctx.fillRect(0,0,W,H);}}
   ctx.restore();

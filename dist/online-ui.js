@@ -1,5 +1,5 @@
-import {SHIPS,SKINS} from './data.js?v=19';
-import {getLocale} from './i18n.js?v=19';
+import {SHIPS,SKINS} from './data.js?v=20';
+import {getLocale} from './i18n.js?v=20';
 
 const text={
  account:['账户与云存档','アカウントとクラウド保存','Account & Cloud Save'],
@@ -46,6 +46,8 @@ const text={
  start:['两人开始出击','2人で出撃','Start Together'],
  leave:['退出房间 · 返回基地','ルームを退出・基地へ','Leave Room · Return'],
  connecting:['正在接入双人战场','協力戦場に接続中','Connecting to Co-op'],
+ directLink:['实时直连','リアルタイム直接接続','Direct Link'],
+ relayLink:['网络中继','ネットワークリレー','Network Relay'],
  assetLoading:['等待双方资源准备完成','両者の素材準備を待機中','Waiting for Both Pilots’ Assets'],
  resume:['取消我的暂停','自分の一時停止を解除','Clear My Pause'],
  paused:['协作已暂停','協力プレイを一時停止','Co-op Paused'],
