@@ -1,28 +1,28 @@
-import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=22';
-import {Game,AssetStore} from './engine.js?v=22';
-import {Renderer} from './renderer.js?v=22';
-import {AudioSynth} from './audio.js?v=22';
-import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=22';
-import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=22';
-import {volumeSettingsHtml} from './audio-levels.js?v=22';
-import {readManifest,resourceUrl} from './asset-loader.js?v=22';
-import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=22';
-import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=22';
-import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=22';
-import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=22';
-import {progressionHtml} from './progression-ui.js?v=22';
-import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=22';
-import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=22';
-import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=22';
-import {STORY,STORY_UI} from './story-content.js?v=22';
-import {Account} from './account.js?v=22';
-import {CoopSession} from './coop.js?v=22';
-import {LanSession,LanProgress} from './lan.js?v=22';
-import {lanPanel,lanText} from './lan-ui.js?v=22';
-import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=22';
-import {GoogleSignIn} from './google-signin.js?v=22';
-import {EndingPlayer} from './ending-player.js?v=22';
-import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=22';
+import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=23';
+import {Game,AssetStore} from './engine.js?v=23';
+import {Renderer} from './renderer.js?v=23';
+import {AudioSynth} from './audio.js?v=23';
+import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=23';
+import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=23';
+import {volumeSettingsHtml} from './audio-levels.js?v=23';
+import {readManifest,resourceUrl} from './asset-loader.js?v=23';
+import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=23';
+import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=23';
+import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=23';
+import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=23';
+import {progressionHtml} from './progression-ui.js?v=23';
+import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=23';
+import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=23';
+import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=23';
+import {STORY,STORY_UI} from './story-content.js?v=23';
+import {Account} from './account.js?v=23';
+import {CoopSession} from './coop.js?v=23';
+import {LanSession,LanProgress} from './lan.js?v=23';
+import {lanPanel,lanText} from './lan-ui.js?v=23';
+import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=23';
+import {GoogleSignIn} from './google-signin.js?v=23';
+import {EndingPlayer} from './ending-player.js?v=23';
+import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=23';
 
 const $=id=>document.getElementById(id),number=n=>Math.round(n).toLocaleString({zh:'zh-CN',ja:'ja-JP',en:'en-US'}[getLocale()]),pad=n=>String(n).padStart(2,'0');
 const duration=t=>`${pad(Math.floor(t/60))}:${pad(Math.floor(t)%60)}`;
@@ -177,7 +177,7 @@ async function prepareCoopStage(stage,{crew}){
 function coopChanged(){
  if(!coop)return;game=coop.game;if(ending.active)return;
  if(game){game.selectPilot(coop.role);$('lobby').hidden=true;$('game-hud').hidden=false;document.body.classList.add('battle-running');updateFlightLabels();}
- const state=coop.state,stamp=JSON.stringify([state,coop.mission,coop.pauseFlags,coop.networkPaused,coop.failureReason,coop.room?.guest,coop.game?.crew.map(p=>[p.alive,p.points,p.ready,p.upgrades]),coop.peer?.state,coop.loadoutAck,coop.loadoutVersion,coop.remoteVersion,onlineBusy]);
+ const state=coop.state,stamp=JSON.stringify([state,coop.mission,coop.pauseFlags,coop.networkPaused,coop.failureReason,coop.room?.guest,coop.game?.crew.map(p=>[p.alive,p.points,p.ready,p.ack,p.upgrades]),coop.peer?.state,coop.peer?.revision,coop.loadoutAck,coop.loadoutVersion,coop.remoteVersion,onlineBusy]);
  if(stamp===coopRenderStamp)return;coopRenderStamp=stamp;
  if(['playing','transition'].includes(state)){if(modalKind==='online'||modalKind==='pause')hideModal();audio.setMode(game?.boss&&!game.boss.dead?'boss':'battle',game?.stage.chapter??0);}
  else if(state!=='closed'){showModal('online');if(state==='paused')audio.setMode('paused',game?.stage.chapter??0);}
@@ -243,6 +243,8 @@ $('modal-body').addEventListener('click',async event=>{const button=event.target
  case 'account-conflict':await account.resolveConflict(v);break;
  case 'lan-ship':if(!onlineBusy&&!coop){lanChoice.shipIndex=Math.max(0,Math.min(2,Number(v)||0));rerender();}break;
  case 'lan-skin':if(!onlineBusy&&!coop){lanChoice.skin=Math.max(0,Math.min(3,Number(v)||0));rerender();}break;
+ case 'lan-retry':coop?.retryConnection();coopRenderStamp='';coopChanged();break;
+ case 'lan-diagnostic':try{await navigator.clipboard.writeText(JSON.stringify(coop?.diagnostics(),null,2));toast(onlineText('copied'));}catch{toast(lanText('check'));}break;
  case 'lan-create':await enterLan('create');break;
  case 'lan-join':await enterLan('join',($('lan-code')?.value||'').trim().toUpperCase());break;
  case 'lan-hull':upgradeLan('hull');break;

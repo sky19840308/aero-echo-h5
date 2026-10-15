@@ -4,40 +4,81 @@ const MAGIC=0xaee0beef,CHUNK=10000,MAX_BYTES=450000;
 const token=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export class CoopPeer {
- constructor({role,code,request,onPacket=()=>{},onState=()=>{},now=()=>Date.now(),rtc=globalThis.RTCPeerConnection,iceServers=[{urls:'stun:stun.cloudflare.com:3478'}]}={}){
+ constructor({role,code,request,onPacket=()=>{},onState=()=>{},now=()=>Date.now(),rtc=globalThis.RTCPeerConnection,iceServers=[{urls:'stun:stun.cloudflare.com:3478'}],trickle=false}={}){
   this.role=role;this.code=code;this.request=request;this.onPacket=onPacket;this.onState=onState;this.now=now;this.rtc=rtc;this.iceServers=iceServers;
   this.state='off';this.key='';this.closed=false;this.fragments=new Map();this.serial=0;this.lastSeen=0;this.rtt=0;this.sending=false;
+  this.trickle=trickle;this.revision=0;this.localCandidates=[];this.remoteCandidates=new Set();this.lastError='';this.localSignal=null;this.signalDirty=false;this.startedAt=this.now();
  }
  get open(){return !this.closed&&!['failed','closed'].includes(this.pc?.connectionState)&&this.control?.readyState==='open'&&this.frames?.readyState==='open';}
+ notify(){this.revision++;this.onState(this.state);}
+ preparePC(){
+  const old=this.pc;this.pc=null;this.control=null;this.frames=null;old?.close();this.remoteCandidates.clear();this.localCandidates=[];this.localSignal=null;this.signalDirty=false;this.remoteKey='';this.accepted='';
+  const pc=this.pc=new this.rtc({iceServers:this.iceServers,iceCandidatePoolSize:0});
+  pc.ondatachannel=event=>{if(this.pc===pc)this.bind(event.channel);};
+  pc.onicecandidate=event=>{
+   if(this.closed||this.pc!==pc)return;
+   if(event.candidate&&this.localCandidates.length<32){const c=event.candidate;this.localCandidates.push({candidate:c.candidate,sdpMid:c.sdpMid??null,sdpMLineIndex:c.sdpMLineIndex??0,...(c.usernameFragment?{usernameFragment:c.usernameFragment}:{})});}
+   if(this.trickle){this.signalDirty=true;this.scheduleSignal();}this.notify();
+  };
+  pc.onicegatheringstatechange=()=>{if(this.pc===pc){if(this.trickle){this.signalDirty=true;this.scheduleSignal();}this.notify();}};
+  pc.oniceconnectionstatechange=()=>{if(this.pc===pc&&!this.closed)this.notify();};
+  pc.onicecandidateerror=()=>{if(this.pc===pc&&!this.closed){this.lastError='candidate-discovery';this.notify();}};
+  pc.onconnectionstatechange=()=>{if(this.pc===pc&&!this.closed){if(['failed','closed'].includes(pc.connectionState))this.state='relay';this.notify();}};
+ }
+ async publishDescription(type){
+  if(!this.trickle){await this.gather();if(!this.closed)await this.request({signal:{key:this.key,type,sdp:this.pc.localDescription.sdp}});return;}
+  this.localSignal={key:this.key,type,sdp:this.pc.localDescription.sdp};this.signalDirty=true;void this.flushSignal();
+ }
+ scheduleSignal(delay=120){if(this.closed||!this.trickle||this.signalTimer)return;this.signalTimer=setTimeout(()=>{this.signalTimer=null;void this.flushSignal();},delay);this.signalTimer?.unref?.();}
+ async flushSignal(){
+  if(this.closed||this.open||!this.localSignal||!this.signalDirty||this.signalSending)return;
+  this.signalSending=true;this.signalDirty=false;const pc=this.pc;
+  try{const response=await this.request({signal:{...this.localSignal,sdp:pc.localDescription?.sdp||this.localSignal.sdp,candidates:this.localCandidates.slice(),complete:pc.iceGatheringState==='complete'}});
+   if(this.closed||this.pc!==pc)return;this.lastError='';if(response.signal)await this.receiveSignal(response.signal);
+  }catch{if(!this.closed&&this.pc===pc){this.lastError='signaling-retry';this.signalDirty=true;this.notify();}}
+  finally{this.signalSending=false;if(!this.closed&&this.signalDirty)this.scheduleSignal(700);}
+ }
  async start(){
-  if(!this.rtc||this.closed)return;this.state='connecting';this.onState(this.state);
-  this.pc=new this.rtc({iceServers:this.iceServers,iceCandidatePoolSize:1});
-  this.pc.ondatachannel=event=>this.bind(event.channel);
-  this.pc.onconnectionstatechange=()=>{if(!this.closed&&['failed','closed'].includes(this.pc.connectionState))this.onState(this.state='relay');};
+  if(!this.rtc||this.closed)return;this.state='connecting';this.notify();this.preparePC();
+  this.pollTimer=setInterval(()=>void this.poll().catch(()=>{}),700);this.pollTimer?.unref?.();
+  this.heartbeat=setInterval(()=>{if(this.open)this.send({type:'ping',at:this.now()});},500);this.heartbeat?.unref?.();
   if(this.role==='host'){
    this.key=token();this.bind(this.pc.createDataChannel('aero-control',{ordered:true}));this.bind(this.pc.createDataChannel('aero-frames',{ordered:false,maxPacketLifeTime:150}));
-   await this.pc.setLocalDescription(await this.pc.createOffer());await this.gather();
-   if(this.closed)return;await this.request({signal:{key:this.key,type:'offer',sdp:this.pc.localDescription.sdp}});
+   await this.pc.setLocalDescription(await this.pc.createOffer());await this.publishDescription('offer');
   }
-  if(this.closed)return;this.pollTimer=setInterval(()=>void this.poll().catch(()=>{}),700);this.pollTimer?.unref?.();void this.poll().catch(()=>{});
-  this.heartbeat=setInterval(()=>{if(this.open)this.send({type:'ping',at:this.now()});},500);this.heartbeat?.unref?.();
+  if(!this.closed)void this.poll().catch(()=>{});
  }
  async gather(){for(let n=0;n<40&&!this.closed&&this.pc.iceGatheringState!=='complete';n++)await pause(100);}
  async poll(){
-  if(this.closed||this.polling||this.open)return;this.polling=true;
-  try{const response=await this.request({}),signal=response.signal;if(this.closed||!signal||signal.key===this.accepted)return;
-   if(this.role==='guest'&&signal.type==='offer'){
-    this.key=signal.key;await this.pc.setRemoteDescription({type:'offer',sdp:signal.sdp});await this.pc.setLocalDescription(await this.pc.createAnswer());await this.gather();
-    if(!this.closed)await this.request({signal:{key:this.key,type:'answer',sdp:this.pc.localDescription.sdp}});
-   }else if(this.role==='host'&&signal.type==='answer'&&signal.key===this.key)await this.pc.setRemoteDescription({type:'answer',sdp:signal.sdp});
-   else return;this.accepted=signal.key;
-  }finally{this.polling=false;}
+  if(this.closed||this.polling||this.open&&this.now()-this.lastSeen<2500)return;this.polling=true;
+  try{const response=await this.request({});if(!this.closed&&response.signal)await this.receiveSignal(response.signal);
+  }catch{if(!this.closed){this.lastError='signaling-retry';this.notify();}}
+  finally{this.polling=false;}
+ }
+ async receiveSignal(signal){
+  if(this.closed||this.processingRemote||!signal||typeof signal.sdp!=='string'||!signal.sdp.startsWith('v=0')||!/^[a-f\d]{32}$/.test(signal.key))return;
+  if(this.role==='host'&&(signal.type!=='answer'||signal.key!==this.key)||this.role==='guest'&&signal.type!=='offer')return;
+  if(!this.trickle&&signal.key===this.accepted)return;
+  this.processingRemote=true;
+  try{
+   if(signal.key!==this.remoteKey){
+    if(this.role==='guest'&&this.remoteKey){this.preparePC();this.state='connecting';this.notify();}
+    this.key=signal.key;await this.pc.setRemoteDescription({type:signal.type,sdp:signal.sdp});this.remoteKey=signal.key;
+    if(this.role==='guest'){await this.pc.setLocalDescription(await this.pc.createAnswer());await this.publishDescription('answer');}
+   }
+   if(this.trickle&&typeof this.pc.addIceCandidate==='function')for(const candidate of (Array.isArray(signal.candidates)?signal.candidates:[]).slice(0,32)){
+    const id=JSON.stringify(candidate);if(this.remoteCandidates.has(id))continue;
+    try{await this.pc.addIceCandidate(candidate);this.remoteCandidates.add(id);}catch{this.lastError='candidate-rejected';}
+   }
+   this.accepted=signal.key;this.notify();
+  }finally{this.processingRemote=false;}
  }
  bind(channel){
   if(channel.label==='aero-control')this.control=channel;else if(channel.label==='aero-frames')this.frames=channel;else{channel.close();return;}
-  channel.binaryType='arraybuffer';channel.onopen=()=>{if(this.open){this.state='direct';this.lastSeen=this.now();this.send({type:'hello',gzip:!!globalThis.DecompressionStream});this.onState(this.state);}};
-  channel.onclose=()=>{if(!this.closed)this.onState(this.state='relay');};channel.onerror=()=>{if(!this.closed)this.onState(this.state='relay');};
+  channel.binaryType='arraybuffer';const opened=()=>{if(this.open){this.state='direct';this.lastSeen=this.now();this.send({type:'hello',gzip:!!globalThis.DecompressionStream});this.notify();}};channel.onopen=opened;
+  channel.onclose=()=>{if(!this.closed&&[this.control,this.frames].includes(channel)){this.state='relay';this.notify();}};channel.onerror=()=>{if(!this.closed){this.state='relay';this.notify();}};
   channel.onmessage=event=>{if(typeof event.data==='string')this.deliver(event.data);else void this.receive(event.data).catch(()=>{});};
+  if(channel.readyState==='open')queueMicrotask(opened);
  }
  deliver(text){
   if(this.closed||text.length>MAX_BYTES)return;
@@ -74,5 +115,5 @@ export class CoopPeer {
   if(compressed){if(!globalThis.DecompressionStream)return;const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader(),chunks=[];let size=0;for(;;){const result=await reader.read();if(result.done)break;size+=result.value.length;if(size>MAX_BYTES){await reader.cancel();return;}chunks.push(result.value);}bytes=new Uint8Array(size);cursor=0;for(const chunk of chunks){bytes.set(chunk,cursor);cursor+=chunk.length;}}
   this.deliver(new TextDecoder().decode(bytes));
  }
- close(){this.closed=true;clearInterval(this.pollTimer);clearInterval(this.heartbeat);this.fragments.clear();this.control?.close();this.frames?.close();this.pc?.close();this.state='off';}
+ close(){this.closed=true;clearInterval(this.pollTimer);clearInterval(this.heartbeat);clearTimeout(this.signalTimer);this.fragments.clear();this.control?.close();this.frames?.close();this.pc?.close();this.state='off';}
 }

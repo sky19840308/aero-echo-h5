@@ -1,9 +1,9 @@
-import {Game} from './engine.js?v=22';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=22';
-import {hazardImpactArt} from './weapons.js?v=22';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=22';
-import {CoopPeer} from './coop-peer.js?v=22';
-import {normalizeProfile} from './profile.js?v=22';
+import {Game} from './engine.js?v=23';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=23';
+import {hazardImpactArt} from './weapons.js?v=23';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=23';
+import {CoopPeer} from './coop-peer.js?v=23';
+import {normalizeProfile} from './profile.js?v=23';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.

@@ -1,11 +1,11 @@
-import {CoopSession} from './coop.js?v=22';
-import {CoopPeer} from './coop-peer.js?v=22';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=22';
-import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=22';
-import {settleEconomy,upgradeHull} from './economy.js?v=22';
-import {upgradeWeapon,upgradeResearch} from './progression.js?v=22';
-import {rememberClear,unlockAchievements} from './campaign.js?v=22';
-import {SHIPS,TALENTS} from './data.js?v=22';
+import {CoopSession} from './coop.js?v=23';
+import {CoopPeer} from './coop-peer.js?v=23';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=23';
+import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=23';
+import {settleEconomy,upgradeHull} from './economy.js?v=23';
+import {upgradeWeapon,upgradeResearch} from './progression.js?v=23';
+import {rememberClear,unlockAchievements} from './campaign.js?v=23';
+import {SHIPS,TALENTS} from './data.js?v=23';
 
 export const LAN_STORAGE='aero-echo.lan.v1';
 const CAPABILITY='aero-echo.lan-capability';
@@ -61,6 +61,7 @@ export class LanSession extends CoopSession {
  }
  get canStart(){return this.role==='host'&&!!this.room?.guest&&this.peerHealthy()&&this.remoteVersion>0&&this.loadoutAck===this.loadoutVersion;}
  get canReady(){return this.peerHealthy()&&this.loadoutAck===this.loadoutVersion;}
+ diagnostics(){const p=this.peer;return {build:23,role:this.role,state:this.state,peer:p?.state||'off',ice:p?.pc?.iceConnectionState||'new',gathering:p?.pc?.iceGatheringState||'new',localCandidates:p?.localCandidates?.length||0,remoteCandidates:p?.remoteCandidates?.size||0,control:p?.control?.readyState||'closed',frames:p?.frames?.readyState||'closed',loadoutAck:this.loadoutAck,loadoutVersion:this.loadoutVersion,remoteVersion:this.remoteVersion,assets:this.game?.crew.map(p=>({role:p.role,ready:p.ack===this.mission}))||[],error:p?.lastError||''};}
  async connect(path,body){if(!this.rtc)throw Object.assign(new Error('WebRTC unavailable'),{code:'rtc-unavailable'});this.settlements=[];this.settled.clear();this.loadoutAck=0;this.remoteVersion=0;this.lanPauseVersions={host:0,guest:0};this.lanSteps=0;this.terminalAck=false;this.lastTerminalAt=-Infinity;return super.connect(path,body);}
  loadout(){const p=this.progress.profile;return {version:1,economyVersion:p.economyVersion,levels:{...p.levels},weapons:{...p.weapons},research:{...p.research},talents:{...p.talents}};}
  choice(){return boundedChoice(this.room?.[this.role]?.choice);}
@@ -77,12 +78,14 @@ export class LanSession extends CoopSession {
   this.peer?.close();this.lastDirectSnapshotSeq=-1;this.lastDirectInputSeq=-1;this.directFrameSeq=0;this.directInputSeq=0;
   if(!this.autoSync||!this.rtc)return;
   const code=this.code;
-  this.peer=new CoopPeer({role:this.role,code,now:this.now,rtc:this.rtc,iceServers:[],request:body=>this.request(`/api/rooms/${code}/signal`,body),onState:state=>{if(state==='direct')this.sendLoadout();if(state==='relay')this.peer.state='unavailable';this.onChange(this);},onPacket:packet=>this.receivePeer(packet)});
+  this.peer=new CoopPeer({role:this.role,code,now:this.now,rtc:this.rtc,trickle:true,iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],request:body=>this.request(`/api/rooms/${code}/signal`,body),onState:state=>{if(state==='direct')this.sendLoadout();if(state==='relay')this.peer.state='unavailable';this.onChange(this);},onPacket:packet=>this.receivePeer(packet)});
   void this.peer.start().catch(()=>{if(this.code===code){this.peer.state='unavailable';this.onChange(this);}});
  }
+ retryConnection(){if(this.baseState!=='waiting'||this.role!=='host')return false;this.loadoutAck=0;this.remoteVersion=0;this.lastLoadoutAt=-Infinity;this.lastPeerAt=this.now();this.openPeer();this.onChange(this);return true;}
  receivePeer(packet){
   if(!this.assertIdentity()||packet.code!==this.code)return;this.lastPeerAt=this.now();this.peerStale=false;
   if(packet.type==='leave'){this.fail('room-closed');return;}
+  if(this.role==='guest'&&packet.type==='lan-start'&&packet.mission===0&&this.baseState==='waiting'){this.beginStage(0);this.refresh();return;}
   const remoteRole=this.role==='host'?'guest':'host';
   if(packet.type==='lan-pause'&&packet.role===remoteRole&&packet.mission===this.mission&&validSeq(packet.version)&&packet.version>=this.lanPauseVersions[remoteRole]&&typeof packet.paused==='boolean'){
    this.lanPauseVersions[remoteRole]=packet.version;this.pauseFlags[remoteRole]=packet.paused;this.refresh();return;
@@ -116,8 +119,9 @@ export class LanSession extends CoopSession {
  sendPause(){this.peer?.send({type:'lan-pause',mission:this.mission,role:this.role,version:this.lanPauseVersions[this.role],paused:this.pauseFlags[this.role]});}
  async start(){
   if(this.baseState!=='waiting'||!this.canStart)return false;
-  const result=await this.request(`/api/rooms/${this.code}/start`);if(!this.assertIdentity()||this.baseState==='closed')return false;
-  this.room.status=result.room.status;this.beginStage(0);this.refresh();return true;
+  this.room.status='playing';this.peer.send({type:'lan-start',mission:0});this.beginStage(0);this.refresh();
+  // Pairing metadata is a best-effort update, never a gate on local gameplay.
+  void this.request(`/api/rooms/${this.code}/start`).catch(()=>this.emit({type:'coop-issue',temporary:true}));return true;
  }
  async sync(){
   if(!this.code||this.baseState!=='waiting'||this.inflight)return null;
