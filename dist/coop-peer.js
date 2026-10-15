@@ -4,14 +4,14 @@ const MAGIC=0xaee0beef,CHUNK=10000,MAX_BYTES=450000;
 const token=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export class CoopPeer {
- constructor({role,code,request,onPacket=()=>{},onState=()=>{},now=()=>Date.now(),rtc=globalThis.RTCPeerConnection}={}){
-  this.role=role;this.code=code;this.request=request;this.onPacket=onPacket;this.onState=onState;this.now=now;this.rtc=rtc;
+ constructor({role,code,request,onPacket=()=>{},onState=()=>{},now=()=>Date.now(),rtc=globalThis.RTCPeerConnection,iceServers=[{urls:'stun:stun.cloudflare.com:3478'}]}={}){
+  this.role=role;this.code=code;this.request=request;this.onPacket=onPacket;this.onState=onState;this.now=now;this.rtc=rtc;this.iceServers=iceServers;
   this.state='off';this.key='';this.closed=false;this.fragments=new Map();this.serial=0;this.lastSeen=0;this.rtt=0;this.sending=false;
  }
  get open(){return !this.closed&&!['failed','closed'].includes(this.pc?.connectionState)&&this.control?.readyState==='open'&&this.frames?.readyState==='open';}
  async start(){
   if(!this.rtc||this.closed)return;this.state='connecting';this.onState(this.state);
-  this.pc=new this.rtc({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],iceCandidatePoolSize:1});
+  this.pc=new this.rtc({iceServers:this.iceServers,iceCandidatePoolSize:1});
   this.pc.ondatachannel=event=>this.bind(event.channel);
   this.pc.onconnectionstatechange=()=>{if(!this.closed&&['failed','closed'].includes(this.pc.connectionState))this.onState(this.state='relay');};
   if(this.role==='host'){

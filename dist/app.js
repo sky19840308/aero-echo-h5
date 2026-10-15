@@ -1,26 +1,28 @@
-import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=20';
-import {Game,AssetStore} from './engine.js?v=20';
-import {Renderer} from './renderer.js?v=20';
-import {AudioSynth} from './audio.js?v=20';
-import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=20';
-import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=20';
-import {volumeSettingsHtml} from './audio-levels.js?v=20';
-import {readManifest,resourceUrl} from './asset-loader.js?v=20';
-import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=20';
-import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=20';
-import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=20';
-import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=20';
-import {progressionHtml} from './progression-ui.js?v=20';
-import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=20';
-import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=20';
-import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=20';
-import {STORY,STORY_UI} from './story-content.js?v=20';
-import {Account} from './account.js?v=20';
-import {CoopSession} from './coop.js?v=20';
-import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=20';
-import {GoogleSignIn} from './google-signin.js?v=20';
-import {EndingPlayer} from './ending-player.js?v=20';
-import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=20';
+import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=21';
+import {Game,AssetStore} from './engine.js?v=21';
+import {Renderer} from './renderer.js?v=21';
+import {AudioSynth} from './audio.js?v=21';
+import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=21';
+import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=21';
+import {volumeSettingsHtml} from './audio-levels.js?v=21';
+import {readManifest,resourceUrl} from './asset-loader.js?v=21';
+import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=21';
+import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=21';
+import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=21';
+import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=21';
+import {progressionHtml} from './progression-ui.js?v=21';
+import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=21';
+import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=21';
+import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=21';
+import {STORY,STORY_UI} from './story-content.js?v=21';
+import {Account} from './account.js?v=21';
+import {CoopSession} from './coop.js?v=21';
+import {LanSession,LanProgress} from './lan.js?v=21';
+import {lanPanel,lanText} from './lan-ui.js?v=21';
+import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=21';
+import {GoogleSignIn} from './google-signin.js?v=21';
+import {EndingPlayer} from './ending-player.js?v=21';
+import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=21';
 
 const $=id=>document.getElementById(id),number=n=>Math.round(n).toLocaleString({zh:'zh-CN',ja:'ja-JP',en:'en-US'}[getLocale()]),pad=n=>String(n).padStart(2,'0');
 const duration=t=>`${pad(Math.floor(t/60))}:${pad(Math.floor(t)%60)}`;
@@ -41,6 +43,8 @@ let selectedFlow='story',exitFlight=null;
 let endingPreviewPending=new URLSearchParams(globalThis.location?.search||'').has('ending');
 function tryEndingPreview(){if(endingPreviewPending&&assets&&accountReady&&profile.language){endingPreviewPending=false;showEnding();}}
 let coop=null,onlineBusy=false,coopChoice={shipIndex:selection.ship,skin:profile.skins[SHIPS[selection.ship].id]},coopRenderStamp='',accountRenderStamp='',accountReady=false;
+let lanProgress=null,deferredAccountProfile=null,lanChoice={...coopChoice};
+function localProgress(){return lanProgress??=new LanProgress({onIssue:()=>toast(lanText('storage'))});}
 const CLOUD_GAME='https://aero-echo-sky.spy-liver.chatgpt.site/game';
 const account=new Account({onProfile:applyAccountProfile,onChange:accountChanged,onIssue:(error,detail)=>{if(detail?.kind==='identity-changed')toast(onlineText('identityChanged'));else if(detail?.kind==='conflict')toast(onlineText('conflict'));}});
 accountReady=!account.enabled;
@@ -64,7 +68,7 @@ function openModal(kind){if(busy||!profile.language)return;if(game?.state==='pla
  else if(kind==='archive')archiveTab='gallery';}
  showModal(kind);
 }
-function showModal(kind){const previous=modalKind;modalKind=kind;if(!$('overlay').classList.contains('open'))focusBefore=document.activeElement;const names={account:['ACCOUNT / CLOUD',onlineText('account')],online:['ONLINE / CO-OP',onlineText('online')],'story-mode':['STORY / 故事航线','故事模式'],continue:['SAVE / 最新通关','继续战斗'],bosses:['BOSS / 挑战航线','BOSS挑战'],missions:['CAMPAIGN / 航线选择','关卡选择'],hangar:['HANGAR / 飞行准备','战机机库'],archive:['ECHO / DATABASE','图库及成就'],settings:['FLIGHT / PREFERENCES','飞行设置'],help:['PILOT / MANUAL','飞行指南'],pause:['FLIGHT / PAUSED','暂停作战'],result:['MISSION / REPORT','战斗报告'],import:['SAVE / RESTORE','恢复存档'],story:['AERO ECHO',storyText(STORY_UI.storyModal)],art:['AERO ECHO',storyText(STORY_UI.gallery)]};const [kicker,title]=names[kind];$('modal-kicker').textContent=tr(kicker);$('modal-title').textContent=tr(title);$('modal-body').innerHTML=localizeHtml(kind==='account'?accountHtml():kind==='online'?onlineHtml():kind==='story'?storySceneHtml(storyContext,manifest):kind==='art'?storyArtHtml(currentArt):kind==='story-mode'?storyModeHtml(profile,selection):kind==='continue'?continueHtml(profile,selection):kind==='bosses'?bossChallengeHtml(profile,selection,manifest):kind==='missions'?missionHtml():kind==='hangar'?hangarHtml():kind==='archive'?archiveHtml():kind==='settings'?settingsHtml():kind==='help'?helpHtml():kind==='pause'?pauseHtml():kind==='import'?importHtml():resultHtml());$('overlay').classList.add('open');$('overlay').classList.toggle('story-open',kind==='story');$('close-modal').hidden=false;if(previous!==kind)$('modal-body').scrollTop=0;$('close-modal').focus({preventScroll:true});if((kind==='account'||kind==='online')&&!account.user)void googleSignIn.mount($('google-signin'),getLocale());}
+function showModal(kind){const previous=modalKind;modalKind=kind;if(!$('overlay').classList.contains('open'))focusBefore=document.activeElement;const names={account:['ACCOUNT / CLOUD',onlineText('account')],online:[coop?.mode==='lan'?'LOCAL / LAN':'ONLINE / CO-OP',coop?.mode==='lan'?lanText('title'):onlineText('online')],lan:['LOCAL / LAN',lanText('title')],'story-mode':['STORY / 故事航线','故事模式'],continue:['SAVE / 最新通关','继续战斗'],bosses:['BOSS / 挑战航线','BOSS挑战'],missions:['CAMPAIGN / 航线选择','关卡选择'],hangar:['HANGAR / 飞行准备','战机机库'],archive:['ECHO / DATABASE','图库及成就'],settings:['FLIGHT / PREFERENCES','飞行设置'],help:['PILOT / MANUAL','飞行指南'],pause:['FLIGHT / PAUSED','暂停作战'],result:['MISSION / REPORT','战斗报告'],import:['SAVE / RESTORE','恢复存档'],story:['AERO ECHO',storyText(STORY_UI.storyModal)],art:['AERO ECHO',storyText(STORY_UI.gallery)]};const [kicker,title]=names[kind];$('modal-kicker').textContent=tr(kicker);$('modal-title').textContent=tr(title);$('modal-body').innerHTML=localizeHtml(kind==='account'?accountHtml():kind==='lan'?lanPanel(localProgress(),coop?.mode==='lan'?coop:null,{choice:lanChoice,busy:onlineBusy,manifest}):kind==='online'?onlineHtml():kind==='story'?storySceneHtml(storyContext,manifest):kind==='art'?storyArtHtml(currentArt):kind==='story-mode'?storyModeHtml(profile,selection):kind==='continue'?continueHtml(profile,selection):kind==='bosses'?bossChallengeHtml(profile,selection,manifest):kind==='missions'?missionHtml():kind==='hangar'?hangarHtml():kind==='archive'?archiveHtml():kind==='settings'?settingsHtml():kind==='help'?helpHtml():kind==='pause'?pauseHtml():kind==='import'?importHtml():resultHtml());$('overlay').classList.add('open');$('overlay').classList.toggle('story-open',kind==='story');$('close-modal').hidden=false;if(previous!==kind)$('modal-body').scrollTop=0;$('close-modal').focus({preventScroll:true});if((kind==='account'||kind==='online'&&coop?.mode!=='lan')&&!account.user)void googleSignIn.mount($('google-signin'),getLocale());}
 function rerender(){if(!modalKind)return;const scroll=$('modal-body').scrollTop;showModal(modalKind);$('modal-body').scrollTop=scroll;}
 function closeModal(){if(coop?.state==='paused'){resumeCoop();return;}if(coop&&['loading','intermission','failed','finished'].includes(coop.state)&&modalKind==='online'){showModal('online');return;}if(modalKind==='story'){finishStory();return;}if(modalKind==='art'){showModal('archive');return;}if(modalKind==='import'){pendingImport=null;showModal('settings');return;}if(modalKind==='result'){goHome();return;}if(game?.state==='paused'){if(modalKind!=='pause'){showModal('pause');return;}game.resume();}hideModal();}
 function hideModal(){$('overlay').classList.remove('open','story-open');modalKind='';focusBefore?.focus?.({preventScroll:true});}
@@ -98,20 +102,20 @@ function settleResult(r){if(coop)return;const economy=settleEconomy(profile,r);p
 function beginStoryExit(){storyContext=null;hideModal();keys.clear();pointer=null;game.enemies=[];game.bullets=[];game.hazards=[];game.pickups=[];game.effects=[];game.weaponEffects=[];game.particles=[];game.texts=[];game.boss=null;game.flash=0;game.player.lastHit=0;game.player.invulnerable=0;game.player.skillTime=0;game.player.ultTime=0;game.player.bombTime=0;game.player.bombPending=0;game.player.bank=0;game.lootBursts=[];$('boss-hud').hidden=true;$('battle-message').classList.remove('visible');$('flight-tip').textContent=tr('任务完成 · 返回机库');$('flight-tip').style.opacity='1';exitFlight={time:0};}
 function hangarArrivalHtml(){const r=lastResult;if(!r?.win||r.flow!=='story')return '';return `<div class="hangar-arrival"><span class="eyebrow">任务完成 · 返回机库</span><h3>${r.stage.id} · ${CHAPTERS[r.stage.chapter].name} ${'★'.repeat(r.stars)}</h3><div class="wallet"><span>获得信用点 <b>+${number(r.reward)}</b></span><span>天赋点 <b>+${r.points}</b></span></div>${experienceReportHtml(r)}${materialReportHtml(r.materials)}${r.stage.boss?'<button class="secondary small" data-action="postflight-story">阅读通关剧情</button>':''}</div>`;}
 function goHome(){if(ending.active)ending.cancel();if(coop){stopCoop();return;}exitFlight=null;storyContext=null;bossCaptions=[];captionUntil=0;currentArt=null;if(game?.seen)profile.discovered=[...new Set([...profile.discovered,...game.seen])].sort((a,b)=>a-b);game=null;keys.clear();pointer=null;hideModal();$('lobby').hidden=false;$('game-hud').hidden=true;$('boss-hud').hidden=true;$('battle-message').classList.remove('visible');document.body.classList.remove('battle-running');audio.setMode('lobby',selection.chapter);updateLobby();}
-function updateHud(){if($('coop-network')){$('coop-network').hidden=!coop;if(coop)$('coop-network').textContent=onlineText(coop.peerHealthy()?'directLink':'relayLink')+' · '+Math.round(coop.peerHealthy()?coop.peer.rtt:coop.rtt)+' ms · '+Math.min(60,Math.round(1000/frameMS))+' FPS';}if(!game)return;const p=game.player;if(coop&&$('coop-status')){const local=coop.local;$('coop-status').hidden=false;const roster=game.crew.map(pilot=>`<span class="${pilot.role===coop.role?'mine ':''}${pilot.alive?'':'fallen'}">${escapeHtml(pilot.name)} · ${onlineText(pilot.alive?'alive':'spectator')} ${Math.ceil(Math.max(0,pilot.player.hp))}</span>`).join('');if($('coop-status').innerHTML!==roster)$('coop-status').innerHTML=roster;if(!local?.alive){$('flight-tip').textContent=onlineText('deadHint');$('flight-tip').style.opacity='1';}}$('hud-score').textContent=tr(String(Math.round(game.score)).padStart(6,'0'));$('hud-combo').textContent=tr('COMBO ×'+game.combo.toFixed(2));$('hp-value').textContent=tr(Math.ceil(p.hp));$('shield-value').textContent=tr(Math.ceil(p.shield));$('hp-fill').style.width=Math.max(0,p.hp/p.maxHp*100)+'%';$('shield-fill').style.width=Math.max(0,p.shield/p.maxShield*100)+'%';$('hud-time').textContent=tr(duration(game.time));$('wave-label').textContent=tr(game.boss?'BOSS FIGHT':'WAVE '+pad(game.wave));$('wave-fill').style.width=Math.min(100,game.time/game.stage.duration*100)+'%';$('weapon-level').textContent=tr('火控 LV.'+game.weaponLevel+' · T'+game.weaponTier);$('graze-label').textContent=tr(game.ship.id==='WraithX'?`相位 ${p.stacks} / 擦弹 ${game.grazes}`:`擦弹 ${game.grazes}`);$('ability-timer').textContent=tr(p.skillTime>0?'生效中':p.skillCd>0?Math.ceil(p.skillCd)+'s':'就绪');$('ability-cooldown').style.height=(p.skillCd/(game.ship.cooldown*(1-(coop?.local?.upgrades.cooldown??game.talents.cooldown??0)*(coop?.05:.06)))*100)+'%';$('bomb-count').textContent=tr('× '+p.bombs);$('ultimate-energy').textContent=tr(Math.floor(p.energy/10)+'%');$('ultimate-charge').style.height=(p.energy/10)+'%';$('ultimate').classList.toggle('ready',p.energy>=1000);if(coop){$('boss-hud').hidden=!game.boss||game.boss.dead;if(game.boss)$('boss-name').textContent=tr(game.chapter.boss);}if(game.boss){$('boss-fill').style.width=Math.max(0,game.boss.hp/game.boss.maxHp*100)+'%';$('boss-phase').textContent=tr('PHASE '+pad(game.boss.phase));}if(game.time>7&&(!coop||coop.local?.alive))$('flight-tip').style.opacity='0';if(game.time>messageUntil)$('battle-message').classList.remove('visible');}
+function updateHud(){if($('coop-network')){$('coop-network').hidden=!coop;if(coop)$('coop-network').textContent=(coop.mode==='lan'?lanText(coop.peerHealthy()?'connected':'connecting'):onlineText(coop.peerHealthy()?'directLink':'relayLink'))+' · '+((coop.peerHealthy()?coop.peer.rtt:coop.rtt)>0?Math.round(coop.peerHealthy()?coop.peer.rtt:coop.rtt):'—')+' ms · '+Math.min(60,Math.round(1000/frameMS))+' FPS';}if(!game)return;const p=game.player;if(coop&&$('coop-status')){const local=coop.local;$('coop-status').hidden=false;const roster=game.crew.map(pilot=>`<span class="${pilot.role===coop.role?'mine ':''}${pilot.alive?'':'fallen'}">${escapeHtml(pilot.name)} · ${onlineText(pilot.alive?'alive':'spectator')} ${Math.ceil(Math.max(0,pilot.player.hp))}</span>`).join('');if($('coop-status').innerHTML!==roster)$('coop-status').innerHTML=roster;if(!local?.alive){$('flight-tip').textContent=(coop.mode==='lan'?lanText('down'):onlineText('deadHint'));$('flight-tip').style.opacity='1';}}$('hud-score').textContent=tr(String(Math.round(game.score)).padStart(6,'0'));$('hud-combo').textContent=tr('COMBO ×'+game.combo.toFixed(2));$('hp-value').textContent=tr(Math.ceil(p.hp));$('shield-value').textContent=tr(Math.ceil(p.shield));$('hp-fill').style.width=Math.max(0,p.hp/p.maxHp*100)+'%';$('shield-fill').style.width=Math.max(0,p.shield/p.maxShield*100)+'%';$('hud-time').textContent=tr(duration(game.time));$('wave-label').textContent=tr(game.boss?'BOSS FIGHT':'WAVE '+pad(game.wave));$('wave-fill').style.width=Math.min(100,game.time/game.stage.duration*100)+'%';$('weapon-level').textContent=tr('火控 LV.'+game.weaponLevel+' · T'+game.weaponTier);$('graze-label').textContent=tr(game.ship.id==='WraithX'?`相位 ${p.stacks} / 擦弹 ${game.grazes}`:`擦弹 ${game.grazes}`);$('ability-timer').textContent=tr(p.skillTime>0?'生效中':p.skillCd>0?Math.ceil(p.skillCd)+'s':'就绪');$('ability-cooldown').style.height=(p.skillCd/(game.ship.cooldown*(1-(coop&&coop.mode!=='lan'?coop.local?.upgrades.cooldown??0:game.talents.cooldown??0)*(coop&&coop.mode!=='lan'?.05:.06)))*100)+'%';$('bomb-count').textContent=tr('× '+p.bombs);$('ultimate-energy').textContent=tr(Math.floor(p.energy/10)+'%');$('ultimate-charge').style.height=(p.energy/10)+'%';$('ultimate').classList.toggle('ready',p.energy>=1000);if(coop){$('boss-hud').hidden=!game.boss||game.boss.dead;if(game.boss)$('boss-name').textContent=tr(game.chapter.boss);}if(game.boss){$('boss-fill').style.width=Math.max(0,game.boss.hp/game.boss.maxHp*100)+'%';$('boss-phase').textContent=tr('PHASE '+pad(game.boss.phase));}if(game.time>7&&(!coop||coop.local?.alive))$('flight-tip').style.opacity='0';if(game.time>messageUntil)$('battle-message').classList.remove('visible');}
 
 
 function cloudUrl(){return CLOUD_GAME+'?account=1';}
 const googleSignIn=new GoogleSignIn(account,{text:onlineText,onSuccess:()=>{accountReady=true;accountChanged();}});
 function accountHtml(){let guestAvailable=false;try{guestAvailable=!!localStorage.getItem(STORAGE);}catch{}return accountPanel(account,{cloudUrl:cloudUrl(),guestAvailable});}
-function onlineHtml(){return coopPanel(account,coop,{cloudUrl:cloudUrl(),choice:coopChoice,busy:onlineBusy});}
+function onlineHtml(){return coop?.mode==='lan'?lanPanel(localProgress(),coop,{choice:lanChoice,busy:onlineBusy,manifest}):coopPanel(account,coop,{cloudUrl:cloudUrl(),choice:coopChoice,busy:onlineBusy});}
 function accountChanged(){
  if($('account-badge'))$('account-badge').textContent=accountBadge(account);
  const stamp=JSON.stringify([account.user,account.status,!!account.conflict]);
  if(stamp!==accountRenderStamp){accountRenderStamp=stamp;if(modalKind==='account'||modalKind==='online'&&!coop)rerender();}
 }
 function applyAccountProfile(value,meta={}){
- accountReady=true;if(meta.source==='guest'){accountChanged();return;}if(ending.active)ending.cancel();
+ accountReady=true;if(coop?.mode==='lan'){deferredAccountProfile={value,meta};accountChanged();return;}if(meta.source==='guest'){accountChanged();return;}if(ending.active)ending.cancel();
  if(coop){const previous=coop;coop=null;void previous.close().catch(()=>{});}
  game=null;exitFlight=null;lastResult=null;lastMessage=null;keys.clear();pointer=null;
  saveBlocked=false;const normalized=meta.userId?normalizeProfile(value):loadProfile();
@@ -126,6 +130,17 @@ function flightAction(type){return coop?coop.action(type):type==='skill'?game?.s
 function moveFlight(x,y){if(coop)coop.moveTo(x,y);else game?.moveTo(x,y);}
 function pauseFlight(){if(coop){coop.pause();coopRenderStamp='';coopChanged();}else game?.pause();}
 function resumeCoop(){if(!coop)return;coop.resume();coopRenderStamp='';coopChanged();}
+async function enterLan(kind,code){
+ if(onlineBusy||!assets)return;if(coop?.code){showModal('online');return;}
+ onlineBusy=true;goHome();const session=new LanSession({progress:localProgress(),onEvent:handleCoopEvent,onChange:coopChanged,onStage:prepareCoopStage});
+ coop=session;try{if(kind==='join')await session.join(code,lanChoice);else await session.create(lanChoice);coopRenderStamp='';coopChanged();}
+ catch(error){if(coop===session){coop=null;game=null;}void session.close().catch(()=>{});toast(error.code==='rtc-unavailable'?lanText('unsupported'):onlineText(error.code==='room-full'?'full':error.status===404?'notFound':'error'));showModal('lan');}
+ finally{onlineBusy=false;coopRenderStamp='';if(coop)coopChanged();else if(modalKind==='lan')rerender();}
+}
+function upgradeLan(type,node){
+ if(onlineBusy||coop&&coop.mode!=='lan'||coop?.mode==='lan'&&(!['waiting','intermission'].includes(coop.baseState)||coop.local?.ready))return;
+ if(localProgress().upgrade(type,node,lanChoice.shipIndex)){if(coop?.mode==='lan')coop.changedLoadout(lanChoice);coopRenderStamp='';rerender();}
+}
 async function enterCoop(kind,code){
  if(onlineBusy||!accountReady||!account.user||!assets)return;if(coop?.code){showModal('online');return;}
  onlineBusy=true;goHome();
@@ -150,7 +165,7 @@ async function prepareCoopStage(stage,{crew}){
 function coopChanged(){
  if(!coop)return;game=coop.game;if(ending.active)return;
  if(game){game.selectPilot(coop.role);$('lobby').hidden=true;$('game-hud').hidden=false;document.body.classList.add('battle-running');updateFlightLabels();}
- const state=coop.state,stamp=JSON.stringify([state,coop.mission,coop.pauseFlags,coop.networkPaused,coop.failureReason,coop.room?.guest,coop.game?.crew.map(p=>[p.alive,p.points,p.ready,p.upgrades]),onlineBusy]);
+ const state=coop.state,stamp=JSON.stringify([state,coop.mission,coop.pauseFlags,coop.networkPaused,coop.failureReason,coop.room?.guest,coop.game?.crew.map(p=>[p.alive,p.points,p.ready,p.upgrades]),coop.peer?.state,coop.loadoutAck,coop.loadoutVersion,coop.remoteVersion,onlineBusy]);
  if(stamp===coopRenderStamp)return;coopRenderStamp=stamp;
  if(['playing','transition'].includes(state)){if(modalKind==='online'||modalKind==='pause')hideModal();audio.setMode(game?.boss&&!game.boss.dead?'boss':'battle',game?.stage.chapter??0);}
  else if(state!=='closed'){showModal('online');if(state==='paused')audio.setMode('paused',game?.stage.chapter??0);}
@@ -159,11 +174,12 @@ function coopChanged(){
 function handleCoopEvent(event){
  if(!coop)return;
  if(event.type==='result')return;
+ if(event.type==='lan-progress'){coopRenderStamp='';return;}
  if(event.type==='boss'){game=coop.game;$('boss-hud').hidden=false;$('boss-name').textContent=tr(event.name);audio.setMode('boss',game.stage.chapter);showBossCaptions(storyPages('boss',game.stage.chapter));return;}
  if(['sound','toast','haptic','camera-impact','message','boss-end','phase'].includes(event.type)){handleEvent(event);return;}
  if(event.type==='coop-over'){audio.endBoss();audio.setMode('story',game?.stage.chapter??0);audio.effect(event.win?'win':'lose');if(event.win){showEnding(()=>{coopRenderStamp='';coopChanged();},true);return;}}
  if(event.type==='coop-issue'&&!event.temporary)toast(onlineText('error'));
- if(event.type==='coop-death'&&event.role===coop.role)toast(onlineText('fallen'));
+ if(event.type==='coop-death'&&event.role===coop.role)toast(coop.mode==='lan'?lanText('down'):onlineText('fallen'));
  if(event.type==='coop-revive'&&event.role===coop.role)toast(onlineText('alive'));
  coopRenderStamp='';coopChanged();
 }
@@ -172,7 +188,7 @@ function stopCoop(){
  const session=coop;coop=null;coopRenderStamp='';onlineBusy=false;
  if(session)void session.close().catch(()=>{});
  game=null;keys.clear();pointer=null;accumulator=0;$('loading').hidden=true;
- if($('coop-status'))$('coop-status').hidden=true;goHome();
+ if($('coop-status'))$('coop-status').hidden=true;if(deferredAccountProfile){const pending=deferredAccountProfile;deferredAccountProfile=null;applyAccountProfile(pending.value,pending.meta);}goHome();
 }
 
 function showLanguageGate(){const pending=!profile.language;$('language-screen').hidden=!pending;document.body.classList.toggle('language-pending',pending);if(pending)document.querySelector('[data-language]')?.focus();}
@@ -213,6 +229,15 @@ $('modal-body').addEventListener('click',async event=>{const button=event.target
  case 'account-nickname':try{await account.nickname($('account-name')?.value||'');toast(onlineText('nicknameSaved'));}catch{toast(onlineText('error'));}break;
  case 'account-guest-import':try{const text=localStorage.getItem(STORAGE);if(!text){toast(onlineText('emptyGuest'));break;}pendingImport=parseBackup(text);showModal('import');}catch{toast('存档无效或版本不兼容，当前进度未改变。');}break;
  case 'account-conflict':await account.resolveConflict(v);break;
+ case 'lan-ship':if(!onlineBusy&&!coop){lanChoice.shipIndex=Math.max(0,Math.min(2,Number(v)||0));rerender();}break;
+ case 'lan-skin':if(!onlineBusy&&!coop){lanChoice.skin=Math.max(0,Math.min(3,Number(v)||0));rerender();}break;
+ case 'lan-create':await enterLan('create');break;
+ case 'lan-join':await enterLan('join',($('lan-code')?.value||'').trim().toUpperCase());break;
+ case 'lan-hull':upgradeLan('hull');break;
+ case 'lan-hull-five':upgradeLan('hull-five');break;
+ case 'lan-talent':upgradeLan('talent',v);break;
+ case 'lan-weapon':upgradeLan('weapon');break;
+ case 'lan-research':upgradeLan('research',v);break;
  case 'coop-ship':coopChoice.shipIndex=Math.max(0,Math.min(2,Number(v)||0));showModal('online');break;
  case 'coop-skin':coopChoice.skin=Math.max(0,Math.min(3,Number(v)||0));showModal('online');break;
  case 'coop-create':await enterCoop('create');break;

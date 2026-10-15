@@ -1,5 +1,5 @@
-import {ENDING_TIMING,ENDING_UI,ENDING_TEASER,endingText,endingRollHtml,endingFinalHtml,endingTeaserHtml} from './ending-content.js?v=20';
-import {EndingScene} from './ending-scene.js?v=20';
+import {ENDING_TIMING,ENDING_UI,ENDING_TEASER,endingText,endingRollHtml,endingFinalHtml,endingTeaserHtml} from './ending-content.js?v=21';
+import {EndingScene} from './ending-scene.js?v=21';
 
 export function endingPhase(seconds){if(seconds<ENDING_TIMING.roll)return 'roll';if(seconds<ENDING_TIMING.credits)return 'finale';if(seconds<ENDING_TIMING.credits+ENDING_TIMING.blackout)return 'blackout';if(seconds<ENDING_TIMING.total)return 'teaser';return 'done';}
 export function teaserIndex(seconds){let t=seconds-ENDING_TIMING.credits-ENDING_TIMING.blackout;for(let i=0;i<ENDING_TEASER.length;i++){t-=ENDING_TEASER[i].duration;if(t<0)return i;}return ENDING_TEASER.length-1;}
