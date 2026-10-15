@@ -1,6 +1,6 @@
-import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=21';
-import {CHAPTERS,SHIPS} from './data.js?v=21';
-import {getLocale} from './i18n.js?v=21';
+import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=22';
+import {CHAPTERS,SHIPS} from './data.js?v=22';
+import {getLocale} from './i18n.js?v=22';
 
 export const storyText=value=>value?.[getLocale()]||value?.zh||'';
 const escape=value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');

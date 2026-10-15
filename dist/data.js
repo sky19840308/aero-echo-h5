@@ -1,4 +1,4 @@
-import {STORY} from './story-content.js?v=21';
+import {STORY} from './story-content.js?v=22';
 export const W = 450, H = 800;
 export const SHIPS = [
  {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', hp:1000, shield:350, dps:120, speed:85, armor:0, cooldown:18, skill:'超频齐射', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。持续命中提高射速，超频获得穿透；日冕射线贯穿战场。', skillText:'7 秒射速 +45%，脉冲获得穿透。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},

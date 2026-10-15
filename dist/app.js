@@ -1,28 +1,28 @@
-import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=21';
-import {Game,AssetStore} from './engine.js?v=21';
-import {Renderer} from './renderer.js?v=21';
-import {AudioSynth} from './audio.js?v=21';
-import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=21';
-import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=21';
-import {volumeSettingsHtml} from './audio-levels.js?v=21';
-import {readManifest,resourceUrl} from './asset-loader.js?v=21';
-import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=21';
-import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=21';
-import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=21';
-import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=21';
-import {progressionHtml} from './progression-ui.js?v=21';
-import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=21';
-import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=21';
-import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=21';
-import {STORY,STORY_UI} from './story-content.js?v=21';
-import {Account} from './account.js?v=21';
-import {CoopSession} from './coop.js?v=21';
-import {LanSession,LanProgress} from './lan.js?v=21';
-import {lanPanel,lanText} from './lan-ui.js?v=21';
-import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=21';
-import {GoogleSignIn} from './google-signin.js?v=21';
-import {EndingPlayer} from './ending-player.js?v=21';
-import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=21';
+import {W,H,SHIPS,CHAPTERS,SKINS,ENEMIES,DIFFICULTIES,TALENTS,stageConfig} from './data.js?v=22';
+import {Game,AssetStore} from './engine.js?v=22';
+import {Renderer} from './renderer.js?v=22';
+import {AudioSynth} from './audio.js?v=22';
+import {missionIndex,missionAt,missionCleared,bossUnlocked,storyTarget,latestClear,canLaunch,rememberClear,unlockAchievements} from './campaign.js?v=22';
+import {storyModeHtml,continueHtml,missionsHtml,bossChallengeHtml,hangarRouteHtml,achievementsHtml} from './campaign-ui.js?v=22';
+import {volumeSettingsHtml} from './audio-levels.js?v=22';
+import {readManifest,resourceUrl} from './asset-loader.js?v=22';
+import {itemsHtml,materialReportHtml,normalizeMaterials} from './inventory-ui.js?v=22';
+import {settleEconomy,upgradeCost,trainingLevel,fleetLevel,canUpgradeHull,upgradeHull} from './economy.js?v=22';
+import {trainingHtml,experienceReportHtml} from './growth-ui.js?v=22';
+import {growthStats,upgradeWeapon,upgradeResearch} from './progression.js?v=22';
+import {progressionHtml} from './progression-ui.js?v=22';
+import {gameIcon,TALENT_ICONS,SHIP_ICONS} from './ui-art.js?v=22';
+import {STORAGE,BACKUP_STORAGE,SENSITIVITIES,createProfile,normalizeProfile,exportProfile,parseBackup} from './profile.js?v=22';
+import {LANGUAGES,setLocale,getLocale,tr,localizeHtml,applyStaticLocale,canonicalText} from './i18n.js?v=22';
+import {STORY,STORY_UI} from './story-content.js?v=22';
+import {Account} from './account.js?v=22';
+import {CoopSession} from './coop.js?v=22';
+import {LanSession,LanProgress} from './lan.js?v=22';
+import {lanPanel,lanText} from './lan-ui.js?v=22';
+import {onlineText,accountBadge,accountPanel,coopPanel,escapeHtml} from './online-ui.js?v=22';
+import {GoogleSignIn} from './google-signin.js?v=22';
+import {EndingPlayer} from './ending-player.js?v=22';
+import {storyText,pilotForShip,pilotImage,pilotChoices,pilotBiography,storyPages,storySceneHtml,storyArchiveHtml,storyGalleryHtml,storyArtHtml} from './story-ui.js?v=22';
 
 const $=id=>document.getElementById(id),number=n=>Math.round(n).toLocaleString({zh:'zh-CN',ja:'ja-JP',en:'en-US'}[getLocale()]),pad=n=>String(n).padStart(2,'0');
 const duration=t=>`${pad(Math.floor(t/60))}:${pad(Math.floor(t)%60)}`;
@@ -43,7 +43,7 @@ let selectedFlow='story',exitFlight=null;
 let endingPreviewPending=new URLSearchParams(globalThis.location?.search||'').has('ending');
 function tryEndingPreview(){if(endingPreviewPending&&assets&&accountReady&&profile.language){endingPreviewPending=false;showEnding();}}
 let coop=null,onlineBusy=false,coopChoice={shipIndex:selection.ship,skin:profile.skins[SHIPS[selection.ship].id]},coopRenderStamp='',accountRenderStamp='',accountReady=false;
-let lanProgress=null,deferredAccountProfile=null,lanChoice={...coopChoice};
+let lanProgress=null,deferredAccountProfile=null,lanChoice={...coopChoice},lanError='';
 function localProgress(){return lanProgress??=new LanProgress({onIssue:()=>toast(lanText('storage'))});}
 const CLOUD_GAME='https://aero-echo-sky.spy-liver.chatgpt.site/game';
 const account=new Account({onProfile:applyAccountProfile,onChange:accountChanged,onIssue:(error,detail)=>{if(detail?.kind==='identity-changed')toast(onlineText('identityChanged'));else if(detail?.kind==='conflict')toast(onlineText('conflict'));}});
@@ -68,7 +68,7 @@ function openModal(kind){if(busy||!profile.language)return;if(game?.state==='pla
  else if(kind==='archive')archiveTab='gallery';}
  showModal(kind);
 }
-function showModal(kind){const previous=modalKind;modalKind=kind;if(!$('overlay').classList.contains('open'))focusBefore=document.activeElement;const names={account:['ACCOUNT / CLOUD',onlineText('account')],online:[coop?.mode==='lan'?'LOCAL / LAN':'ONLINE / CO-OP',coop?.mode==='lan'?lanText('title'):onlineText('online')],lan:['LOCAL / LAN',lanText('title')],'story-mode':['STORY / 故事航线','故事模式'],continue:['SAVE / 最新通关','继续战斗'],bosses:['BOSS / 挑战航线','BOSS挑战'],missions:['CAMPAIGN / 航线选择','关卡选择'],hangar:['HANGAR / 飞行准备','战机机库'],archive:['ECHO / DATABASE','图库及成就'],settings:['FLIGHT / PREFERENCES','飞行设置'],help:['PILOT / MANUAL','飞行指南'],pause:['FLIGHT / PAUSED','暂停作战'],result:['MISSION / REPORT','战斗报告'],import:['SAVE / RESTORE','恢复存档'],story:['AERO ECHO',storyText(STORY_UI.storyModal)],art:['AERO ECHO',storyText(STORY_UI.gallery)]};const [kicker,title]=names[kind];$('modal-kicker').textContent=tr(kicker);$('modal-title').textContent=tr(title);$('modal-body').innerHTML=localizeHtml(kind==='account'?accountHtml():kind==='lan'?lanPanel(localProgress(),coop?.mode==='lan'?coop:null,{choice:lanChoice,busy:onlineBusy,manifest}):kind==='online'?onlineHtml():kind==='story'?storySceneHtml(storyContext,manifest):kind==='art'?storyArtHtml(currentArt):kind==='story-mode'?storyModeHtml(profile,selection):kind==='continue'?continueHtml(profile,selection):kind==='bosses'?bossChallengeHtml(profile,selection,manifest):kind==='missions'?missionHtml():kind==='hangar'?hangarHtml():kind==='archive'?archiveHtml():kind==='settings'?settingsHtml():kind==='help'?helpHtml():kind==='pause'?pauseHtml():kind==='import'?importHtml():resultHtml());$('overlay').classList.add('open');$('overlay').classList.toggle('story-open',kind==='story');$('close-modal').hidden=false;if(previous!==kind)$('modal-body').scrollTop=0;$('close-modal').focus({preventScroll:true});if((kind==='account'||kind==='online'&&coop?.mode!=='lan')&&!account.user)void googleSignIn.mount($('google-signin'),getLocale());}
+function showModal(kind){const previous=modalKind;modalKind=kind;if(!$('overlay').classList.contains('open'))focusBefore=document.activeElement;const names={account:['ACCOUNT / CLOUD',onlineText('account')],online:[coop?.mode==='lan'?'LOCAL / LAN':'ONLINE / CO-OP',coop?.mode==='lan'?lanText('title'):onlineText('online')],lan:['LOCAL / LAN',lanText('title')],'story-mode':['STORY / 故事航线','故事模式'],continue:['SAVE / 最新通关','继续战斗'],bosses:['BOSS / 挑战航线','BOSS挑战'],missions:['CAMPAIGN / 航线选择','关卡选择'],hangar:['HANGAR / 飞行准备','战机机库'],archive:['ECHO / DATABASE','图库及成就'],settings:['FLIGHT / PREFERENCES','飞行设置'],help:['PILOT / MANUAL','飞行指南'],pause:['FLIGHT / PAUSED','暂停作战'],result:['MISSION / REPORT','战斗报告'],import:['SAVE / RESTORE','恢复存档'],story:['AERO ECHO',storyText(STORY_UI.storyModal)],art:['AERO ECHO',storyText(STORY_UI.gallery)]};const [kicker,title]=names[kind];$('modal-kicker').textContent=tr(kicker);$('modal-title').textContent=tr(title);$('modal-body').innerHTML=localizeHtml(kind==='account'?accountHtml():kind==='lan'?lanPanel(localProgress(),coop?.mode==='lan'?coop:null,{choice:lanChoice,busy:onlineBusy,manifest,error:lanError}):kind==='online'?onlineHtml():kind==='story'?storySceneHtml(storyContext,manifest):kind==='art'?storyArtHtml(currentArt):kind==='story-mode'?storyModeHtml(profile,selection):kind==='continue'?continueHtml(profile,selection):kind==='bosses'?bossChallengeHtml(profile,selection,manifest):kind==='missions'?missionHtml():kind==='hangar'?hangarHtml():kind==='archive'?archiveHtml():kind==='settings'?settingsHtml():kind==='help'?helpHtml():kind==='pause'?pauseHtml():kind==='import'?importHtml():resultHtml());$('overlay').classList.add('open');$('overlay').classList.toggle('story-open',kind==='story');$('close-modal').hidden=false;if(previous!==kind)$('modal-body').scrollTop=0;$('close-modal').focus({preventScroll:true});if((kind==='account'||kind==='online'&&coop?.mode!=='lan')&&!account.user)void googleSignIn.mount($('google-signin'),getLocale());}
 function rerender(){if(!modalKind)return;const scroll=$('modal-body').scrollTop;showModal(modalKind);$('modal-body').scrollTop=scroll;}
 function closeModal(){if(coop?.state==='paused'){resumeCoop();return;}if(coop&&['loading','intermission','failed','finished'].includes(coop.state)&&modalKind==='online'){showModal('online');return;}if(modalKind==='story'){finishStory();return;}if(modalKind==='art'){showModal('archive');return;}if(modalKind==='import'){pendingImport=null;showModal('settings');return;}if(modalKind==='result'){goHome();return;}if(game?.state==='paused'){if(modalKind!=='pause'){showModal('pause');return;}game.resume();}hideModal();}
 function hideModal(){$('overlay').classList.remove('open','story-open');modalKind='';focusBefore?.focus?.({preventScroll:true});}
@@ -108,7 +108,7 @@ function updateHud(){if($('coop-network')){$('coop-network').hidden=!coop;if(coo
 function cloudUrl(){return CLOUD_GAME+'?account=1';}
 const googleSignIn=new GoogleSignIn(account,{text:onlineText,onSuccess:()=>{accountReady=true;accountChanged();}});
 function accountHtml(){let guestAvailable=false;try{guestAvailable=!!localStorage.getItem(STORAGE);}catch{}return accountPanel(account,{cloudUrl:cloudUrl(),guestAvailable});}
-function onlineHtml(){return coop?.mode==='lan'?lanPanel(localProgress(),coop,{choice:lanChoice,busy:onlineBusy,manifest}):coopPanel(account,coop,{cloudUrl:cloudUrl(),choice:coopChoice,busy:onlineBusy});}
+function onlineHtml(){return coop?.mode==='lan'?lanPanel(localProgress(),coop,{choice:lanChoice,busy:onlineBusy,manifest,error:lanError}):coopPanel(account,coop,{cloudUrl:cloudUrl(),choice:coopChoice,busy:onlineBusy});}
 function accountChanged(){
  if($('account-badge'))$('account-badge').textContent=accountBadge(account);
  const stamp=JSON.stringify([account.user,account.status,!!account.conflict]);
@@ -130,11 +130,23 @@ function flightAction(type){return coop?coop.action(type):type==='skill'?game?.s
 function moveFlight(x,y){if(coop)coop.moveTo(x,y);else game?.moveTo(x,y);}
 function pauseFlight(){if(coop){coop.pause();coopRenderStamp='';coopChanged();}else game?.pause();}
 function resumeCoop(){if(!coop)return;coop.resume();coopRenderStamp='';coopChanged();}
+function lanFailure(error){
+ if(error?.code==='rtc-unavailable')return lanText('unsupported');
+ if(error?.code==='lan-timeout')return lanText('timeout');
+ if(error?.code==='lan-response-invalid')return lanText('response');
+ if(error?.code==='same-account')return lanText('sameDevice');
+ if(error?.status===429)return lanText('rateLimited');
+ if(error?.status===404)return onlineText('notFound');
+ if(error?.code==='room-full')return onlineText('full');
+ return lanText('network');
+}
 async function enterLan(kind,code){
  if(onlineBusy||!assets)return;if(coop?.code){showModal('online');return;}
- onlineBusy=true;goHome();const session=new LanSession({progress:localProgress(),onEvent:handleCoopEvent,onChange:coopChanged,onStage:prepareCoopStage});
- coop=session;try{if(kind==='join')await session.join(code,lanChoice);else await session.create(lanChoice);coopRenderStamp='';coopChanged();}
- catch(error){if(coop===session){coop=null;game=null;}void session.close().catch(()=>{});toast(error.code==='rtc-unavailable'?lanText('unsupported'):onlineText(error.code==='room-full'?'full':error.status===404?'notFound':'error'));showModal('lan');}
+ if(kind==='join'){code=String(code||'').normalize('NFKC').replace(/[\s-]/g,'').toUpperCase();if(!/^[A-HJ-NP-Z2-9]{8}$/.test(code)){lanError=lanText('invalidCode');showModal('lan');return;}}
+ onlineBusy=true;lanError='';let session=null;
+ try{goHome();showModal('lan');session=new LanSession({progress:localProgress(),onEvent:handleCoopEvent,onChange:coopChanged,onStage:prepareCoopStage});coop=session;
+  if(kind==='join')await session.join(code,lanChoice);else await session.create(lanChoice);coopRenderStamp='';coopChanged();
+ }catch(error){if(coop===session){coop=null;game=null;}if(session)void session.close().catch(()=>{});lanError=lanFailure(error);toast(lanError);showModal('lan');}
  finally{onlineBusy=false;coopRenderStamp='';if(coop)coopChanged();else if(modalKind==='lan')rerender();}
 }
 function upgradeLan(type,node){

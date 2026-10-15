@@ -1,9 +1,9 @@
-import {SHIPS,SKINS,TALENTS} from './data.js?v=21';
-import {getLocale} from './i18n.js?v=21';
-import {onlineText,escapeHtml} from './online-ui.js?v=21';
-import {trainingHtml} from './growth-ui.js?v=21';
-import {progressionHtml} from './progression-ui.js?v=21';
-import {canUpgradeHull,fleetLevel,upgradeCost} from './economy.js?v=21';
+import {SHIPS,SKINS,TALENTS} from './data.js?v=22';
+import {getLocale} from './i18n.js?v=22';
+import {onlineText,escapeHtml} from './online-ui.js?v=22';
+import {trainingHtml} from './growth-ui.js?v=22';
+import {progressionHtml} from './progression-ui.js?v=22';
+import {canUpgradeHull,fleetLevel,upgradeCost} from './economy.js?v=22';
 const strings={
  title:['本地双人合作','ローカル2人協力','Local Two-player Co-op'],
  note:['两台设备连接同一个 Wi-Fi（关闭访客网络隔离），打开本游戏。一人建房，另一人输入房间码；无需登录。配对需要联网，出击后战斗数据仅在局域网内直传。','2台を同じWi-Fiに接続し、ルームコードで参加。ログイン不要。ペアリング時はインターネットが必要、戦闘はLAN内で直接通信します。ゲストWi-Fiの端末隔離を解除してください。','Connect both devices to the same Wi-Fi and join by room code. No sign-in. Pairing requires internet; battle traffic stays on the LAN. Disable guest-network client isolation.'],
@@ -18,6 +18,13 @@ const strings={
  down:['已阵亡 · 永久天赋与升级保留，下一大关复活','撃墜・永久強化は保持、次章で復活','Down · Permanent upgrades kept; revive next chapter'],
  input:['本机操作即时响应 · 局域网直传','端末操作は即時反映・LAN直接通信','Immediate local input · Direct LAN traffic'],
  unsupported:['此浏览器不支持局域网直连，请用最新版 Safari 或 Chrome 打开。','LAN直接接続に未対応。最新のSafari / Chromeで開いてください。','This browser does not support the LAN link. Open in a current Safari or Chrome.'],
+ network:['未能连接房间服务，请检查网络后重试。无需登录。','ルームサービスに接続できません。ネットワークを確認して再試行してください。ログインは不要です。','Cannot reach the room service. Check your connection and retry. No sign-in is needed.'],
+ timeout:['房间服务响应超时，请稍后重试。','ルームサービスがタイムアウトしました。再試行してください。','Room service timed out. Please retry.'],
+ invalidCode:['请输入完整的 8 位房间码。','8文字のルームコードを入力してください。','Enter the complete 8-character room code.'],
+ sameDevice:['这是当前页面创建的房间，请让另一台设备输入房间码加入。','この画面が作成したルームです。別の端末からコードを入力して参加してください。','This room belongs to this page. Enter its code on the other device to join.'],
+ rateLimited:['房间操作过于频繁，请稍等片刻再重试。','操作回数が多すぎます。少し待って再試行してください。','Too many room requests. Wait briefly and retry.'],
+ response:['房间服务返回异常，请刷新游戏页面后重试。','ルームサービスの応答が不正です。ゲームを再読込して再試行してください。','Unexpected room service response. Reload the game and retry.'],
+ pairing:['正在连接房间服务，请稍候…','ルームサービスに接続中です。少々お待ちください…','Connecting to the room service. Please wait…'],
 };
 export const lanText=key=>strings[key]?.[{zh:0,ja:1,en:2}[getLocale()]??0]||key;
 const t=onlineText,l=lanText,e=escapeHtml;
@@ -26,8 +33,9 @@ export function lanHangarHtml(progress,choice,manifest){
  const p=progress.profile,ship=SHIPS[choice.shipIndex],level=fleetLevel(p);
  return `<details class="lan-hangar" ${p.points||canUpgradeHull(p)?'open':''}><summary>${l('upgrades')}</summary><div class="wallet"><span>${t('credits')} <b>${p.credits}</b></span><span>天赋点 <b>${p.points}</b></span></div><p>LV.${level} / 50 · ${e(ship.name)}</p>${btn('lan-hull',`强化机体 · ${upgradeCost(level)} 信用点`,!canUpgradeHull(p))}${trainingHtml(p).replaceAll('data-action="upgrade-five"','data-action="lan-hull-five"')}<span class="selection-label">飞行天赋 · 全部 6 项</span><div class="talent-grid">${TALENTS.map(node=>`<button class="talent-card" data-action="lan-talent" data-value="${node.id}" ${p.points<1||(p.talents[node.id]||0)>=node.max?'disabled':''}><span>${p.talents[node.id]||0} / ${node.max}</span><b>${node.name}</b><small>${node.note}</small></button>`).join('')}</div>${progressionHtml(p,ship.id,manifest).replaceAll('data-action="forge"','data-action="lan-weapon"').replaceAll('data-action="research"','data-action="lan-research"')}</details>`;
 }
-export function lanPanel(progress,session,{choice={shipIndex:0,skin:0},busy=false,manifest}={}){
- if(!session?.code)return `<p class="modal-note">${l('note')}</p><p class="tiny-note">${l('progress')}</p><span class="selection-label">${t('chooseShip')}</span><div class="segmented">${SHIPS.map((s,i)=>`<button data-action="lan-ship" data-value="${i}" class="${i===choice.shipIndex?'active':''}" ${busy?'disabled':''}>${e(s.name)}</button>`).join('')}</div><div class="skin-grid">${SKINS.map((s,i)=>`<button data-action="lan-skin" data-value="${i}" class="${i===choice.skin?'active':''}" ${busy?'disabled':''}>${e(s)}</button>`).join('')}</div><button class="primary" data-action="lan-create" ${busy?'disabled':''}>${t(busy?'busy':'create')}</button><label class="online-field">${t('code')}<input id="lan-code" maxlength="8" minlength="8" pattern="[A-HJ-NP-Z2-9]{8}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXXXXXX"></label>${btn('lan-join',t(busy?'busy':'join'),busy)}${busy?'':lanHangarHtml(progress,choice,manifest)}`;
+export function lanPanel(progress,session,{choice={shipIndex:0,skin:0},busy=false,manifest,error=''}={}){
+ const warning=(error?`<p class="save-warning" role="alert">${e(error)}</p>`:'')+(busy?`<p class="modal-note" role="status">${l('pairing')}</p>`:'');
+ if(!session?.code)return `${warning}<p class="modal-note">${l('note')}</p><p class="tiny-note">${l('progress')}</p><span class="selection-label">${t('chooseShip')}</span><div class="segmented">${SHIPS.map((s,i)=>`<button data-action="lan-ship" data-value="${i}" class="${i===choice.shipIndex?'active':''}" ${busy?'disabled':''}>${e(s.name)}</button>`).join('')}</div><div class="skin-grid">${SKINS.map((s,i)=>`<button data-action="lan-skin" data-value="${i}" class="${i===choice.skin?'active':''}" ${busy?'disabled':''}>${e(s)}</button>`).join('')}</div><button class="primary" data-action="lan-create" ${busy?'disabled':''}>${t(busy?'busy':'create')}</button><label class="online-field">${t('code')}<input id="lan-code" maxlength="8" minlength="8" pattern="[A-HJ-NP-Z2-9]{8}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXXXXXX"></label>${btn('lan-join',t(busy?'busy':'join'),busy)}${busy?'':lanHangarHtml(progress,choice,manifest)}`;
  const healthy=session.peerHealthy(),loaded=session.loadoutAck===session.loadoutVersion,peer=session.peer,state=session.state;
  let body='';
  if(state==='waiting')body=`<p class="modal-note">${!session.room.guest?t('waiting'):healthy?l(loaded?'connected':'sync'):l(peer?.state==='unavailable'?'unavailable':'connecting')}</p>${session.role==='host'?btn('coop-start',t('start'),busy||!session.canStart):''}`;

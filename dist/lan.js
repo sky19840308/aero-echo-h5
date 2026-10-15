@@ -1,19 +1,20 @@
-import {CoopSession} from './coop.js?v=21';
-import {CoopPeer} from './coop-peer.js?v=21';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=21';
-import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=21';
-import {settleEconomy,upgradeHull} from './economy.js?v=21';
-import {upgradeWeapon,upgradeResearch} from './progression.js?v=21';
-import {rememberClear,unlockAchievements} from './campaign.js?v=21';
-import {SHIPS,TALENTS} from './data.js?v=21';
+import {CoopSession} from './coop.js?v=22';
+import {CoopPeer} from './coop-peer.js?v=22';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=22';
+import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=22';
+import {settleEconomy,upgradeHull} from './economy.js?v=22';
+import {upgradeWeapon,upgradeResearch} from './progression.js?v=22';
+import {rememberClear,unlockAchievements} from './campaign.js?v=22';
+import {SHIPS,TALENTS} from './data.js?v=22';
 
 export const LAN_STORAGE='aero-echo.lan.v1';
 const CAPABILITY='aero-echo.lan-capability';
 const API='https://aero-echo-sky.spy-liver.chatgpt.site';
 const validSeq=n=>Number.isSafeInteger(n)&&n>=0;
+const browserStorage=name=>{try{return globalThis[name];}catch{return undefined;}};
 const boundedChoice=c=>({shipIndex:Math.max(0,Math.min(2,Math.floor(Number(c?.shipIndex)||0))),skin:Math.max(0,Math.min(3,Math.floor(Number(c?.skin)||0)))});
 export class LanProgress {
- constructor({storage=globalThis.localStorage,onIssue=()=>{}}={}){
+ constructor({storage=browserStorage('localStorage'),onIssue=()=>{}}={}){
   this.storage=storage;this.onIssue=onIssue;this.profile=createProfile();this.blocked=false;this.saved=false;
   try{const existing=storage?.getItem(LAN_STORAGE),raw=existing??storage?.getItem(STORAGE);if(raw){const parsed=JSON.parse(raw);if(parsed?.version!==1)throw new Error('Invalid save');this.profile=normalizeProfile(parsed);}if(!existing)this.save();else this.saved=true;}catch{this.blocked=true;this.onIssue('read');}
  }
@@ -31,17 +32,23 @@ export class LanProgress {
 }
 
 export class LanClient {
- constructor({fetcher=globalThis.fetch,storage=globalThis.sessionStorage,origin=API}={}){
-  this.fetcher=fetcher;this.origin=origin;let capability;
+ constructor({fetcher=globalThis.fetch,storage=browserStorage('sessionStorage'),origin=API}={}){
+  // Native browser fetch requires its Window/Worker receiver. Node's fetch
+  // tolerates a client object receiver, which hid this error in API fixtures.
+  this.fetcher=typeof fetcher==='function'?fetcher.bind(globalThis):null;this.origin=origin;let capability;
   try{capability=storage?.getItem(CAPABILITY);}catch{}
   if(!/^[A-Za-z0-9_-]{43}$/.test(capability||'')){capability=btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');try{storage?.setItem(CAPABILITY,capability);}catch{}}
   Object.defineProperty(this,'capability',{value:capability});this.user={id:'local-pilot'};this.enabled=true;
  }
  async request(path,{body={},signal}={}){
   if(!/^\/api\/rooms(?:\/[A-HJ-NP-Z2-9]{8}\/(?:join|reconnect|status|start|signal|leave))?$/.test(path))throw new Error('LAN metadata route required');
-  const controller=new AbortController(),abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();const timer=setTimeout(abort,6000);timer?.unref?.();
+  if(!this.fetcher)throw Object.assign(new Error('LAN network unavailable'),{code:'lan-network'});
+  let timedOut=false;
+  const controller=new AbortController(),abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();const timer=setTimeout(()=>{timedOut=true;abort();},20000);timer?.unref?.();
   try{const response=await this.fetcher(this.origin+path.replace('/api/rooms','/api/lan/rooms'),{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json','Authorization':'Bearer '+this.capability},body:JSON.stringify(body),signal:controller.signal});
-   const data=await response.json();if(!response.ok)throw Object.assign(new Error(data.error||'lan-unavailable'),{status:response.status,code:data.error});return data;
+   let data;try{data=await response.json();}catch{throw Object.assign(new Error('Invalid pairing response'),{code:'lan-response-invalid'});}
+   if(!response.ok)throw Object.assign(new Error(data.error||'lan-unavailable'),{status:response.status,code:data.error});return data;
+  }catch(error){if(timedOut)throw Object.assign(new Error('LAN pairing timeout'),{code:'lan-timeout'});if(!error.code&&error.name!=='AbortError')throw Object.assign(new Error('LAN network unavailable'),{code:'lan-network'});throw error;
   }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);}
  }
 }
@@ -173,6 +180,6 @@ export class LanSession extends CoopSession {
  }
  checkNetwork(){
   super.checkNetwork();
-  if(this.baseState==='waiting'&&this.peer?.state==='connecting'&&this.now()-this.lastPeerAt>20000){this.peer.state='unavailable';this.onChange(this);}
+  if(this.baseState==='waiting'&&this.peer?.state==='connecting'&&this.now()-this.lastPeerAt>60000){this.peer.state='unavailable';this.onChange(this);}
  }
 }

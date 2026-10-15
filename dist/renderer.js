@@ -1,8 +1,8 @@
-import {tr} from './i18n.js?v=21';
-import {W,H,CHAPTERS} from './data.js?v=21';
-import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=21';
-import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=21';
-import {drawChapterBackground} from './chapter-background.js?v=21';
+import {tr} from './i18n.js?v=22';
+import {W,H,CHAPTERS} from './data.js?v=22';
+import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=22';
+import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=22';
+import {drawChapterBackground} from './chapter-background.js?v=22';
 const TAU=Math.PI*2;
 export class Renderer {
  constructor(canvas,assets,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.assets=assets;this.settings=settings;this.stars=Array.from({length:75},(_,i)=>({x:(i*97.23)%W,y:(i*139.71)%H,size:.5+(i%4)*.35,speed:8+(i%5)*4}));this.resize();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);}
