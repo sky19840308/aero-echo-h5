@@ -1,10 +1,10 @@
-import {chapterCalibration} from './economy.js?v=25';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=25';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=25';
-import {growthStats,weaponTier} from './progression.js?v=25';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=25';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=25';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from './combat-geometry.js?v=25';
+import {chapterCalibration} from './economy.js?v=26';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=26';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=26';
+import {growthStats,weaponTier} from './progression.js?v=26';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=26';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=26';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from './combat-geometry.js?v=26';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -34,11 +34,9 @@ export class Game {
  energy(amount){this.player.energy=clamp(this.player.energy+amount*(1+.05*(this.talents.energy||0))*this.growth.charge,0,1000);if(this.player.energy>=1000&&!this.energyAnnounced){this.energyAnnounced=true;this.combatSound('ready');this.emit({type:'toast',text:'终极技已就绪'});}}
  skill(){const p=this.player;if(this.state!=='playing'||p.skillCd>0||p.hitCrash||p.heroBomb)return false;p.skillCd=this.ship.cooldown*(1-.06*(this.talents.cooldown||0));p.skillTime=this.ship.id==='Dawn7'?1.7:this.ship.id==='Bastion3'?4.8:2.15;p.skillTick=0;p.slashTick=0;
   if(this.ship.id==='WraithX')p.invulnerable=Math.max(p.invulnerable,p.skillTime+.12);
-  this.heroCallout();
   this.weaponEffect(this.ship.id==='Dawn7'?'P_DAWN_laser_emitter':this.ship.id==='WraithX'?'P_WRAITH_target':playerEffectArt(this.ship.id,'muzzle'),p.x,p.y-24,82,.5,-Math.PI/2);
-  this.effect(this.ship.id==='Dawn7'?'Dawn7_Overclock':this.ship.id==='Bastion3'?'Bastion3_Magnetic_Dome':'WraithX_Phase_Dash',p.x,p.y,130,.7);this.shake=Math.max(this.shake,this.ship.id==='Dawn7'?2.4:1.5);this.combatSound('skill');this.emit({type:'toast',text:this.ship.skill+' · 已启动'});return true;}
- heroCallout(){const title={Dawn7:'三段击',Bastion3:'风林火山',WraithX:'忍术皆传'}[this.ship.id];if(title)this.effects.push({name:'SkillCallout',text:title,x:W/2,y:H*.36,size:58,duration:1.65,age:0,shipId:this.ship.id});}
- bomb(){const p=this.player;if(this.state!=='playing'||p.bombs<=0||p.heroBomb||p.hitCrash)return false;p.bombs=Math.min(5,p.bombs)-1;p.heroBomb={age:0,attacked:false};this.heroCallout();this.effect('Bomb_Clear_Ring',p.x,p.y,90,.3);this.shake=Math.max(this.shake,4);this.combatSound('charge');return true;}
+  this.effect(this.ship.id==='Dawn7'?'Dawn7_Overclock':this.ship.id==='Bastion3'?'Bastion3_Magnetic_Dome':'WraithX_Phase_Dash',p.x,p.y,130,.7);this.shake=Math.max(this.shake,this.ship.id==='Dawn7'?2.4:1.5);this.combatSound('skill');return true;}
+ bomb(){const p=this.player;if(this.state!=='playing'||p.bombs<=0||p.heroBomb||p.hitCrash)return false;p.bombs=Math.min(5,p.bombs)-1;p.heroBomb={age:0,attacked:false,name:{Dawn7:'織田信長',Bastion3:'武田信玄',WraithX:'服部半蔵'}[this.ship.id]};this.effect('Bomb_Clear_Ring',p.x,p.y,90,.3);this.shake=Math.max(this.shake,4);this.combatSound('charge');return true;}
  heroBombStrike(){
   const p=this.player,signature=HERO_BOMB_FX[this.ship.id];this.clearBullets(true);this.shake=Math.max(this.shake,17);this.shock=.85;this.flash=.2;this.emit({type:'camera-impact',strength:16,duration:.85});
   this.effects.push({name:signature,x:W/2,y:H*.48,size:880,duration:1.45,age:0,rotation:0});
@@ -60,11 +58,11 @@ export class Game {
  laser(x,y,damage,options={}){const owner=this.attackOwner(),art=owner.boss?bossHazardArt(this.stage.chapter,'laser'):enemyHazardArt(owner.enemy,'laser',this.uid++),parts=owner.boss?bossBeamParts(this.stage.chapter):enemyBeamParts(art);
   const h={...options,art,type:'laser',x,y,warn:Math.max(1.6,Number(options.warn)||0),duration:options.duration??.7,age:0,width:options.width??14,damage,soundOwner:owner,strip:parts.strip,emitter:parts.emitter,warnArt:owner.boss?bossTelegraphArt(this.stage.chapter):owner.enemy===24?'GSPEC_11':'GSPEC_10'};this.hazards.push(h);this.combatSound('lock',{...owner,art:h.warnArt,x});}
  zone(x,y,r,damage,type='blast',options={}){const owner=this.attackOwner(),h={art:owner.boss?bossHazardArt(this.stage.chapter,type):enemyHazardArt(owner.enemy,type,this.uid++),type,x,y,r,damage,warn:1.1,duration:type==='fire'?2.5:.4,age:0,soundOwner:owner,warnArt:owner.boss?bossTelegraphArt(this.stage.chapter):type==='time'?'GSPEC_06':type==='freeze'?'GSPEC_05':'GSPEC_13',impactArt:owner.boss?null:type==='fire'?'GSPEC_07':type==='mine'?'GFX_06':type==='blast'?'GFX_13':null,...options};this.hazards.push(h);if(owner.boss)this.combatSound('lock',{...owner,art:h.warnArt,x});}
- spawn(id,x,y=-45,extra={}){const cfg=ENEMIES[id-1];if(!this.stage.enemies.includes(id))throw new Error('Stage enemy constraint violated');if(this.enemies.filter(e=>e.alive).length>=34)return;const size=cfg.category==='heavy'?88:cfg.category==='bomber'?69:cfg.category==='elite'?61:cfg.category==='support'?54:51;const hp=cfg.hp*1.22**this.stage.chapter*1.12;
-  const e={id:++this.uid,type:id,cfg,x,y,originX:x,originY:y,age:0,hp,maxHp:hp,size,r:size*.28,fireTimer:.65+this.random()*.4,phase:this.random()*TAU,alive:true,flash:0,phaseOut:false,dashWarning:0,chargeTime:0,shielded:false,...extra};this.enemies.push(e);this.spawned++;this.seen.add(id);return e;
+ spawn(id,x,y=-45,extra={}){const cfg=ENEMIES[id-1];if(!this.stage.enemies.includes(id))throw new Error('Stage enemy constraint violated');if(this.enemies.filter(e=>e.alive).length>=34)return;const size=cfg.category==='heavy'?88:cfg.category==='bomber'?69:cfg.category==='elite'?61:cfg.category==='support'?54:51;const hp=cfg.hp*1.22**this.stage.chapter*1.12*1.18*this.difficulty.enemyHp;
+  const e={id:++this.uid,type:id,cfg,x,y,originX:x,originY:y,age:0,hp,maxHp:hp,size,r:size*.28,fireTimer:.65+this.random()*.4,phase:this.random()*TAU,alive:true,flash:0,phaseOut:false,dashWarning:0,diveWarning:0,diveCooldown:0,chargeTime:0,shielded:false,movementStyle:'type',speedMultiplier:.82+this.random()*.64,...extra};this.enemies.push(e);this.spawned++;this.seen.add(id);return e;
  }
- spawnWave(){this.wave++;const t=this.time/this.stage.duration;const allowed=t<.18?1:t<.48?2:3;const id=this.stage.enemies[Math.floor(this.random()*allowed)];const type=ENEMIES[id-1].category;const count=type==='scout'?6:type==='intercept'?3:2;const formation=this.wave%3;
-  for(let i=0;i<count;i++){let x=formation===0?45+i*(W-90)/Math.max(1,count-1):formation===1?W/2+(i-(count-1)/2)*58:50+this.random()*(W-100);this.spawn(id,clamp(x,35,W-35),-45-i*34,{formation});}
+ spawnWave(){this.wave++;const t=this.time/this.stage.duration;const allowed=t<.18?1:t<.48?2:3;const id=this.stage.enemies[Math.floor(this.random()*allowed)];const type=ENEMIES[id-1].category;const count=type==='scout'?6:type==='intercept'?3:2;const formation=this.wave%4,spread=formation===0?66:55,center=clamp(50+this.random()*(W-100),35+spread*(count-1)/2,W-35-spread*(count-1)/2),formationId=this.wave;
+  for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*spread,x=formation===0?center+offset:formation===1?center+Math.sign(offset)*Math.abs(offset)*.62:center+offset;let movementStyle=formation===0?'formation':formation===1?'irregular':formation===2&&i===0?'kamikaze':i===count-1&&this.difficulty.id!=='easy'?'kamikaze':'irregular';if(['heavy','support'].includes(type)&&movementStyle==='kamikaze')movementStyle='irregular';this.spawn(id,clamp(x,35,W-35),-45-i*34,{formation,formationId,formationCenter:center,formationOffset:formation===1?Math.sign(offset)*Math.abs(offset)*.62:offset,formationPhase:this.random()*TAU,movementStyle});}
   this.nextWave=this.time+Math.max(1.75,2.45-t*.45-this.stage.chapter*.035);
  }
  spawnBoss(){if(this.boss)return;const hp=this.chapter.hp*2.35;const count=this.stage.chapter===4?3:this.stage.chapter===7?3:2;this.boss={x:W/2,y:-175,baseY:185,age:0,hp,maxHp:hp,w:Math.min(335,285+this.stage.chapter*6),h:242,phase:1,pattern:0,fireTimer:2.5,flash:0,weakTime:0,chargeTime:0,chargeWarning:0,armored:false,dead:false,teleport:0,lDamage:0,rDamage:0,parts:Array.from({length:count},(_,i)=>({x:(i-(count-1)/2)*.23,y:.28,hp:hp*.035,maxHp:hp*.035,dead:false}))};this.emit({type:'boss',name:this.chapter.boss});this.combatSound('boss-intro',{boss:this.stage.chapter+1});this.emit({type:'message',speaker:'WARNING / 巨型目标',text:this.chapter.boss,duration:3});}
@@ -111,8 +109,17 @@ export class Game {
   else if(this.boss&&!this.bossDefeated&&dist(this.boss,p)<540){this.damageBoss(this.dps*.58,this.boss.x,this.boss.y);this.effects.push({name:'WraithX_SlashBurst',x:this.boss.x,y:this.boss.y,size:Math.max(120,this.boss.w*.55),duration:.42,age:0,seed:this.random()*TAU});this.shake=Math.max(this.shake,1.25);}
   else{const targets=this.enemies.filter(e=>e.alive&&!e.phaseOut&&e.y>0&&dist(e,p)<540).sort((a,b)=>dist(a,p)-dist(b,p)).slice(0,3);for(let i=0;i<targets.length;i++){const e=targets[i];this.damageEnemy(e,this.dps*.76,e.x);this.effects.push({name:'WraithX_SlashBurst',x:e.x,y:e.y,size:Math.max(90,e.size*1.55),duration:.42,age:0,seed:this.random()*TAU});}if(targets.length)this.shake=Math.max(this.shake,1.25);}
  }
- updateEnemies(dt){const p=this.player;for(const e of this.enemies){if(e.crashing){const crash=e.crashing;crash.age+=dt;const t=crash.age;e.x=clamp(crash.x+crash.vx*t,12,W-12);e.y=crash.y+crash.vy*t+210*t*t;e.rotation=crash.rotation+t*3.2;if(crash.age>=crash.duration){e.crashing=null;this.effect(e.size>70?'Explosion_Large':'Explosion_Small',e.x,e.y,e.size*1.35,.36);this.sparks(e.x,e.y,'#ff9d62',12);}continue;}if(!e.alive)continue;e.age+=dt;e.flash=Math.max(0,e.flash-dt*8);e.shielded=this.enemies.some(s=>s!==e&&s.alive&&s.type===17&&dist(e,s)<92);const rate=e.cfg.speed*2.2*this.difficulty.enemyMove*(e.type===28&&e.hp<e.maxHp*.4?1.25:1);
-   if(e.type===1||e.type===5){e.y+=rate*dt;e.x=clamp(e.originX+Math.sin(e.age*2+e.phase)*38,25,W-25);}
+ updateEnemies(dt){const p=this.player;for(const e of this.enemies){if(e.crashing){const crash=e.crashing;crash.age+=dt;const t=crash.age;e.x=clamp(crash.x+crash.vx*t,12,W-12);e.y=crash.y+crash.vy*t+210*t*t;e.rotation=crash.rotation+t*3.2;if(crash.age>=crash.duration){e.crashing=null;this.effect(e.size>70?'Explosion_Large':'Explosion_Small',e.x,e.y,e.size*1.35,.36);this.sparks(e.x,e.y,'#ff9d62',12);}continue;}if(!e.alive)continue;e.age+=dt;e.flash=Math.max(0,e.flash-dt*8);e.shielded=this.enemies.some(s=>s!==e&&s.alive&&s.type===17&&dist(e,s)<92);const rate=e.cfg.speed*3*this.difficulty.enemyMove*e.speedMultiplier*(e.type===28&&e.hp<e.maxHp*.4?1.25:1);
+   if(e.movementStyle==='kamikaze'){
+    e.diveCooldown=Math.max(0,(e.diveCooldown||0)-dt);
+    if(e.diveState==='diving'){const dx=e.diveTargetX-e.x,dy=e.diveTargetY-e.y,d=Math.max(1,Math.hypot(dx,dy)),speed=rate*3.2,step=Math.min(d,speed*dt);e.diveAngle=Math.atan2(dy,dx);e.x+=dx/d*step;e.y+=dy/d*step;e.rotation=e.diveAngle-Math.PI/2;if(d<=step){e.diveState='coasting';e.diveCoast=.38;}}
+    else if(e.diveState==='warning'){e.diveWarning=Math.max(0,e.diveWarning-dt);e.y+=rate*.16*dt;e.x=clamp(e.x+Math.sin(e.age*5+e.phase)*rate*.42*dt,24,W-24);if(e.diveWarning===0){e.diveState='diving';this.weaponEffect('GFX_05',e.x,e.y,72,.28);}}
+    else if(e.diveState==='coasting'){e.diveCoast-=dt;e.x+=Math.cos(e.diveAngle)*rate*2.1*dt;e.y+=Math.sin(e.diveAngle)*rate*2.1*dt;if(e.diveCoast<=0){e.diveState='approach';e.diveCooldown=1.1;}}
+    else{e.y+=rate*.7*dt;e.x=clamp(e.originX+Math.sin(e.age*1.8+e.phase)*32,24,W-24);if(e.y>125&&e.age>.85&&e.diveCooldown<=0){e.diveState='warning';e.diveWarning=.9;e.diveTargetX=clamp(p.x,25,W-25);e.diveTargetY=clamp(p.y,175,H-80);}}
+   }
+   else if(e.movementStyle==='formation'){e.y+=rate*dt;e.x=clamp((e.formationCenter??e.originX)+(e.formationOffset||0)+Math.sin(e.age*1.35+(e.formationId||0)*.28)*19,25,W-25);}
+   else if(e.movementStyle==='irregular'){e.y+=rate*.82*dt;const weave=Math.sin(e.age*(2.3+e.speedMultiplier)+e.phase)*52,cut=Math.sin(e.age*5.1+e.phase*.7)*20;e.x=clamp(e.originX+weave+cut,24,W-24);}
+   else if(e.type===1||e.type===5){e.y+=rate*dt;e.x=clamp(e.originX+Math.sin(e.age*2+e.phase)*38,25,W-25);}
     else if(e.type===2){if(e.age<1.35){e.y+=rate*dt;e.x+=Math.sin(e.phase)*rate*.45*dt;}else{if(e.chargeTime===0){e.chargeTime=.65;e.dashWarning=.65;e.dashX=p.x;e.dashY=p.y;}e.dashWarning=Math.max(0,e.dashWarning-dt);if(e.dashWarning===0){e.x+=(e.dashX-e.originX)*.7*dt;e.y+=rate*2.15*dt;}}}
    else if(e.type===3){e.y+=rate*.65*dt;e.x=clamp(e.originX+Math.sin(e.age*1.2+e.phase)*65,24,W-24);}
     else if(e.type===4){e.y+=rate*(e.age<1.1?.45:2.3)*dt;if(e.age<1.1)e.dashWarning=1.1-e.age;}
@@ -126,12 +133,12 @@ export class Game {
    if(e.type===18){for(const o of this.enemies)if(o.alive&&o!==e&&dist(e,o)<120)o.hp=Math.min(o.maxHp,o.hp+o.maxHp*.03*dt);}
    if(e.type===20&&dist(e,p)<220){p.x+=clamp(e.x-p.x,-17*dt,17*dt);p.y+=clamp(e.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,W-20);p.y=clamp(p.y,155,H-93);}
    if(e.y>25&&e.y<H-90){e.fireTimer-=dt;if(e.fireTimer<=0){e.fireTimer=(e.type===28&&e.hp<e.maxHp*.4?1.25:1.75)/this.difficulty.rate;this.enemyFire(e);}}
-   if(e.y>H+95||e.x<-90||e.x>W+90)e.alive=false;
-   if(e.alive&&!e.phaseOut&&dist(e,p)<e.r+p.r){this.hurtPlayer(Math.max(65,e.cfg.damage*1.6));if(e.cfg.category==='scout')this.damageEnemy(e,e.hp+1);}
+   if(e.y>H+95||e.x<-90||e.x>W+90||(e.movementStyle==='kamikaze'&&['diving','coasting'].includes(e.diveState)&&e.y<-95))e.alive=false;
+   if(e.alive&&!e.phaseOut&&dist(e,p)<e.r+p.r){this.hurtPlayer(Math.max(65,e.cfg.damage*1.6));if(e.diveState==='diving'||e.diveState==='coasting'){e.hp=0;this.killEnemy(e);}else if(e.cfg.category==='scout')this.damageEnemy(e,e.hp+1);}
   }
   this.enemies=this.enemies.filter(e=>e.alive||e.crashing);
  }
- enemyFire(e){this.firingEnemy=e;e.salvo=(e.salvo||0)+1;const p=this.player,s=(138+this.stage.chapter*5)*this.difficulty.speed,flight=Math.min(.7,Math.hypot(p.x-e.x,p.y-e.y)/Math.max(1,s)),lead=flight*this.difficulty.aimLead,aimX=clamp(p.x+p.vx*lead,20,W-20),aimY=clamp(p.y+p.vy*lead,155,H-93),a=Math.atan2(aimY-e.y,aimX-e.x),d=e.cfg.damage*1.12**this.stage.chapter*this.difficulty.damage,fast=e.salvo%2===1,round={kind:'round',simpleRound:true,fastRound:fast,speedMultiplier:fast?1.26:.68,color:fast?'#ff977f':'#85ddff',r:fast?3.5:5.2};
+ enemyFire(e){this.firingEnemy=e;e.salvo=(e.salvo||0)+1;const p=this.player,s=(188+this.stage.chapter*7)*this.difficulty.speed,flight=Math.min(.7,Math.hypot(p.x-e.x,p.y-e.y)/Math.max(1,s)),lead=flight*this.difficulty.aimLead,aimX=clamp(p.x+p.vx*lead,20,W-20),aimY=clamp(p.y+p.vy*lead,155,H-93),a=Math.atan2(aimY-e.y,aimX-e.x),d=e.cfg.damage*1.12**this.stage.chapter*this.difficulty.damage,fast=e.salvo%2===1,round={kind:'round',simpleRound:true,fastRound:fast,speedMultiplier:fast?1.45:.84,color:fast?'#ff977f':'#85ddff',r:fast?3.5:5.2};
   if(e.type!==26||!e.phaseOut){this.weaponEffect(enemyMuzzleArt(e.type),e.x,e.y+12,30,.13,a);const art=enemyFireArt(e.type,e.salvo);if(art)this.weaponEffect(art,e.x,e.y+18,art.startsWith('GSPEC')?64:44,.28,art==='GSPEC_08'?a:0);}
   switch(e.type){
    case 1:case 2:case 4:case 6:this.fan(e.x,e.y,3,.23,s,d,a,round);break;
@@ -306,4 +313,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=25';
+export {AssetStore} from './asset-loader.js?v=26';

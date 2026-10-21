@@ -1,10 +1,10 @@
-import {Game} from './engine.js?v=25';
-import {segmentHitsAabb} from './combat-geometry.js?v=25';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=25';
-import {hazardImpactArt} from './weapons.js?v=25';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=25';
-import {CoopPeer} from './coop-peer.js?v=25';
-import {normalizeProfile} from './profile.js?v=25';
+import {Game} from './engine.js?v=26';
+import {segmentHitsAabb} from './combat-geometry.js?v=26';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=26';
+import {hazardImpactArt} from './weapons.js?v=26';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=26';
+import {CoopPeer} from './coop-peer.js?v=26';
+import {normalizeProfile} from './profile.js?v=26';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -91,7 +91,7 @@ export class CoopGame extends Game {
   const p=pilot.player;for(const enemy of this.enemies){
    if(!enemy.alive||enemy.phaseOut)continue;
    if(enemy.type===20&&distance(enemy,p)<220){p.x+=clamp(enemy.x-p.x,-17*dt,17*dt);p.y+=clamp(enemy.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,W-20);p.y=clamp(p.y,155,H-93);}
-   if(distance(enemy,p)<enemy.r+p.r){this.hurtPlayer(Math.max(65,enemy.cfg.damage*1.6));if(enemy.cfg.category==='scout')this.damageEnemy(enemy,enemy.hp+1);}
+   if(distance(enemy,p)<enemy.r+p.r){this.hurtPlayer(Math.max(65,enemy.cfg.damage*1.6));if(enemy.diveState==='diving'||enemy.diveState==='coasting'){enemy.hp=0;this.killEnemy(enemy);}else if(enemy.cfg.category==='scout')this.damageEnemy(enemy,enemy.hp+1);}
   }
  });}
  updateBoss(dt){const target=this.targetPilot();this.withPilot(target,()=>super.updateBoss(dt));const boss=this.boss;if(!boss||boss.dead)return;for(const pilot of this.living())if(pilot!==target&&Math.abs(pilot.player.x-boss.x)<boss.w*.32&&Math.abs(pilot.player.y-boss.y)<boss.h*.27)this.withPilot(pilot,()=>this.hurtPlayer(160*this.difficulty.damage));}

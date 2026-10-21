@@ -1,4 +1,4 @@
-import {STORY} from './story-content.js?v=25';
+import {STORY} from './story-content.js?v=26';
 export const W = 450, H = 800;
 export const SHIPS = [
  {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', dps:120, speed:85, cooldown:18, skill:'等离子喷涌', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。启动三段击时喷发纵向等离子激光，并显著加速主炮弹；日冕射线贯穿战场。', skillText:'1.7 秒等离子激光持续喷涌，同时提高主炮弹速与射速。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
@@ -30,9 +30,9 @@ const enemyRows = [
 const enemyHints = ['S 型穿屏，瞄准散射','斜切入场，锁定后直冲','圆弧绕场，连续散射','预警后高速俯冲','编队同步环弹','预警后闪跃至侧翼','悬停，双炮交替散射','密集扇形弹','激光预警后高速射击','跟随玩家横向位置','旋转并发射螺旋弹','红圈预警，火箭落点','预判航线，延时爆弹','持续燃烧危险区域','大弹触发二次冲击环','横移并散布延时雷','附近敌机获得护盾减伤','持续修复附近敌机','干扰玩家弹速和充能','牵引场改变玩家位置','双侧连续散射','正面装甲，侧翼弱点','三炮塔交叉散射','清晰预警后贯屏磁轨炮','只释放本关允许的敌机','实体与不可命中相位切换','真机射弹，分身只作视觉干扰','残血后移动和射速提高','弹丸首次碰到边缘后反射','建立敌弹先慢后快的时滞场'];
 export const ENEMIES = enemyRows.map((r,i)=>({id:i+1,name:r[0],hp:r[1],speed:r[2],damage:r[3],category:r[4],hint:enemyHints[i]}));
 export const DIFFICULTIES = [
- {id:'easy',name:'休闲',hp:1,damage:.68,speed:.76,rate:1,density:1,score:.8,aimLead:0,skillBonus:1,enemyMove:.88},
- {id:'normal',name:'标准',hp:1,damage:1,speed:.84,rate:1,density:1,score:1,aimLead:.18,skillBonus:0,enemyMove:1},
- {id:'hard',name:'精英',hp:1,damage:1.18,speed:.94,rate:1,density:1,score:1.5,aimLead:.62,skillBonus:0,enemyMove:1.2}
+ {id:'easy',name:'休闲',hp:1,enemyHp:1.12,damage:.7,speed:.94,rate:.88,density:1,score:.8,aimLead:0,skillBonus:1,enemyMove:1},
+ {id:'normal',name:'标准',hp:1,enemyHp:1.42,damage:1,speed:1.12,rate:1.08,density:1,score:1,aimLead:.28,skillBonus:0,enemyMove:1.22},
+ {id:'hard',name:'精英',hp:1,enemyHp:1.82,damage:1.28,speed:1.34,rate:1.23,density:1,score:1.5,aimLead:.78,skillBonus:0,enemyMove:1.5}
 ];
 export const TALENTS = [
  {id:'fire',name:'火控校准',note:'主炮伤害 +4% / 级',max:3},
