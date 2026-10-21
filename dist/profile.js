@@ -1,12 +1,13 @@
-import {SHIPS,DIFFICULTIES,TALENTS,SKINS} from './data.js?v=26';
-import {weaponTier,researchLevel,RESEARCH} from './progression.js?v=26';
-import {AUDIO_DEFAULTS,audioVolume} from './audio-levels.js?v=26';
-import {ECONOMY_VERSION,normalizeEconomy} from './economy.js?v=26';
-import {ACHIEVEMENTS,latestClear,storyFrontier,storyUnlocked,missionAt,unlockAchievements} from './campaign.js?v=26';
+import {SHIPS,DIFFICULTIES,SKINS,TALENT_TREE_VERSION} from './data.js?v=27';
+import {normalizeTalentProgress} from './talent-tree.js?v=27';
+import {weaponTier,researchLevel,RESEARCH} from './progression.js?v=27';
+import {AUDIO_DEFAULTS,audioVolume} from './audio-levels.js?v=27';
+import {ECONOMY_VERSION,normalizeEconomy} from './economy.js?v=27';
+import {ACHIEVEMENTS,latestClear,storyFrontier,storyUnlocked,missionAt,unlockAchievements} from './campaign.js?v=27';
 
 export const STORAGE='aero-echo.h5.v1',BACKUP_STORAGE=STORAGE+'.previous';
 export const SENSITIVITIES=[.75,1,1.25,1.5];
-export function createProfile(){return {version:1,economyVersion:ECONOMY_VERSION,audioDefaultsVersion:2,experience:0,rewardedMissions:[],rewardedChapters:[],language:null,credits:250,points:0,levels:{Dawn7:1,Bastion3:1,WraithX:1},skins:{Dawn7:0,Bastion3:0,WraithX:0},weapons:{Dawn7:0,Bastion3:0,WraithX:0},research:{charge:0,supply:0,magnet:0},materials:{blueprint:0,data:0},talents:{},clears:{},bossClears:{},records:[],discovered:[],checkpoint:null,storyNext:null,achievements:[],selection:{chapter:0,substage:0,ship:0,difficulty:'normal',pace:'quick',mode:'campaign'},settings:{sound:true,music:true,effects:true,...AUDIO_DEFAULTS,shake:true,flash:true,detail:true,contrast:false,numbers:true,haptic:false,sensitivity:1,handedness:'right'}};}
+export function createProfile(){return {version:1,economyVersion:ECONOMY_VERSION,audioDefaultsVersion:2,talentTreeVersion:TALENT_TREE_VERSION,experience:0,rewardedMissions:[],rewardedChapters:[],language:null,credits:250,points:0,levels:{Dawn7:1,Bastion3:1,WraithX:1},skins:{Dawn7:0,Bastion3:0,WraithX:0},weapons:{Dawn7:0,Bastion3:0,WraithX:0},research:{charge:0,supply:0,magnet:0},materials:{blueprint:0,data:0},talents:{},clears:{},bossClears:{},records:[],discovered:[],checkpoint:null,storyNext:null,achievements:[],selection:{chapter:0,substage:0,ship:0,difficulty:'normal',pace:'quick',mode:'campaign'},settings:{sound:true,music:true,effects:true,...AUDIO_DEFAULTS,shake:true,flash:true,detail:true,contrast:false,numbers:true,haptic:false,sensitivity:1,handedness:'right'}};}
 const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const integer=(value,min,max,fallback=min)=>Number.isFinite(Number(value))?Math.max(min,Math.min(max,Math.floor(Number(value)))):fallback;
 export function normalizeProfile(value){
@@ -15,7 +16,8 @@ export function normalizeProfile(value){
  result.credits=integer(value.credits,0,1e12,250);result.points=integer(value.points,0,18,0);
  for(const ship of SHIPS){result.levels[ship.id]=integer(value.levels?.[ship.id],1,50,1);result.skins[ship.id]=integer(value.skins?.[ship.id],0,SKINS.length-1);result.weapons[ship.id]=weaponTier(value,ship.id);}
  for(const node of RESEARCH)result.research[node.id]=researchLevel(value,node.id);
- for(const talent of TALENTS)result.talents[talent.id]=integer(value.talents?.[talent.id],0,talent.max);
+ const talentProgress=normalizeTalentProgress({treeVersion:value.talentTreeVersion,points:result.points,talents:value.talents});
+ result.talentTreeVersion=talentProgress.talentTreeVersion;result.points=talentProgress.points;result.talents=talentProgress.talents;
  for(const key of ['blueprint','data'])result.materials[key]=integer(value.materials?.[key],0,1e9);
  for(let c=1;c<=9;c++)for(let s=1;s<=3;s++){const id=`${c}-${s}`;if(Number(value.clears?.[id])>0)result.clears[id]=integer(value.clears[id],1,3);}
  for(let c=0;c<9;c++)if(Number(value.bossClears?.[c])>0)result.bossClears[c]=integer(value.bossClears[c],1,3);

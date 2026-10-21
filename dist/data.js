@@ -1,4 +1,4 @@
-import {STORY} from './story-content.js?v=26';
+import {STORY} from './story-content.js?v=27';
 export const W = 450, H = 800;
 export const SHIPS = [
  {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', dps:120, speed:85, cooldown:18, skill:'等离子喷涌', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。启动三段击时喷发纵向等离子激光，并显著加速主炮弹；日冕射线贯穿战场。', skillText:'1.7 秒等离子激光持续喷涌，同时提高主炮弹速与射速。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
@@ -32,15 +32,30 @@ export const ENEMIES = enemyRows.map((r,i)=>({id:i+1,name:r[0],hp:r[1],speed:r[2
 export const DIFFICULTIES = [
  {id:'easy',name:'休闲',hp:1,enemyHp:1.12,damage:.7,speed:.94,rate:.88,density:1,score:.8,aimLead:0,skillBonus:1,enemyMove:1},
  {id:'normal',name:'标准',hp:1,enemyHp:1.42,damage:1,speed:1.12,rate:1.08,density:1,score:1,aimLead:.28,skillBonus:0,enemyMove:1.22},
- {id:'hard',name:'精英',hp:1,enemyHp:1.82,damage:1.28,speed:1.34,rate:1.23,density:1,score:1.5,aimLead:.78,skillBonus:0,enemyMove:1.5}
+ {id:'hard',name:'复杂',hp:1,enemyHp:1.9,damage:1.08,speed:1.2,rate:.88,density:.76,enemyCount:1.34,score:1.5,aimLead:.58,skillBonus:-1,enemyMove:1.5}
 ];
 export const TALENTS = [
- {id:'fire',name:'火控校准',note:'主炮伤害 +4% / 级',max:3},
- {id:'energy',name:'能量回收',note:'大招获得 +5% / 级',max:3},
- {id:'shield',name:'相位缓冲',note:'受击后无敌 +0.12 秒 / 级',max:3},
- {id:'repair',name:'命数补给',note:'命数补给冷却 -3 秒 / 级',max:3},
- {id:'bomb',name:'爆弹工程',note:'携带上限 5 枚；2 级出击多带 1 枚，3 级伤害 +20%',max:3},
- {id:'cooldown',name:'过载散热',note:'主动技冷却 -6% / 级',max:3}
+ {id:'assault_core',branch:'assault',slot:'root',glyph:'✦',name:'脉冲调谐',note:'主炮伤害 +2.5% / 级（2级）',ja:'パルス調律',en:'Pulse Tuning',noteJa:'主砲ダメージ +2.5% / レベル（2段階）',noteEn:'Primary weapon damage +2.5% per level (2 levels).',max:2},
+ {id:'assault_piercer',branch:'assault',slot:'left',requires:[{id:'assault_core',level:2}],glyph:'↗',name:'装甲贯穿',note:'对重型与精英敌机伤害 +8%',ja:'装甲貫通',en:'Armor Piercer',noteJa:'重装・エリート機へのダメージ +8%',noteEn:'Deal 8% more damage to heavy and elite fighters.',max:1},
+ {id:'assault_reactor',branch:'assault',slot:'right',requires:[{id:'assault_core',level:2}],glyph:'◉',name:'回声回路',note:'命中与击毁获得的大招能量 +10%',ja:'エコー回路',en:'Echo Circuit',noteJa:'命中・撃破で得る必殺エネルギー +10%',noteEn:'Gain 10% more ultimate energy from hits and kills.',max:1},
+ {id:'assault_weakpoint',branch:'assault',slot:'left-cap',requires:[{id:'assault_piercer',level:1}],glyph:'◇',name:'核心追击',note:'命中 Boss 部件时伤害 +8%',ja:'コア追撃',en:'Core Pursuit',noteJa:'ボスの部位へのダメージ +8%',noteEn:'Deal 8% more damage when striking Boss parts.',max:1},
+ {id:'assault_rhythm',branch:'assault',slot:'right-cap',requires:[{id:'assault_reactor',level:1}],glyph:'≋',name:'超频齐射',note:'主炮射速 +5%',ja:'超過連射',en:'Overclock Volley',noteJa:'主砲の連射速度 +5%',noteEn:'Increase primary weapon fire rate by 5%.',max:1},
+ {id:'mobility_core',branch:'mobility',slot:'root',glyph:'✧',name:'矢量喷口',note:'战机移动速度 +4% / 级（2级）',ja:'ベクトル噴射口',en:'Vector Thrusters',noteJa:'機体の移動速度 +4% / レベル（2段階）',noteEn:'Aircraft movement speed +4% per level (2 levels).',max:2},
+ {id:'mobility_graze',branch:'mobility',slot:'left',requires:[{id:'mobility_core',level:2}],glyph:'⌁',name:'擦弹扫描',note:'擦弹判定距离 +5',ja:'かすりスキャン',en:'Graze Scanner',noteJa:'かすり判定距離 +5',noteEn:'Increase the bullet graze radius by 5.',max:1},
+ {id:'mobility_magnet',branch:'mobility',slot:'right',requires:[{id:'mobility_core',level:2}],glyph:'⌖',name:'磁轨回收',note:'资源吸附距离 +35',ja:'磁気回収軌道',en:'Magnetic Recovery',noteJa:'アイテム吸引距離 +35',noteEn:'Increase item attraction range by 35.',max:1},
+ {id:'mobility_feedback',branch:'mobility',slot:'left-cap',requires:[{id:'mobility_graze',level:1}],glyph:'↯',name:'擦弹蓄能',note:'每次擦弹额外获得 3 点大招能量',ja:'かすり蓄電',en:'Graze Capacitor',noteJa:'かすりごとに必殺エネルギーを 3 獲得',noteEn:'Gain 3 extra ultimate energy for each graze.',max:1},
+ {id:'mobility_salvage',branch:'mobility',slot:'right-cap',requires:[{id:'mobility_magnet',level:1}],glyph:'⟳',name:'回收涡轮',note:'资源吸附速度 +25%',ja:'回収タービン',en:'Salvage Turbine',noteJa:'アイテム吸引速度 +25%',noteEn:'Increase item attraction speed by 25%.',max:1},
+ {id:'survival_core',branch:'survival',slot:'root',glyph:'⬡',name:'燃烧复归',note:'受击后的保护时间 +0.2 秒 / 级（2级）',ja:'炎上復帰',en:'Burning Reentry',noteJa:'被弾後の保護時間 +0.2 秒 / レベル（2段階）',noteEn:'Gain +0.2 seconds of protection after a hit per level (2 levels).',max:2},
+ {id:'survival_warning',branch:'survival',slot:'left',requires:[{id:'survival_core',level:2}],glyph:'⌛',name:'先兆解析',note:'敌方技能预警时间 +0.15 秒',ja:'予兆解析',en:'Warning Analysis',noteJa:'敵の技の予告時間 +0.15 秒',noteEn:'Add 0.15 seconds to enemy attack warnings.',max:1},
+ {id:'survival_bomb',branch:'survival',slot:'right',requires:[{id:'survival_core',level:2}],glyph:'✹',name:'爆弹核心',note:'英雄炸弹伤害 +8%',ja:'爆弾コア',en:'Bomb Core',noteJa:'英雄爆弾のダメージ +8%',noteEn:'Increase hero bomb damage by 8%.',max:1},
+ {id:'survival_repair',branch:'survival',slot:'left-cap',requires:[{id:'survival_warning',level:1}],glyph:'✚',name:'维修共鸣',note:'修复补给额外恢复 80 点大招能量',ja:'修理共鳴',en:'Repair Resonance',noteJa:'修理補給で必殺エネルギーを 80 追加回復',noteEn:'Repair pickups restore an extra 80 ultimate energy.',max:1},
+ {id:'survival_reserve',branch:'survival',slot:'right-cap',requires:[{id:'survival_bomb',level:1}],glyph:'▣',name:'备用弹舱',note:'每次出击额外携带 1 枚炸弹（上限仍为 5）',ja:'予備弾倉',en:'Reserve Bomb Rack',noteJa:'出撃時に爆弾を 1 個追加（上限 5 個）',noteEn:'Start each sortie with one extra bomb; the five-bomb cap remains.',max:1}
+];
+export const TALENT_TREE_VERSION=2;
+export const TALENT_BRANCHES=[
+ {id:'assault',name:'火力专精',root:'assault_core',routes:[['assault_piercer','assault_weakpoint'],['assault_reactor','assault_rhythm']]},
+ {id:'mobility',name:'机动专精',root:'mobility_core',routes:[['mobility_graze','mobility_feedback'],['mobility_magnet','mobility_salvage']]},
+ {id:'survival',name:'生存专精',root:'survival_core',routes:[['survival_warning','survival_repair'],['survival_bomb','survival_reserve']]}
 ];
 export function stageConfig(chapter, substage, mode='campaign', pace='full') {
  const ch=CHAPTERS[chapter];

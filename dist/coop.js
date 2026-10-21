@@ -1,10 +1,10 @@
-import {Game} from './engine.js?v=26';
-import {segmentHitsAabb} from './combat-geometry.js?v=26';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=26';
-import {hazardImpactArt} from './weapons.js?v=26';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=26';
-import {CoopPeer} from './coop-peer.js?v=26';
-import {normalizeProfile} from './profile.js?v=26';
+import {Game} from './engine.js?v=27';
+import {segmentHitsAabb} from './combat-geometry.js?v=27';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=27';
+import {hazardImpactArt} from './weapons.js?v=27';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=27';
+import {CoopPeer} from './coop-peer.js?v=27';
+import {normalizeProfile} from './profile.js?v=27';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -12,7 +12,7 @@ const ROLES=['host','guest'];
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const integer=(n,a,b)=>Number.isSafeInteger(n)&&n>=a&&n<=b;
-const advanceCrash=(player,dt)=>{const crash=player.hitCrash;if(!crash)return false;crash.age+=dt;player.x=clamp(crash.x+crash.vx*crash.age,22,W-22);player.y=Math.min(H+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);if(crash.age>=crash.duration){player.hitCrash=null;player.x=clamp(crash.x,35,W-35);player.y=H*.77;}return true;};
+const advanceCrash=(player,dt,survivalCore=0)=>{const crash=player.hitCrash;if(!crash)return false;crash.age+=dt;player.x=clamp(crash.x+crash.vx*crash.age,22,W-22);player.y=Math.min(H+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);if(crash.age>=crash.duration){player.hitCrash=null;player.x=clamp(crash.x,35,W-35);player.y=H*.77;player.respawnTime=player.lives>0?5+.2*clamp(Number(survivalCore)||0,0,2):0;player.invulnerable=player.respawnTime;}return true;};
 const PILOT_KEYS=['ship','player','talents','growth','dps','level','weaponLevel','weaponTier','weaponXp','bombFragments','energyAnnounced'];
 const WORLD_KEYS=['state','time','clock','nextWave','wave','uid','bossAnnounced','bossDefeated','score','combo','lastKill','kills','spawned','grazes','hits','coins','lastSupply','nextHazard','shake','shock','flash','ending'];
 const WORLD_ARRAYS=['enemies','bullets','pickups','hazards','effects','weaponEffects','particles','texts','lootBursts'];
@@ -80,8 +80,8 @@ export class CoopGame extends Game {
   this.updateVisuals(dt);this.selectPilot(this.localRole);
  }
  updatePlayer(dt){for(const pilot of this.living())this.withPilot(pilot,()=>super.updatePlayer(dt));}
- updateDeadCrashes(dt){for(const pilot of this.crew){const p=pilot.player;if(pilot.alive)continue;advanceCrash(p,dt);}}
- updateCrashes(dt){for(const pilot of this.crew)advanceCrash(pilot.player,dt);}
+ updateDeadCrashes(dt){for(const pilot of this.crew){const p=pilot.player;if(pilot.alive)continue;advanceCrash(p,dt,pilot.talents?.survival_core);}}
+ updateCrashes(dt){for(const pilot of this.crew)advanceCrash(pilot.player,dt,pilot.talents?.survival_core);}
  shoot(x,y,angle,speed,damage,owner='enemy',options={}){return super.shoot(x,y,angle,speed,damage,owner,owner==='player'?{...options,pilot:this.activePilot.role}:options);}
  use(role,type){const pilot=this.crew.find(item=>item.role===role);if(!pilot?.alive||this.state!=='playing')return false;return this.withPilot(pilot,()=>{
   if(type==='skill'){const used=super.skill();if(used&&!this.lan)this.player.skillCd=this.ship.cooldown*(1-.05*pilot.upgrades.cooldown);return used;}
@@ -116,7 +116,7 @@ export class CoopGame extends Game {
     for(const pilot of this.living()){
      if(!b.alive)break;const p=pilot.player,d=distance(b,p);this.withPilot(pilot,()=>{
       if(d<b.r+p.r){if(p.invulnerable<=0){this.hurtPlayer(b.damage);b.alive=false;if(b.shock)this.ring(b.x,b.y,12,140,b.damage*.6);}}
-      else if(!b.grazed&&d<b.r+p.r+15){b.grazed=true;this.grazes++;this.score+=15;this.energy(pilot.ship.id==='WraithX'?11:5);if(pilot.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
+      else if(!b.grazed&&d<b.r+p.r+15+5*(pilot.talents.mobility_graze||0)){b.grazed=true;this.grazes++;this.score+=15;this.energy((pilot.ship.id==='WraithX'?11:5)+3*(pilot.talents.mobility_feedback||0));if(pilot.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
      });
     }
    }
@@ -125,6 +125,7 @@ export class CoopGame extends Game {
  }
  updateHazards(dt){
   for(const h of this.hazards){
+   if(!h.talentWarningApplied){const warning=Math.max(0,...this.crew.map(pilot=>Number(pilot.talents?.survival_warning)||0));h.warn=(Number(h.warn)||0)+.15*warning;h.talentWarningApplied=true;}
    h.age+=dt;if(h.age<h.warn||h.visual)continue;
    if(!h.activated){h.activated=true;const impact=hazardImpactArt(h);this.combatSound(h.skill?'boss-skill':h.soundOwner?.boss?'boss-weapon':h.soundOwner?.enemy?'enemy-special':'environment',{...h.soundOwner,art:h.activationArt||impact||h.art,x:h.x,hazard:h.type});if(impact&&['blast','fire','mine','cross'].includes(h.type))this.weaponEffect(impact,h.x,h.y,h.r*2,.35);}
    if(h.volley&&!h.triggered){h.triggered=true;h.volley();}
@@ -139,7 +140,7 @@ export class CoopGame extends Game {
  }
  updatePickups(dt){for(const item of this.pickups.slice()){
   if(item.dead)continue;item.age+=dt;const pilot=this.living().sort((a,b)=>distance(item,a.player)-distance(item,b.player))[0];if(!pilot){item.y+=50*dt;continue;}const p=pilot.player,d=distance(item,p);
-  item.attracting=item.age>.2&&(d<pilot.growth.magnet||this.bossDefeated);if(item.attracting){const speed=this.bossDefeated?Math.min(1050,d/Math.max(dt,.001)):220+Math.max(0,pilot.growth.magnet-10-d)*4,step=Math.min(d,speed*dt);item.x+=(p.x-item.x)/Math.max(1,d)*step;item.y+=(p.y-item.y)/Math.max(1,d)*step;}else item.y+=50*dt;
+  const talents=pilot.talents||{};item.attracting=item.age>.2&&(d<pilot.growth.magnet+35*(talents.mobility_magnet||0)||this.bossDefeated);if(item.attracting){const speed=this.bossDefeated?Math.min(1050,d/Math.max(dt,.001)):220+Math.max(0,pilot.growth.magnet-10-d)*4,step=Math.min(d,speed*dt*(1+.25*(talents.mobility_salvage||0)));item.x+=(p.x-item.x)/Math.max(1,d)*step;item.y+=(p.y-item.y)/Math.max(1,d)*step;}else item.y+=50*dt;
   if(item.age>.2&&distance(item,p)<19)this.withPilot(pilot,()=>super.collect(item));if(item.y>H+25||item.age>17)item.dead=true;
  }this.pickups=this.pickups.filter(item=>!item.dead);}
  hurtPlayer(damage,art=''){super.hurtPlayer(damage,art);if(this.player.lives<=0)this.killPilot(this.activePilot);}
@@ -347,9 +348,9 @@ export class CoopSession {
   this.game.updateVisuals(dt);
   this.game.shake=Math.max(0,(this.game.shake||0)-dt*18);this.game.shock=Math.max(0,(this.game.shock||0)-dt);
   this.game.bullets=this.game.bullets.filter(b=>b.age<=10&&b.x>-100&&b.x<W+100&&b.y>-120&&b.y<H+100&&(!b.burstAt||b.age<b.burstAt));
-  const crashing=new Set();for(const pilot of this.game.crew)if(advanceCrash(pilot.player,dt))crashing.add(pilot.role);
+  const crashing=new Set();for(const pilot of this.game.crew)if(advanceCrash(pilot.player,dt,pilot.talents?.survival_core))crashing.add(pilot.role);
   const p=this.local.player;if(this.target&&this.local.alive&&!crashing.has(this.local.role)&&!p.heroBomb&&!p.hitCrash){const dx=this.target.x-p.x,dy=this.target.y-p.y,len=Math.hypot(dx,dy),slow=this.game.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1,step=Math.min(len,p.speed*slow*dt*1.5),oldX=p.x,oldY=p.y;if(len>0){p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.targetX=this.target.x;p.targetY=this.target.y;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);}
-  if(p.heroBomb)p.heroBomb.age+=dt;for(const pilot of this.game.crew)for(const key of ['invulnerable','bombReturn','skillCd','skillTime','ultTime','armorCd'])if(Number.isFinite(pilot.player[key]))pilot.player[key]=Math.max(0,pilot.player[key]-dt);
+  if(p.heroBomb)p.heroBomb.age+=dt;for(const pilot of this.game.crew){if(crashing.has(pilot.role))continue;for(const key of ['invulnerable','respawnTime','bombReturn','skillCd','skillTime','ultTime','armorCd'])if(Number.isFinite(pilot.player[key]))pilot.player[key]=Math.max(0,pilot.player[key]-dt);}
  }
  snapshot(compact=false){
   const snapshot={v:1,mission:this.mission,state:this.baseState,pauseFlags:{...this.pauseFlags},networkPaused:this.networkPaused,failureReason:this.failureReason,transitionLeft:this.transitionLeft,...this.game.snapshot(),events:this.eventLog.map(record=>({...record,event:{...record.event}}))};
@@ -382,7 +383,7 @@ export class CoopSession {
   };
   for(const key of ['enemies','bullets','pickups'])for(const item of this.game[key])track(`${key}:${item.id}`,item,key==='bullets'?{vx:item.vx||0,vy:item.vy||0,hold:Math.max(0,(item.hold||0)-(item.age||0))}:{});
   if(this.game.boss)track('boss',this.game.boss);
-  for(const pilot of this.game.crew){const old=oldPositions.get(`pilot:${pilot.role}`);if(pilot.player.hitCrash){advanceCrash(pilot.player,this.snapshotAge);continue;}if(!pilot.alive)continue;
+  for(const pilot of this.game.crew){const old=oldPositions.get(`pilot:${pilot.role}`);if(pilot.player.hitCrash){advanceCrash(pilot.player,this.snapshotAge,pilot.talents?.survival_core);continue;}if(!pilot.alive)continue;
    // Only movement is predicted. Health, death, skill costs and damage always
    // come from the host. Never interpolate a local input back toward an old pose.
    if(pilot.role===this.role&&this.target&&old){pilot.player.x=old.x;pilot.player.y=old.y;pilot.player.targetX=this.target.x;pilot.player.targetY=this.target.y;}

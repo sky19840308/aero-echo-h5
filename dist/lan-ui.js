@@ -1,13 +1,14 @@
-import {SHIPS,SKINS,TALENTS} from './data.js?v=26';
-import {getLocale} from './i18n.js?v=26';
-import {onlineText,escapeHtml} from './online-ui.js?v=26';
-import {trainingHtml} from './growth-ui.js?v=26';
-import {progressionHtml} from './progression-ui.js?v=26';
-import {canUpgradeHull,fleetLevel,upgradeCost} from './economy.js?v=26';
+import {SHIPS,SKINS} from './data.js?v=27';
+import {talentTreeHtml} from './talent-tree.js?v=27';
+import {getLocale} from './i18n.js?v=27';
+import {onlineText,escapeHtml} from './online-ui.js?v=27';
+import {trainingHtml} from './growth-ui.js?v=27';
+import {progressionHtml} from './progression-ui.js?v=27';
+import {canUpgradeHull,fleetLevel,upgradeCost} from './economy.js?v=27';
 const strings={
  title:['本地双人合作','ローカル2人協力','Local Two-player Co-op'],
  note:['两台设备连接同一个 Wi-Fi（关闭访客网络隔离），打开本游戏。一人建房，另一人输入房间码；无需登录。配对需要联网，战斗数据由两台设备直传，不经过游戏服务器转发。','2台を同じWi-Fiに接続し、ルームコードで参加。ログイン不要。ペアリング時はインターネットが必要、戦闘は端末間で直接通信し、ゲームサーバーでは中継しません。ゲストWi-Fiの端末隔離を解除してください。','Connect both devices to the same Wi-Fi and join by room code. No sign-in. Pairing requires internet; battle traffic goes directly between devices without a game-server relay. Disable guest-network client isolation.'],
- progress:['保留完整机库成长：机体、武器、六项天赋和三项研究。首次使用继承此设备的游客进度，之后独立保存；两位玩家各自结算首通奖励。死亡不会删除永久强化。','機体・武器・全6才能・全3研究を利用。初回は端末のゲスト進行を引き継ぎ、以降は別保存。報酬は各端末に保存され、撃墜でも永久強化は保持。','Full hull, weapon, six-talent and three-research progression. Initially copies this device’s guest save, then saves separately. Each pilot earns clear rewards locally; death keeps permanent upgrades.'],
+ progress:['保留完整机库成长：机体、武器、18 点天赋树和三项研究。首次使用继承此设备的游客进度，之后独立保存；两位玩家各自结算首通奖励。死亡不会删除永久强化。','機体・武器・18ポイントの才能ツリー・全3研究を利用。初回は端末のゲスト進行を引き継ぎ、以降は別保存。報酬は各端末に保存され、撃墜でも永久強化は保持。','Full hull, weapon, 18-point talent-tree and three-research progression. Initially copies this device’s guest save, then saves separately. Each pilot earns clear rewards locally; death keeps permanent upgrades.'],
  connecting:['正在建立局域网直连…','LAN直接接続中…','Establishing LAN link…'],
  connected:['局域网直连已就绪','LAN直接接続準備完了','LAN link ready'],
  unavailable:['尚未直连。请保持两页在前台，确认同一 Wi-Fi、VPN 已关闭、路由器未开启 AP / 客户端隔离。连接失败可退出后重新建房。','未接続。両画面を前面にし、同じWi-Fi・VPNオフ・AP隔離オフを確認。失敗時は退出して新しいルームを作成。','Not connected. Keep both pages in front; check the same Wi-Fi, VPN off and AP/client isolation off. Leave and create a fresh room to retry.'],
@@ -38,7 +39,7 @@ const t=onlineText,l=lanText,e=escapeHtml;
 const btn=(action,label,disabled=false)=>`<button class="secondary" data-action="${action}" ${disabled?'disabled':''}>${e(label)}</button>`;
 export function lanHangarHtml(progress,choice,manifest){
  const p=progress.profile,ship=SHIPS[choice.shipIndex],level=fleetLevel(p);
- return `<details class="lan-hangar" ${p.points||canUpgradeHull(p)?'open':''}><summary>${l('upgrades')}</summary><div class="wallet"><span>${t('credits')} <b>${p.credits}</b></span><span>天赋点 <b>${p.points}</b></span></div><p>LV.${level} / 50 · ${e(ship.name)}</p>${btn('lan-hull',`强化机体 · ${upgradeCost(level)} 信用点`,!canUpgradeHull(p))}${trainingHtml(p).replaceAll('data-action="upgrade-five"','data-action="lan-hull-five"')}<span class="selection-label">飞行天赋 · 全部 6 项</span><div class="talent-grid">${TALENTS.map(node=>`<button class="talent-card" data-action="lan-talent" data-value="${node.id}" ${p.points<1||(p.talents[node.id]||0)>=node.max?'disabled':''}><span>${p.talents[node.id]||0} / ${node.max}</span><b>${node.name}</b><small>${node.note}</small></button>`).join('')}</div>${progressionHtml(p,ship.id,manifest).replaceAll('data-action="forge"','data-action="lan-weapon"').replaceAll('data-action="research"','data-action="lan-research"')}</details>`;
+ return `<details class="lan-hangar" ${p.points||canUpgradeHull(p)?'open':''}><summary>${l('upgrades')}</summary><div class="wallet"><span>${t('credits')} <b>${p.credits}</b></span><span>天赋点 <b>${p.points}</b></span></div><p>LV.${level} / 50 · ${e(ship.name)}</p>${btn('lan-hull',`强化机体 · ${upgradeCost(level)} 信用点`,!canUpgradeHull(p))}${trainingHtml(p).replaceAll('data-action="upgrade-five"','data-action="lan-hull-five"')}${talentTreeHtml(p,{action:'lan-talent'})}${progressionHtml(p,ship.id,manifest).replaceAll('data-action="forge"','data-action="lan-weapon"').replaceAll('data-action="research"','data-action="lan-research"')}</details>`;
 }
 export function lanPanel(progress,session,{choice={shipIndex:0,skin:0},busy=false,manifest,error=''}={}){
  const warning=(error?`<p class="save-warning" role="alert">${e(error)}</p>`:'')+(busy?`<p class="modal-note" role="status">${l('pairing')}</p>`:'');

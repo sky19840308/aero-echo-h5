@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=26';
-import {CoopGame} from '../dist/coop.js?v=26';
-import {DIFFICULTIES,stageConfig} from '../dist/data.js?v=26';
-import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=26';
+import {Game} from '../dist/engine.js?v=27';
+import {CoopGame} from '../dist/coop.js?v=27';
+import {DIFFICULTIES,stageConfig} from '../dist/data.js?v=27';
+import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=27';
 
 const stage=stageConfig(0,0,'campaign','quick');
 const difficultyRuns=DIFFICULTIES.map(({id})=>{
@@ -33,8 +33,10 @@ for(const {game,enemyHp,bossHp} of difficultyRuns){
 }
 assert.ok(difficultyRuns[0].enemyHp<difficultyRuns[1].enemyHp&&difficultyRuns[1].enemyHp<difficultyRuns[2].enemyHp,'enemy aircraft have meaningfully more health at each difficulty tier');
 assert.deepEqual(difficultyRuns.map(run=>run.bulletCount),[2,2,2],'enemy bullet count stays fixed across difficulties');
-assert.deepEqual(difficultyRuns.map(run=>run.bossBulletCount),[5,5,5],'Boss bullet count stays fixed across difficulties');
-assert.deepEqual(difficultyRuns.map(run=>run.waveCount),[6,6,6],'enemy count stays fixed across difficulties');
+assert.equal(difficultyRuns[0].bossBulletCount,difficultyRuns[1].bossBulletCount,'Easy and Standard retain their Boss projectile pattern size');
+assert.ok(difficultyRuns[2].bossBulletCount<difficultyRuns[1].bossBulletCount,'Complex Boss volleys are lighter than Standard');
+assert.equal(difficultyRuns[0].waveCount,difficultyRuns[1].waveCount,'Easy and Standard retain the same starting wave size');
+assert.ok(difficultyRuns[2].waveCount>difficultyRuns[1].waveCount,'Complex fields more aircraft into each wave');
 assert.deepEqual(difficultyRuns.map(run=>run.nextWave),[difficultyRuns[0].nextWave,difficultyRuns[0].nextWave,difficultyRuns[0].nextWave]);
 assert.ok(difficultyRuns[0].enemyMove<difficultyRuns[1].enemyMove&&difficultyRuns[1].enemyMove<difficultyRuns[2].enemyMove,'difficulty increases enemy movement');
 assert.ok(difficultyRuns[0].aimAngle>difficultyRuns[1].aimAngle&&difficultyRuns[1].aimAngle>difficultyRuns[2].aimAngle,'difficulty improves enemy aim lead');
@@ -42,7 +44,8 @@ assert.ok(difficultyRuns[0].bulletSpeed<difficultyRuns[1].bulletSpeed&&difficult
 assert.ok(difficultyRuns[0].bossBulletSpeed<difficultyRuns[1].bossBulletSpeed&&difficultyRuns[1].bossBulletSpeed<difficultyRuns[2].bossBulletSpeed,'difficulty changes Boss projectile speed');
 assert.ok(difficultyRuns[0].bulletSpeed>138,'ordinary enemy bullets are no longer slower than the old 138 baseline');
 assert.ok(difficultyRuns[0].enemyDamage<difficultyRuns[1].enemyDamage&&difficultyRuns[1].enemyDamage<difficultyRuns[2].enemyDamage,'enemy damage increases by difficulty');
-assert.ok(difficultyRuns[0].fireRate<difficultyRuns[1].fireRate&&difficultyRuns[1].fireRate<difficultyRuns[2].fireRate,'higher difficulty increases enemy firing cadence');
+assert.ok(difficultyRuns[0].fireRate<difficultyRuns[1].fireRate,'Standard increases enemy firing cadence over Easy');
+assert.ok(difficultyRuns[2].fireRate<difficultyRuns[1].fireRate,'Complex lowers firing cadence to keep more aircraft dodgeable');
 
 for(const id of ['easy','normal','hard']){
  const game=new Game({stage,seed:25,difficulty:id});game.start();
@@ -116,4 +119,4 @@ for(const [shipIndex,shipId] of ['Dawn7','Bastion3','WraithX'].entries()){
  assert.equal(guest.player.lives,3);
 }
 
-console.log(JSON.stringify({passed:true,difficulties:DIFFICULTIES.map(d=>d.id),heroes:Object.keys(HERO_BOMB_ASSETS).length,checks:['three lives and hit recovery','enemy durability, aim, movement, damage, firing cadence and projectile speed scale with difficulty','Boss health and projectile counts stay stable across tiers','life restoration and pulse pickup','three animated hero bomb sheets and effects','Boss survives bomb strike','co-op life snapshots and individual elimination']}));
+console.log(JSON.stringify({passed:true,difficulties:DIFFICULTIES.map(d=>d.id),heroes:Object.keys(HERO_BOMB_ASSETS).length,checks:['three lives and hit recovery','enemy durability, aim, movement and projectile speed scale with difficulty','Complex waves and aircraft increase while enemy volleys and Boss patterns become lighter','life restoration and pulse pickup','three animated hero bomb sheets and effects','Boss survives bomb strike','co-op life snapshots and individual elimination']}));

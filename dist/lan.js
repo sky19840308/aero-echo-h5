@@ -1,11 +1,12 @@
-import {CoopSession} from './coop.js?v=26';
-import {CoopPeer} from './coop-peer.js?v=26';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=26';
-import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=26';
-import {settleEconomy,upgradeHull} from './economy.js?v=26';
-import {upgradeWeapon,upgradeResearch} from './progression.js?v=26';
-import {rememberClear,unlockAchievements} from './campaign.js?v=26';
-import {SHIPS,TALENTS} from './data.js?v=26';
+import {CoopSession} from './coop.js?v=27';
+import {CoopPeer} from './coop-peer.js?v=27';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=27';
+import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=27';
+import {settleEconomy,upgradeHull} from './economy.js?v=27';
+import {upgradeWeapon,upgradeResearch} from './progression.js?v=27';
+import {rememberClear,unlockAchievements} from './campaign.js?v=27';
+import {SHIPS} from './data.js?v=27';
+import {learnTalent} from './talent-tree.js?v=27';
 
 export const LAN_STORAGE='aero-echo.lan.v1';
 const CAPABILITY='aero-echo.lan-capability';
@@ -25,7 +26,7 @@ export class LanProgress {
   if(type==='hull-five')changed=upgradeHull(p,5)>0;
   if(type==='weapon')changed=upgradeWeapon(p,ship);
   if(type==='research')changed=upgradeResearch(p,node);
-  if(type==='talent'){const t=TALENTS.find(t=>t.id===node),n=p.talents[node]||0;if(t&&p.points>0&&n<t.max){p.points--;p.talents[node]=n+1;changed=true;}}
+  if(type==='talent')changed=!!learnTalent(p,node);
   if(changed)this.save();return changed;
  }
  settle(result){const reward=settleEconomy(this.profile,result);rememberClear(this.profile,result);this.profile.discovered=[...new Set([...this.profile.discovered,...(result.seen||[])])];unlockAchievements(this.profile);this.save();return reward;}
@@ -63,7 +64,7 @@ export class LanSession extends CoopSession {
  get canReady(){return this.peerHealthy()&&this.loadoutAck===this.loadoutVersion;}
  diagnostics(){const p=this.peer;return {build:23,role:this.role,state:this.state,peer:p?.state||'off',ice:p?.pc?.iceConnectionState||'new',gathering:p?.pc?.iceGatheringState||'new',localCandidates:p?.localCandidates?.length||0,remoteCandidates:p?.remoteCandidates?.size||0,control:p?.control?.readyState||'closed',frames:p?.frames?.readyState||'closed',loadoutAck:this.loadoutAck,loadoutVersion:this.loadoutVersion,remoteVersion:this.remoteVersion,assets:this.game?.crew.map(p=>({role:p.role,ready:p.ack===this.mission}))||[],error:p?.lastError||''};}
  async connect(path,body){if(!this.rtc)throw Object.assign(new Error('WebRTC unavailable'),{code:'rtc-unavailable'});this.settlements=[];this.settled.clear();this.loadoutAck=0;this.remoteVersion=0;this.lanPauseVersions={host:0,guest:0};this.lanSteps=0;this.terminalAck=false;this.lastTerminalAt=-Infinity;return super.connect(path,body);}
- loadout(){const p=this.progress.profile;return {version:1,economyVersion:p.economyVersion,levels:{...p.levels},weapons:{...p.weapons},research:{...p.research},talents:{...p.talents}};}
+ loadout(){const p=this.progress.profile;return {version:1,economyVersion:p.economyVersion,talentTreeVersion:p.talentTreeVersion,levels:{...p.levels},weapons:{...p.weapons},research:{...p.research},talents:{...p.talents}};}
  choice(){return boundedChoice(this.room?.[this.role]?.choice);}
  sendLoadout(){
   if(!this.room?.[this.role])return false;this.room[this.role].loadout=this.loadout();this.lastLoadoutAt=this.now();
