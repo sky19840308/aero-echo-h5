@@ -2,10 +2,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
-import {Game} from '../dist/engine.js?v=14';
-import {Renderer} from '../dist/renderer.js?v=14';
-import {stageConfig} from '../dist/data.js?v=14';
-import {BOSS_ARSENALS,EFFECT_ART,hazardImpactArt,hazardPhaseArt} from '../dist/weapons.js?v=14';
+import {Game} from '../dist/engine.js?v=24';
+import {Renderer} from '../dist/renderer.js?v=24';
+import {stageConfig} from '../dist/data.js?v=24';
+import {BOSS_ARSENALS,EFFECT_ART,hazardImpactArt,hazardPhaseArt} from '../dist/weapons.js?v=24';
+import {HERO_BOMB_ASSETS,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=24';
 
 const require=createRequire(import.meta.url);
 const {createCanvas,loadImage}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');
@@ -29,21 +30,22 @@ function verifyBlast(game,h,expected){
  assert.equal(impact,expected);
  assert.equal(manifest.weapons.sprites[impact].kind,'impact','detonation art is an isolated impact, never a carrier/pattern/glyph');
  assert.ok(drawHazard(h).includes(h.warnArt||h.art),'warning is visible before activation');
- const shield=game.player.shield;
+ const lives=game.player.lives;
  game.player.invulnerable=0;game.player.x=h.x;game.player.y=h.y;
  game.updateHazards(h.warn-.01);
- assert.equal(game.player.shield,shield,'warning does not damage the player');
+ assert.equal(game.player.lives,lives,'warning does not cost a life');
  assert.equal(game.weaponEffects.length,0,'warning does not spawn an early explosion');
  game.updateHazards(.02);
  assert.equal(h.activated,true);
- assert.ok(game.player.shield<shield,'blast collision still works after activation');
+ assert.equal(game.player.lives,lives-1,'active blast collision costs exactly one life');
  assert.equal(game.weaponEffects.filter(f=>f.art===impact).length,1,'exactly one isolated impact is spawned (shield-hit feedback is separate)');
- assert.ok(game.weaponEffects.every(f=>f.art===impact||f.art==='GFX_05'),'neither the warning glyph nor the missile/carrier becomes an explosion effect');
+ assert.ok(game.weaponEffects.every(f=>f.art===impact||['GFX_04','GFX_17'].includes(f.art)),'neither the warning glyph nor the missile/carrier becomes an explosion effect');
  assert.equal(hazardPhaseArt(h),null);
  assert.deepEqual(drawHazard(h),[],'active blast does not paint its old warning/carrier underneath the impact');
  renderer.weaponEffect(game.weaponEffects[0]);
  assert.equal(rendered.at(-1),impact,'active effect actually draws the selected impact in native Canvas');
  game.updateHazards(.04);
+ assert.equal(game.player.lives,lives-1,'one active hazard cannot remove a second life during hit recovery');
  assert.equal(game.weaponEffects.filter(f=>f.art===impact).length,1,'activation does not spawn a new impact every frame');
  checkedBlasts++;
 }
@@ -78,9 +80,12 @@ for(let ship=0;ship<3;ship++){
   const art=effect.art||EFFECT_ART[effect.name],meta=manifest.playerWeapons.sprites[art];
   if(meta)assert.equal(meta.owner,g.ship.id,'skill effect belongs to the selected hero');
  }
- assert.ok(g.bomb());g.updatePlayer(.3);
- const detonation=g.effects.find(x=>x.name==='Bomb_Detonation');
- assert.equal(manifest.playerWeapons.sprites[detonation.art].owner,g.ship.id);
+ assert.ok(g.bomb());g.updatePlayer(1);
+ assert.equal(g.player.heroBomb.attacked,true,'hero animation reaches its strike phase');
+ assert.ok(g.effects.some(x=>x.name===(g.ship.id==='Dawn7'?'Dawn7_Corona':g.ship.id==='Bastion3'?'Bastion3_Gravity_Burst':'WraithX_Singularity')),'each hero uses its own full-screen strike effect');
+ g.updatePlayer(2);
+ assert.equal(g.player.heroBomb,null,'the fighter returns after the animated attack');
+ assert.equal(g.player.invulnerable,5,'the returning fighter receives exactly five seconds of invulnerability');
  for(const ring of g.effects.filter(x=>x.name==='Bomb_Clear_Ring'))assert.equal(ring.art||EFFECT_ART[ring.name],'GFX_09','clear ring is a neutral shockwave, not another hero targeting glyph');
 }
 
@@ -105,4 +110,15 @@ for(const meta of Object.values(manifest.projectiles)){
  const im=await loadImage(fs.readFileSync(new URL('dist/'+meta.src,root)));
  assert.equal(im.width,meta.width);assert.equal(im.height,meta.height);
 }
-console.log(JSON.stringify({passed:true,checkedBlasts,heroes:3,legacyAnimatedSheets:Object.keys(manifest.fx).length,animatedFrames,legacyProjectiles:Object.keys(manifest.projectiles).length,checks:['warning-only glyphs and carriers','one impact per activation','real blast collision retained','all nine Boss exclusive impact transitions','owner-specific skill and bomb art','persistent fields retained','all legacy sheet frames individually cropped']}));
+let heroBombFrames=0;
+for(const [shipIndex,ship] of ['Dawn7','Bastion3','WraithX'].entries()){
+ const path=HERO_BOMB_ASSETS[ship],im=await loadImage(fs.readFileSync(new URL('dist/'+path,root)));images.set(path,im);
+ const game=new Game({stage:stageConfig(0,0),ship:shipIndex,seed:900+shipIndex});game.start();
+ for(const [age,frame] of [[.1,0],[.6,1],[1.4,2],[2.6,3]]){
+  game.player.heroBomb={age,attacked:age>=HERO_BOMB_STRIKE_TIME};sourceRects.length=0;
+  fallbackRenderer.bombCinematics(game,age);
+  assert.deepEqual(sourceRects,[[frame%2*384,Math.floor(frame/2)*384,384,384]],ship+' action frame '+frame+' is individually cropped');
+  heroBombFrames++;
+ }
+}
+console.log(JSON.stringify({passed:true,checkedBlasts,heroes:3,heroBombFrames,legacyAnimatedSheets:Object.keys(manifest.fx).length,animatedFrames,legacyProjectiles:Object.keys(manifest.projectiles).length,checks:['warning-only glyphs and carriers','one impact per activation','real blast collision retained','all nine Boss exclusive impact transitions','owner-specific skill and bomb art','all four new hero bomb frames rendered with source cropping','persistent fields retained','all legacy sheet frames individually cropped']}));

@@ -1,8 +1,9 @@
-import {tr} from './i18n.js?v=23';
-import {W,H,CHAPTERS} from './data.js?v=23';
-import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=23';
-import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=23';
-import {drawChapterBackground} from './chapter-background.js?v=23';
+import {tr} from './i18n.js?v=24';
+import {W,H,CHAPTERS} from './data.js?v=24';
+import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=24';
+import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=24';
+import {drawChapterBackground} from './chapter-background.js?v=24';
+import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_STRIKE_TIME} from './hero-bombs.js?v=24';
 const TAU=Math.PI*2;
 export class Renderer {
  constructor(canvas,assets,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.assets=assets;this.settings=settings;this.stars=Array.from({length:75},(_,i)=>({x:(i*97.23)%W,y:(i*139.71)%H,size:.5+(i%4)*.35,speed:8+(i%5)*4}));this.resize();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);}
@@ -15,7 +16,7 @@ export class Renderer {
  frame(name,x,y,size,age,duration,rotation=0){if(EFFECT_ART[name]&&this.weapon(EFFECT_ART[name],x,y,size*(.8+age/duration*.4),undefined,rotation,Math.min(1,(1-age/duration)*1.5)))return;const meta=this.assets.manifest.fx[name];if(!meta)return;const im=this.assets.get(meta.src);if(!im)return;const frame=Math.min(meta.frames-1,Math.floor(age/duration*meta.frames)),s=meta.frameSize;const ctx=this.ctx;ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.88;ctx.drawImage(im,frame%meta.columns*s,Math.floor(frame/meta.columns)*s,s,s,-size/2,-size/2,size,size);ctx.restore();}
  draw(game,clock,chapter=0,skin=0){const ctx=this.ctx;ctx.setTransform(this.sx,0,0,this.sy,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);ctx.save();if(game&&this.settings.shake&&game.shake>0&&game.state!=='paused'&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){const impact=Math.min(1,(game.shock||0)/.9);ctx.translate(W/2,H/2);ctx.rotate(Math.sin(clock*43)*impact*.009);ctx.scale(1+impact*.014,1+impact*.014);ctx.translate(-W/2+Math.sin(clock*67)*game.shake,-H/2+Math.cos(clock*89)*game.shake*.72);}
   this.background(game?.stage.chapter??chapter,game?game.clock:clock,!!game);
-  if(game){for(const h of game.hazards)this.hazard(h,clock,false);for(const e of game.enemies)this.enemy(e,game,clock);if(game.boss)this.boss(game.boss,game,clock);for(const b of game.bullets)if(b.alive&&b.owner==='enemy')this.bullet(b,clock);for(const i of game.pickups)this.pickup(i,clock,game);this.players(game,skin,clock);for(const b of game.bullets)if(b.alive&&b.owner==='player')this.bullet(b,clock);this.ultimates(game,clock);for(const f of game.effects)(f.art?this.weaponEffect(f):this.frame(f.name,f.x,f.y,f.size,f.age,f.duration,f.rotation));for(const f of game.weaponEffects||[])this.weaponEffect(f);for(const f of game.lootBursts||[])this.lootBurst(f);for(const p of game.particles){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);}ctx.globalAlpha=1;for(const h of game.hazards)this.hazard(h,clock,true);if(this.settings.numbers){ctx.font='bold 12px monospace';ctx.textAlign='center';for(const t of game.texts){ctx.globalAlpha=1-t.age/.85;ctx.fillStyle=t.color;ctx.fillText(tr(t.text),t.x,t.y);}ctx.globalAlpha=1;}if(this.settings.flash&&game.flash>0){ctx.fillStyle=`rgba(110,205,255,${game.flash*.65})`;ctx.fillRect(0,0,W,H);}}
+  if(game){for(const h of game.hazards)this.hazard(h,clock,false);for(const e of game.enemies)this.enemy(e,game,clock);if(game.boss)this.boss(game.boss,game,clock);for(const b of game.bullets)if(b.alive&&b.owner==='enemy')this.bullet(b,clock);for(const i of game.pickups)this.pickup(i,clock,game);this.players(game,skin,clock);for(const b of game.bullets)if(b.alive&&b.owner==='player')this.bullet(b,clock);this.ultimates(game,clock);for(const f of game.effects)(f.art?this.weaponEffect(f):this.frame(f.name,f.x,f.y,f.size,f.age,f.duration,f.rotation));for(const f of game.weaponEffects||[])this.weaponEffect(f);for(const f of game.lootBursts||[])this.lootBurst(f);for(const p of game.particles){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);}ctx.globalAlpha=1;for(const h of game.hazards)this.hazard(h,clock,true);this.bombCinematics(game,clock);if(this.settings.numbers){ctx.font='bold 12px monospace';ctx.textAlign='center';for(const t of game.texts){ctx.globalAlpha=1-t.age/.85;ctx.fillStyle=t.color;ctx.fillText(tr(t.text),t.x,t.y);}ctx.globalAlpha=1;}if(this.settings.flash&&game.flash>0){ctx.fillStyle=`rgba(110,205,255,${game.flash*.65})`;ctx.fillRect(0,0,W,H);}}
   ctx.restore();
  }
  menuBackground(clock){
@@ -61,14 +62,31 @@ export class Renderer {
  }
  players(game,skin,clock){if(!game.coop)return this.player(game,skin,clock);for(const pilot of game.crew){if(!pilot.alive)continue;game.selectPilot(pilot.role);this.player(game,pilot.skin,clock);}game.selectPilot(game.localRole);}
  ultimates(game,clock){if(!game.coop)return this.ultimate(game,clock);for(const pilot of game.crew){if(!pilot.alive)continue;game.selectPilot(pilot.role);this.ultimate(game,clock);}game.selectPilot(game.localRole);}
- player(game,skin,clock){const p=game.player,ctx=this.ctx,meta=this.assets.manifest.players[game.ship.id][skin]||this.assets.manifest.players[game.ship.id][0],src=meta.src;const flicker=p.invulnerable>0&&p.lastHit>0?(Math.sin(clock*40)>0?.45:1):1;
-  if(p.shield>0){ctx.strokeStyle=`rgba(103,205,255,${.08+.25*p.shield/p.maxShield})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(p.x,p.y,36,48,p.bank*.08,0,TAU);ctx.stroke();}
+ player(game,skin,clock){const p=game.player,ctx=this.ctx,meta=this.assets.manifest.players[game.ship.id][skin]||this.assets.manifest.players[game.ship.id][0],src=meta.src;if(p.heroBomb)return;const flicker=p.invulnerable>0&&p.lastHit>0?(Math.sin(clock*40)>0?.45:1):1;
+  if(p.bombReturn>0){ctx.strokeStyle=`rgba(130,231,255,${.32+.28*Math.sin(clock*8)})`;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y,35+Math.sin(clock*7)*3,48+Math.sin(clock*7)*3,p.bank*.08,0,TAU);ctx.stroke();}
   if(game.ship.id==='Bastion3'){for(const dx of [-45,45]){ctx.fillStyle='#acd8e6';ctx.beginPath();ctx.moveTo(p.x+dx,p.y-11);ctx.lineTo(p.x+dx+7,p.y+7);ctx.lineTo(p.x+dx-7,p.y+7);ctx.closePath();ctx.fill();ctx.fillStyle='#55d9ff';ctx.fillRect(p.x+dx-2,p.y+8,4,8+Math.sin(clock*15)*3);}}
   this.sprite(src,p.x,p.y,82,82*meta.height/meta.width,p.bank*.13,flicker);
   if(p.skillTime>0&&game.ship.id==='Bastion3'){ctx.strokeStyle='#76ebfeac';ctx.fillStyle='#52c5ea14';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,72,0,TAU);ctx.fill();ctx.stroke();}
   if(p.skillTime>0&&game.ship.id==='WraithX'){ctx.strokeStyle='#c0a1ff8c';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,35,clock*5,clock*5+Math.PI*1.7);ctx.stroke();}
   const proximity=game.bullets.some(b=>b.owner==='enemy'&&Math.hypot(b.x-p.x,b.y-p.y)<55);if(proximity){ctx.strokeStyle='#b9efff48';ctx.lineWidth=1;ctx.beginPath();ctx.arc(p.x,p.y,p.r+15,0,TAU);ctx.stroke();}
   ctx.fillStyle='#0e293acc';ctx.beginPath();ctx.arc(p.x,p.y,p.r+2,0,TAU);ctx.fill();ctx.fillStyle=p.skillTime>0?'#e3c3ff':'#d6fbff';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,TAU);ctx.fill();ctx.fillStyle='#63dfff';ctx.beginPath();ctx.arc(p.x,p.y,2,0,TAU);ctx.fill();
+ }
+ bombCinematics(game,clock){
+  const pilots=game.coop?game.crew.filter(pilot=>pilot.alive&&pilot.player.heroBomb):game.player.heroBomb?[{role:null,player:game.player}]:[];
+  for(const pilot of pilots){if(game.coop)game.selectPilot(pilot.role);const p=game.player,state=p.heroBomb;if(!state)continue;const ctx=this.ctx,age=state.age,ship=game.ship.id;
+   if(age>=HERO_BOMB_STRIKE_TIME){const t=Math.max(0,Math.min(1,(age-HERO_BOMB_STRIKE_TIME)/1.65)),fade=Math.sin(Math.PI*t);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.28+.55*fade;
+    if(ship==='Dawn7'){
+     for(let i=0;i<3;i++){const x=W*(i+1)/4+Math.sin(clock*4+i)*18,beam=ctx.createLinearGradient(x,0,x,H);beam.addColorStop(0,'#ffffff00');beam.addColorStop(.18,'#9ceaffcc');beam.addColorStop(.56,'#f5fdff');beam.addColorStop(1,'#5bdcff00');ctx.fillStyle=beam;ctx.fillRect(x-13,0,26,H);}
+    }else if(ship==='Bastion3'){
+     const radius=Math.hypot(W,H)*t,ring=ctx.createRadialGradient(W/2,H*.48,Math.max(0,radius-45),W/2,H*.48,radius+50);ring.addColorStop(0,'#ff9a3900');ring.addColorStop(.72,'#ffc16a12');ring.addColorStop(.91,'#fff0c9dd');ring.addColorStop(1,'#ff8e3100');ctx.fillStyle=ring;ctx.fillRect(0,0,W,H);ctx.fillStyle=`rgba(255,156,62,${.07*fade})`;ctx.fillRect(0,0,W,H);
+    }else{
+     ctx.strokeStyle='#dbb7ff';ctx.lineWidth=5;for(let i=0;i<7;i++){const a=i*Math.PI/7+clock*.17,x=Math.cos(a)*W*.74,y=Math.sin(a)*H*.68;ctx.beginPath();ctx.moveTo(W/2-x,H/2-y);ctx.lineTo(W/2+x,H/2+y);ctx.stroke();}
+    }
+    ctx.restore();
+   }
+   const image=this.assets.get(HERO_BOMB_ASSETS[ship]);if(image){const frame=age<.4?0:age<HERO_BOMB_STRIKE_TIME?1:age<2.45?2:3,col=frame%2,row=Math.floor(frame/2),cellW=image.width/2,cellH=image.height/2,bob=Math.sin(clock*5+age*3)*5,scale=1+.025*Math.sin(clock*7),width=255*scale,height=275*scale,alpha=age>2.65?Math.max(0,(HERO_BOMB_DURATION-age)/.35):1;ctx.save();ctx.globalAlpha=alpha;ctx.shadowBlur=26;ctx.shadowColor=ship==='Dawn7'?'#80e8ff':ship==='Bastion3'?'#ffc36d':'#caa6ff';ctx.translate(p.x,H*.48+bob);ctx.rotate(Math.sin(clock*3+age)*.025);ctx.drawImage(image,col*cellW,row*cellH,cellW,cellH,-width/2,-height/2,width,height);ctx.restore();}
+  }
+  if(game.coop)game.selectPilot(game.localRole);
  }
  bullet(b,clock){const ctx=this.ctx,playerMeta=this.assets.manifest.playerWeapons?.sprites[b.art],travel=Math.atan2(b.vy,b.vx),meta=this.assets.manifest.weapons?.sprites[b.art],angle=travel+Math.PI/2;
   if(b.owner==='player'&&playerMeta){

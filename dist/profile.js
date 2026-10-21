@@ -1,8 +1,8 @@
-import {SHIPS,DIFFICULTIES,TALENTS,SKINS} from './data.js?v=23';
-import {weaponTier,researchLevel,RESEARCH} from './progression.js?v=23';
-import {AUDIO_DEFAULTS,audioVolume} from './audio-levels.js?v=23';
-import {ECONOMY_VERSION,normalizeEconomy} from './economy.js?v=23';
-import {ACHIEVEMENTS,latestClear,storyFrontier,storyUnlocked,missionAt,unlockAchievements} from './campaign.js?v=23';
+import {SHIPS,DIFFICULTIES,TALENTS,SKINS} from './data.js?v=24';
+import {weaponTier,researchLevel,RESEARCH} from './progression.js?v=24';
+import {AUDIO_DEFAULTS,audioVolume} from './audio-levels.js?v=24';
+import {ECONOMY_VERSION,normalizeEconomy} from './economy.js?v=24';
+import {ACHIEVEMENTS,latestClear,storyFrontier,storyUnlocked,missionAt,unlockAchievements} from './campaign.js?v=24';
 
 export const STORAGE='aero-echo.h5.v1',BACKUP_STORAGE=STORAGE+'.previous';
 export const SENSITIVITIES=[.75,1,1.25,1.5];

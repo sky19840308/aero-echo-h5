@@ -1,12 +1,14 @@
 // Resolve against the deployed module, independent of the page's navigation path.
-export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','15');return url.href;};
+import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=24';
+
+export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','24');return url.href;};
 
 export class AssetLoadError extends Error {
  constructor(src,kind='load'){super('Asset load failed: '+(src.startsWith('data:')?'embedded image':src));this.name='AssetLoadError';this.src=src;this.kind=kind;}
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=23';
+ const src='assets/manifest.json?v=24';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
@@ -80,6 +82,7 @@ export class AssetStore {
   const m=this.manifest,boss=stage.boss?m.bosses[stage.chapter+1]:null,required=[m.players[ship]?.[skin]||m.players[ship]?.[0],m.backgrounds[stage.chapter+1],...stage.enemies.map(id=>m.enemies[id]),...(boss?[boss]:[]),m.projectiles.PRJ_Blue_Pulse_01,m.projectiles.PRJ_Orange_Lance_01,m.projectiles.PRJ_Blue_Lance_01,...Object.values(m.items?.atlases||{})];
   for(const pilot of additionalPlayers.slice(0,1)){const meta=m.players[pilot.ship]?.[pilot.skin]||m.players[pilot.ship]?.[0];if(meta)required.push(meta);}
   const pilotShips=[ship,...additionalPlayers.slice(0,1).map(p=>p.ship)];
+  required.push(...pilotShips.map(id=>({src:HERO_BOMB_ASSETS[id]})));
   const playerAtlases=Object.values(m.playerWeapons?.atlases||{});required.push(...playerAtlases);
   const generalAtlas=m.weapons?.atlases?.GENERAL;if(generalAtlas?.fallback)required.push(generalAtlas);
   const backgroundFrames=m.backgrounds[stage.chapter+1].frames||[];

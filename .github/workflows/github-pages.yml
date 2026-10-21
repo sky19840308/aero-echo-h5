@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 23
+name: Deploy AERO ECHO Build 24
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
     paths:
       - .github/workflows/github-pages.yml
       - dist/**
-      - runtime-build23.sha256
+      - runtime-build24.sha256
       - tools/github/**
 
 permissions:
@@ -29,9 +29,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned Build 23 game
+      - name: Check out the versioned Build 24 game
         uses: actions/checkout@v4
-      - name: Restore verified media and apply Build 23
+      - name: Restore verified media and apply Build 24
         shell: bash
         run: |
           set -euo pipefail
@@ -62,11 +62,11 @@ jobs:
           root = Path(sys.argv[1])
           transport = json.loads((root / 'tools/github/binary-manifest15.json').read_text())
           for entry in transport['files']:
-              assert entry['target'] in {'dist/assets/music/ending-theme.mp3', 'tools/github/skin-manifest15.json'}
+              assert entry['target'] in {'dist/assets/music/ending-theme.mp3', 'tools/github/skin-manifest15.json', 'dist/assets/hero-bombs/nobunaga-actions.png', 'dist/assets/hero-bombs/takeda-actions.png', 'dist/assets/hero-bombs/hanzo-actions.png'}
               for part in entry['parts']:
                   path = PurePosixPath(part)
                   assert not path.is_absolute() and '..' not in path.parts
-                  assert part.startswith('tools/github/binary-build15/')
+                  assert part.startswith(('tools/github/binary-build15/', 'tools/github/binary-build24/'))
               payload = ''.join((root / part).read_text() for part in entry['parts'])
               data = base64.b64decode(payload, validate=True)
               assert hashlib.sha256(data).hexdigest() == entry['sha256']
@@ -88,10 +88,10 @@ jobs:
           target.write_text(json.dumps(manifest, ensure_ascii=False, separators=(',', ':')))
           PY
           cd site
-          sha256sum --check "$GITHUB_WORKSPACE/runtime-build23.sha256"
+          sha256sum --check "$GITHUB_WORKSPACE/runtime-build24.sha256"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the verified Build 23 runtime
+      - name: Upload the verified Build 24 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist

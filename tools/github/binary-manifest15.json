@@ -49,6 +49,44 @@
         "tools/github/binary-build15/skins-006.b64"
       ],
       "sha256": "06f709a4161ca9b1ce16e01d970e3435e90744ff545852d2dd6060fffa1feb45"
+    },
+    {
+      "target": "dist/assets/hero-bombs/nobunaga-actions.png",
+      "sha256": "815d5dc950bf3281a0a8a5919c8c795e2084d15ff0e25377e1b1c36a4e1518cc",
+      "parts": [
+        "tools/github/binary-build24/hero-nobunaga-actions-000.b64",
+        "tools/github/binary-build24/hero-nobunaga-actions-001.b64",
+        "tools/github/binary-build24/hero-nobunaga-actions-002.b64",
+        "tools/github/binary-build24/hero-nobunaga-actions-003.b64",
+        "tools/github/binary-build24/hero-nobunaga-actions-004.b64",
+        "tools/github/binary-build24/hero-nobunaga-actions-005.b64"
+      ]
+    },
+    {
+      "target": "dist/assets/hero-bombs/takeda-actions.png",
+      "sha256": "993d517a7dbf73d02730b5f5460cabafb5c8cdafc40dbeed76d1a0a9fbb4f6e2",
+      "parts": [
+        "tools/github/binary-build24/hero-takeda-actions-000.b64",
+        "tools/github/binary-build24/hero-takeda-actions-001.b64",
+        "tools/github/binary-build24/hero-takeda-actions-002.b64",
+        "tools/github/binary-build24/hero-takeda-actions-003.b64",
+        "tools/github/binary-build24/hero-takeda-actions-004.b64",
+        "tools/github/binary-build24/hero-takeda-actions-005.b64",
+        "tools/github/binary-build24/hero-takeda-actions-006.b64"
+      ]
+    },
+    {
+      "target": "dist/assets/hero-bombs/hanzo-actions.png",
+      "sha256": "2369debf30cf90c58d35f6649cd89eb57f984d43953de21eb0ef8167270dfde3",
+      "parts": [
+        "tools/github/binary-build24/hero-hanzo-actions-000.b64",
+        "tools/github/binary-build24/hero-hanzo-actions-001.b64",
+        "tools/github/binary-build24/hero-hanzo-actions-002.b64",
+        "tools/github/binary-build24/hero-hanzo-actions-003.b64",
+        "tools/github/binary-build24/hero-hanzo-actions-004.b64",
+        "tools/github/binary-build24/hero-hanzo-actions-005.b64",
+        "tools/github/binary-build24/hero-hanzo-actions-006.b64"
+      ]
     }
   ]
 }

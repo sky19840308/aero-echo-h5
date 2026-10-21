@@ -1,4 +1,4 @@
-import {createProfile, normalizeProfile, STORAGE} from './profile.js?v=23';
+import {createProfile, normalizeProfile, STORAGE} from './profile.js?v=24';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const object = value => value && typeof value === 'object' && !Array.isArray(value);

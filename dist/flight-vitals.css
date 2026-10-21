@@ -1,0 +1,6 @@
+.lives-counter{margin-top:10px;display:flex;align-items:center;gap:9px;color:#b7d6e3}
+.life-readout{display:flex;align-items:baseline;gap:5px;font-size:8px;letter-spacing:.4px}
+.life-readout b{font-family:monospace;font-size:14px;font-weight:600;color:#dcf8ff}
+.lives-pips{display:flex;align-items:center;gap:6px;height:14px}
+.life-pip{display:block;width:8px;height:8px;transform:rotate(45deg);border:1px solid #8ceaff;background:#66dfff;box-shadow:0 0 7px #57d8ff88}
+.life-pip.spent{background:transparent;border-color:#8ca6b388;box-shadow:none;opacity:.5}

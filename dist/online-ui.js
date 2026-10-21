@@ -1,5 +1,5 @@
-import {SHIPS,SKINS} from './data.js?v=23';
-import {getLocale} from './i18n.js?v=23';
+import {SHIPS,SKINS} from './data.js?v=24';
+import {getLocale} from './i18n.js?v=24';
 
 const text={
  account:['账户与云存档','アカウントとクラウド保存','Account & Cloud Save'],
@@ -56,7 +56,7 @@ const text={
  intermission:['大关完成 · 临时强化','章クリア・一時強化','Chapter Clear · Temporary Upgrades'],
  points:['临时强化点','一時強化ポイント','Temporary Points'],
  fire:['火力 +10% / 级','火力 +10% / レベル','Damage +10% / Level'],
- shield:['护盾 +10% / 级','シールド +10% / レベル','Shield +10% / Level'],
+ shield:['受击后无敌 +0.12 秒 / 级','被弾後の無敵 +0.12 秒 / レベル','Post-hit invulnerability +0.12 seconds / level'],
  cooldown:['技能冷却 -5% / 级','スキル待機 -5% / レベル','Skill Cooldown −5% / Level'],
  ready:['准备进入下一大关','次章への準備完了','Ready for Next Chapter'],
  readyWait:['已准备 · 等待队友','準備完了・仲間を待機中','Ready · Waiting for Partner'],

@@ -1,9 +1,9 @@
-import {STORY} from './story-content.js?v=23';
+import {STORY} from './story-content.js?v=24';
 export const W = 450, H = 800;
 export const SHIPS = [
- {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', hp:1000, shield:350, dps:120, speed:85, armor:0, cooldown:18, skill:'超频齐射', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。持续命中提高射速，超频获得穿透；日冕射线贯穿战场。', skillText:'7 秒射速 +45%，脉冲获得穿透。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
- {id:'Bastion3', name:'堡垒-3', english:'BASTION / 03', role:'防御生存', color:'#f8bf69', hp:1350, shield:600, dps:100, speed:71, armor:.10, cooldown:22, skill:'磁场穹顶', ultimate:'重力轰击', passive:'反应装甲', description:'五联重型霰炮与防御僚机。护盾破裂触发保护，磁场吸收弹幕；重力轰击覆盖前方。', skillText:'5 秒磁场，减伤 60%，吸收附近普通敌弹。', ultText:'5 秒连续区域轰击，每轮清除普通敌弹。'},
- {id:'WraithX', name:'幽蓝-X', english:'WRAITH / X', role:'相位擦弹', color:'#bf9cff', hp:800, shield:250, dps:145, speed:99, armor:0, cooldown:14, skill:'相位穿梭', ultimate:'奇点切割', passive:'擦弹相位', description:'穿透激光针与链状电弧。擦弹积累相位数据，穿梭避开弹幕；奇点切割锁定多个目标。', skillText:'1.2 秒相位无敌，移动轨迹留下攻击残影。', ultText:'锁定至多 6 个目标，普通敌弹减速 40%，持续 3 秒。'}
+ {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', dps:120, speed:85, cooldown:18, skill:'超频齐射', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。持续命中提高射速，超频获得穿透；日冕射线贯穿战场。', skillText:'7 秒射速 +45%，脉冲获得穿透。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
+ {id:'Bastion3', name:'堡垒-3', english:'BASTION / 03', role:'磁场控场', color:'#f8bf69', dps:100, speed:71, cooldown:22, skill:'磁场穹顶', ultimate:'重力轰击', passive:'磁场护航', description:'五联重型霰炮与防御僚机。磁场吸收附近普通敌弹；重力轰击覆盖前方。每次受击仍会损失一条命。', skillText:'5 秒磁场，吸收附近普通敌弹；受击仍会损失一条命。', ultText:'5 秒连续区域轰击，每轮清除普通敌弹。'},
+ {id:'WraithX', name:'幽蓝-X', english:'WRAITH / X', role:'高机动擦弹', color:'#bf9cff', dps:145, speed:99, cooldown:14, skill:'相位穿梭', ultimate:'奇点切割', passive:'擦弹相位', description:'穿透激光针与链状电弧。擦弹积累相位数据，穿梭避开弹幕；奇点切割锁定多个目标。', skillText:'1.2 秒相位无敌，移动轨迹留下攻击残影。', ultText:'锁定至多 6 个目标，普通敌弹减速 40%，持续 3 秒。'}
 ];
 export const SKINS = ['原装机体','战地涂装','战术涂装','特装机体'];
 export const CHAPTERS = [
@@ -30,15 +30,15 @@ const enemyRows = [
 const enemyHints = ['S 型穿屏，瞄准散射','斜切入场，锁定后直冲','圆弧绕场，连续散射','预警后高速俯冲','编队同步环弹','预警后闪跃至侧翼','悬停，双炮交替散射','密集扇形弹','激光预警后高速射击','跟随玩家横向位置','旋转并发射螺旋弹','红圈预警，火箭落点','预判航线，延时爆弹','持续燃烧危险区域','大弹触发二次冲击环','横移并散布延时雷','附近敌机获得护盾减伤','持续修复附近敌机','干扰玩家弹速和充能','牵引场改变玩家位置','双侧连续散射','正面装甲，侧翼弱点','三炮塔交叉散射','清晰预警后贯屏磁轨炮','只释放本关允许的敌机','实体与不可命中相位切换','真机射弹，分身只作视觉干扰','残血后移动和射速提高','弹丸首次碰到边缘后反射','建立敌弹先慢后快的时滞场'];
 export const ENEMIES = enemyRows.map((r,i)=>({id:i+1,name:r[0],hp:r[1],speed:r[2],damage:r[3],category:r[4],hint:enemyHints[i]}));
 export const DIFFICULTIES = [
- {id:'easy',name:'休闲',hp:.58,damage:.52,speed:.72,rate:.78,density:.68,score:.8,aimLead:0,skillBonus:0},
- {id:'normal',name:'标准',hp:1,damage:1,speed:1,rate:1,density:1,score:1,aimLead:0,skillBonus:0},
- {id:'hard',name:'精英',hp:1.9,damage:1.5,speed:1.52,rate:1.58,density:1.4,score:1.5,aimLead:.48,skillBonus:2}
+ {id:'easy',name:'休闲',hp:1,damage:.68,speed:.76,rate:1,density:1,score:.8,aimLead:0,skillBonus:1,enemyMove:.88},
+ {id:'normal',name:'标准',hp:1,damage:1,speed:.84,rate:1,density:1,score:1,aimLead:.18,skillBonus:0,enemyMove:1},
+ {id:'hard',name:'精英',hp:1,damage:1.18,speed:.94,rate:1,density:1,score:1.5,aimLead:.62,skillBonus:0,enemyMove:1.2}
 ];
 export const TALENTS = [
  {id:'fire',name:'火控校准',note:'主炮伤害 +4% / 级',max:3},
  {id:'energy',name:'能量回收',note:'大招获得 +5% / 级',max:3},
- {id:'shield',name:'护盾电容',note:'最大护盾 +6% / 级',max:3},
- {id:'repair',name:'紧急修复',note:'修复拾取 +20% / 级',max:3},
+ {id:'shield',name:'相位缓冲',note:'受击后无敌 +0.12 秒 / 级',max:3},
+ {id:'repair',name:'命数补给',note:'命数补给冷却 -3 秒 / 级',max:3},
  {id:'bomb',name:'爆弹工程',note:'2 级容量 +1，3 级爆弹伤害 +20%',max:3},
  {id:'cooldown',name:'过载散热',note:'主动技冷却 -6% / 级',max:3}
 ];

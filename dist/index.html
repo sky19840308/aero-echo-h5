@@ -8,19 +8,20 @@
  <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
  <title>裂空回响 · AERO ECHO</title>
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="style.css?v=23">
- <link rel="stylesheet" href="ui-art.css?v=23">
- <link rel="stylesheet" href="menu-layout.css?v=23">
- <link rel="stylesheet" href="online.css?v=23">
- <link rel="stylesheet" href="ending.css?v=23">
- <link rel="stylesheet" href="experience.css?v=23">
+ <link rel="stylesheet" href="style.css?v=24">
+ <link rel="stylesheet" href="ui-art.css?v=24">
+ <link rel="stylesheet" href="menu-layout.css?v=24">
+ <link rel="stylesheet" href="online.css?v=24">
+ <link rel="stylesheet" href="ending.css?v=24">
+ <link rel="stylesheet" href="flight-vitals.css?v=24">
+ <link rel="stylesheet" href="experience.css?v=24">
 </head>
 <body class="language-pending">
  <div class="ambient-grid" aria-hidden="true"></div>
  <main class="shell">
   <aside class="left-panel">
    <a class="wordmark" href="./" aria-label="裂空回响首页"><span class="emblem">A</span><span>AERO ECHO<small>裂 空 回 响</small></span></a>
-   <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 23</div>
+   <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 24</div>
    <h1>拯救地球，<br>唤醒 X 星。</h1>
    <p class="intro-copy">X 星舰队即将入侵地球。<br>三位飞行员突破九道封锁，<br>让两个世界重获自由。</p>
    <nav class="side-nav" aria-label="游戏导航">
@@ -63,7 +64,7 @@
     <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div>
     <small id="coop-network" class="coop-network" hidden></small>
     <div id="coop-status" class="coop-status" aria-live="polite" hidden></div>
-    <div class="vitals"><div class="vital-label"><span>机体 <b id="hp-value">1000</b></span><span>护盾 <b id="shield-value">350</b></span></div><div class="vital-bars"><div class="hp-bar"><i id="hp-fill"></i></div><div class="shield-bar"><i id="shield-fill"></i></div></div></div>
+    <div class="lives-counter" id="lives-counter" aria-label="剩余命数 3"><div class="life-readout"><span>命数</span><b id="lives-value">3</b></div><div class="lives-pips" id="lives-pips" aria-hidden="true"><i class="life-pip"></i><i class="life-pip"></i><i class="life-pip"></i></div></div>
     <div class="mission-progress"><span id="wave-label">WAVE 01</span><i><b id="wave-fill"></b></i><span id="hud-time">00:00</span></div>
     <div class="boss-hud" id="boss-hud" hidden><div><span id="boss-name"></span><b id="boss-phase">PHASE 01</b></div><i><b id="boss-fill"></b></i></div>
     <div class="battle-message" id="battle-message"><img id="message-avatar" alt=""><div><small id="message-speaker"></small><span id="message-text"></span></div></div>
@@ -96,6 +97,6 @@
    <button id="ending-pause"></button><button id="ending-skip"></button><button id="ending-sound"></button><button id="ending-return" hidden></button>
   </nav>
  </section>
- <script type="module" src="app.js?v=23"></script>
+ <script type="module" src="app.js?v=24"></script>
 </body>
 </html>
