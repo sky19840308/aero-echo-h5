@@ -1,5 +1,5 @@
-import {SFX,SPRITE_SOUNDS} from './sfx-catalog.js?v=24';
-import {audioVolume} from './audio-levels.js?v=24';
+import {SFX,SPRITE_SOUNDS} from './sfx-catalog.js?v=25';
+import {audioVolume} from './audio-levels.js?v=25';
 
 // Bind by the approved aircraft identity. The supplied audio README swaps the
 // two pilot names, but P02 is Wraith-X and P03 is Bastion-3 in its actual files.

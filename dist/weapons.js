@@ -1,6 +1,6 @@
 // Native-alpha weapon cuts. Moving, rotating, warnings and collision are engine behavior.
 // A pattern is a complete attack image; it is never used as one tiny bullet sprite.
-import {BOSS_ARSENALS,BOSS_BEAM_COMPONENTS} from './boss-arsenals.js?v=24';
+import {BOSS_ARSENALS,BOSS_BEAM_COMPONENTS} from './boss-arsenals.js?v=25';
 export {BOSS_ARSENALS};
 export const BOSS_COLORS=['#8edeff','#ff9950','#85f99b','#dfa6ff','#74eaff','#d8a0ff','#ffbf76','#baadff','#ff997d'];
 const ENEMY_SHOTS={

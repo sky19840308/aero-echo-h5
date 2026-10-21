@@ -2,11 +2,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
-import {Game} from '../dist/engine.js?v=24';
-import {Renderer} from '../dist/renderer.js?v=24';
-import {stageConfig} from '../dist/data.js?v=24';
-import {BOSS_ARSENALS,EFFECT_ART,hazardImpactArt,hazardPhaseArt} from '../dist/weapons.js?v=24';
-import {HERO_BOMB_ASSETS,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=24';
+import {Game} from '../dist/engine.js?v=25';
+import {Renderer} from '../dist/renderer.js?v=25';
+import {stageConfig} from '../dist/data.js?v=25';
+import {BOSS_ARSENALS,EFFECT_ART,hazardImpactArt,hazardPhaseArt} from '../dist/weapons.js?v=25';
+import {HERO_BOMB_ASSETS,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=25';
 
 const require=createRequire(import.meta.url);
 const {createCanvas,loadImage}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');

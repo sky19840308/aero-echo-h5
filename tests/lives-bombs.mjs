@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=24';
-import {CoopGame} from '../dist/coop.js?v=24';
-import {DIFFICULTIES,stageConfig} from '../dist/data.js?v=24';
-import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=24';
+import {Game} from '../dist/engine.js?v=25';
+import {CoopGame} from '../dist/coop.js?v=25';
+import {DIFFICULTIES,stageConfig} from '../dist/data.js?v=25';
+import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=25';
 
 const stage=stageConfig(0,0,'campaign','quick');
 const difficultyRuns=DIFFICULTIES.map(({id})=>{
@@ -46,6 +46,7 @@ assert.ok(difficultyRuns[0].bulletSpeed<138,'all projectile speeds are reduced f
 for(const id of ['easy','normal','hard']){
  const game=new Game({stage,seed:25,difficulty:id});game.start();
  for(const expected of [2,1,0]){
+  game.player.hitCrash=null;
   game.player.invulnerable=0;
   game.hurtPlayer(999);
   assert.equal(game.player.lives,expected,'one hit costs one life');
@@ -103,6 +104,7 @@ for(const [shipIndex,shipId] of ['Dawn7','Bastion3','WraithX'].entries()){
  const coop=new CoopGame({mission:0,room,seed:321});coop.start();
  const host=coop.crew.find(pilot=>pilot.role==='host'),guest=coop.crew.find(pilot=>pilot.role==='guest');
  for(const expected of [2,1,0]){
+  host.player.hitCrash=null;
   host.player.invulnerable=0;
   coop.withPilot(host,()=>coop.hurtPlayer(500));
   assert.equal(host.player.lives,expected,'co-op pilot loses one life per hit');

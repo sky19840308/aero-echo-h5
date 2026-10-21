@@ -1,9 +1,9 @@
-import {STORY} from './story-content.js?v=24';
+import {STORY} from './story-content.js?v=25';
 export const W = 450, H = 800;
 export const SHIPS = [
- {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', dps:120, speed:85, cooldown:18, skill:'超频齐射', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。持续命中提高射速，超频获得穿透；日冕射线贯穿战场。', skillText:'7 秒射速 +45%，脉冲获得穿透。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
- {id:'Bastion3', name:'堡垒-3', english:'BASTION / 03', role:'磁场控场', color:'#f8bf69', dps:100, speed:71, cooldown:22, skill:'磁场穹顶', ultimate:'重力轰击', passive:'磁场护航', description:'五联重型霰炮与防御僚机。磁场吸收附近普通敌弹；重力轰击覆盖前方。每次受击仍会损失一条命。', skillText:'5 秒磁场，吸收附近普通敌弹；受击仍会损失一条命。', ultText:'5 秒连续区域轰击，每轮清除普通敌弹。'},
- {id:'WraithX', name:'幽蓝-X', english:'WRAITH / X', role:'高机动擦弹', color:'#bf9cff', dps:145, speed:99, cooldown:14, skill:'相位穿梭', ultimate:'奇点切割', passive:'擦弹相位', description:'穿透激光针与链状电弧。擦弹积累相位数据，穿梭避开弹幕；奇点切割锁定多个目标。', skillText:'1.2 秒相位无敌，移动轨迹留下攻击残影。', ultText:'锁定至多 6 个目标，普通敌弹减速 40%，持续 3 秒。'}
+ {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', dps:120, speed:85, cooldown:18, skill:'等离子喷涌', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。启动三段击时喷发纵向等离子激光，并显著加速主炮弹；日冕射线贯穿战场。', skillText:'1.7 秒等离子激光持续喷涌，同时提高主炮弹速与射速。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
+ {id:'Bastion3', name:'堡垒-3', english:'BASTION / 03', role:'磁场控场', color:'#f8bf69', dps:100, speed:71, cooldown:22, skill:'磁场穹顶', ultimate:'重力轰击', passive:'磁场护航', description:'五联重型霰炮与两颗持续旋转的小型卫星。风林火山展开防护穹顶，吸收弹幕并免疫伤害；重力轰击改为短促的小范围爆炸。', skillText:'4.8 秒防护穹顶：吸收附近敌弹并免疫所有伤害，两颗卫星持续环绕。', ultText:'2.8 秒聚焦轰击；爆炸持续更短、作用半径缩小至约 132。'},
+ {id:'WraithX', name:'幽蓝-X', english:'WRAITH / X', role:'高机动擦弹', color:'#bf9cff', dps:145, speed:99, cooldown:14, skill:'隐身', ultimate:'奇点切割', passive:'擦弹相位', description:'穿透激光针与链状电弧。忍术皆传启动后隐身并免疫伤害；自动连斩以多道刀光瞬间切击敌机。', skillText:'隐身 2.15 秒，期间不受任何伤害；自动连斩可瞬间切杀轻型敌机。', ultText:'锁定至多 6 个目标，普通敌弹减速 40%，持续 3 秒。'}
 ];
 export const SKINS = ['原装机体','战地涂装','战术涂装','特装机体'];
 export const CHAPTERS = [
@@ -39,7 +39,7 @@ export const TALENTS = [
  {id:'energy',name:'能量回收',note:'大招获得 +5% / 级',max:3},
  {id:'shield',name:'相位缓冲',note:'受击后无敌 +0.12 秒 / 级',max:3},
  {id:'repair',name:'命数补给',note:'命数补给冷却 -3 秒 / 级',max:3},
- {id:'bomb',name:'爆弹工程',note:'2 级容量 +1，3 级爆弹伤害 +20%',max:3},
+ {id:'bomb',name:'爆弹工程',note:'携带上限 5 枚；2 级出击多带 1 枚，3 级伤害 +20%',max:3},
  {id:'cooldown',name:'过载散热',note:'主动技冷却 -6% / 级',max:3}
 ];
 export function stageConfig(chapter, substage, mode='campaign', pace='full') {
