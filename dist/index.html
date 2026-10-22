@@ -11,20 +11,21 @@
  <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
  <title>裂空回响 · AERO ECHO</title>
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="style.css?v=28">
- <link rel="stylesheet" href="ui-art.css?v=28">
- <link rel="stylesheet" href="menu-layout.css?v=28">
- <link rel="stylesheet" href="online.css?v=28">
- <link rel="stylesheet" href="ending.css?v=28">
- <link rel="stylesheet" href="flight-vitals.css?v=28">
- <link rel="stylesheet" href="experience.css?v=28">
+ <link rel="stylesheet" href="style.css?v=29">
+ <link rel="stylesheet" href="ui-art.css?v=29">
+ <link rel="stylesheet" href="menu-layout.css?v=29">
+ <link rel="stylesheet" href="online.css?v=29">
+ <link rel="stylesheet" href="ending.css?v=29">
+ <link rel="stylesheet" href="flight-vitals.css?v=29">
+ <link rel="stylesheet" href="experience.css?v=29">
+ <link rel="stylesheet" href="desktop-play.css?v=29">
 </head>
 <body class="language-pending">
  <div class="ambient-grid" aria-hidden="true"></div>
  <main class="shell">
   <aside class="left-panel">
    <a class="wordmark" href="./" aria-label="裂空回响首页"><span class="emblem">A</span><span>AERO ECHO<small>裂 空 回 响</small></span></a>
-  <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 27</div>
+  <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 29</div>
    <h1>拯救地球，<br>唤醒 X 星。</h1>
    <p class="intro-copy">X 星舰队即将入侵地球。<br>三位飞行员突破九道封锁，<br>让两个世界重获自由。</p>
    <nav class="side-nav" aria-label="游戏导航">
@@ -37,6 +38,7 @@
     <button data-open="online"><span>07</span> 双人协作 </button>
     <button data-open="account"><span>08</span> 账户与云存档 </button>
     <button data-open="lan"><span>09</span> 本地双人合作 </button>
+    <button data-open="local-duo"><span>10</span> 同屏双打 </button>
    </nav>
    <div class="edition-foot"><span>09 / CHAPTERS</span><span>27 / MISSIONS</span><span>03 / FIGHTERS</span></div>
   </aside>
@@ -44,7 +46,7 @@
    <canvas id="canvas" width="450" height="800" aria-label="战场：按住拖拽移动，战机自动开火" tabindex="0"></canvas>
    <div class="stage-vignette" aria-hidden="true"></div>
    <div id="lobby" class="lobby">
-    <div class="lobby-top"><span><i class="status-light"></i> ECHO FLIGHT COMMAND</span><div><button class="icon-button locale-toggle" id="language-toggle" aria-label="语言">🌐</button><button class="icon-button" id="sound-toggle" aria-label="切换声音"></button><button class="icon-button" data-open="settings" aria-label="设置">⚙</button></div></div>
+    <div class="lobby-top"><span><i class="status-light"></i> ECHO FLIGHT COMMAND</span><div><button class="icon-button locale-toggle" id="language-toggle" aria-label="语言">🌐</button><button class="icon-button" id="sound-toggle" aria-label="切换声音"></button><button class="icon-button" data-action="fullscreen" aria-label="全屏" title="全屏">⛶</button><button class="icon-button" data-open="settings" aria-label="设置">⚙</button></div></div>
     <div class="title-block"><div class="eyebrow">裂 空 回 响</div><div class="game-title">AERO<span>ECHO</span></div><p>突入 X 星 · 自由的回响</p></div>
     <div id="lobby-wallet" class="lobby-wallet"></div>
     <div class="ship-switcher"><button id="previous-ship" aria-label="上一位飞行员"></button><button id="ship-info" data-open="hangar"><span id="ship-name">宇宙人</span><small id="ship-role">均衡火力</small></button><button id="next-ship" aria-label="下一位飞行员"></button></div>
@@ -58,15 +60,17 @@
      <button class="menu-entry secondary" data-open="bosses"><span class="menu-index">05</span><span>BOSS挑战<small>BOSS CHALLENGE</small></span></button>
      <button class="menu-entry secondary" data-open="archive"><span class="menu-index">06</span><span>图库及成就<small>GALLERY / ACHIEVEMENTS</small></span></button>
      <button class="menu-entry secondary lan-menu" data-open="lan"><span class="menu-index">07</span><span>本地双人合作<small>LOCAL CO-OP · LAN</small></span></button>
+     <button class="menu-entry secondary local-duo-entry" data-open="local-duo"><span class="menu-index">08</span><span>同屏双打<small>LOCAL DUEL · ONE KEYBOARD</small></span></button>
     </nav>
     <div class="online-entry"><button class="secondary" data-open="online">双人协作 </button><button class="secondary" data-open="account">账户与云存档 </button></div>
     <span id="account-badge" class="account-badge" role="status">游客 · 本机存档</span>
     <div class="lobby-note">九章故事 · 账户独立 · 双人协作</div>
    </div>
    <div class="game-hud" id="game-hud" hidden>
-    <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div>
+    <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><div><button class="icon-button" data-action="fullscreen" aria-label="切换全屏" title="切换全屏">⛶</button><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div></div>
     <small id="coop-network" class="coop-network" hidden></small>
     <div id="coop-status" class="coop-status" aria-live="polite" hidden></div>
+    <div id="local-duo-status" class="coop-status local-duo-status" aria-live="polite" hidden></div>
     <div class="lives-counter" id="lives-counter" aria-label="剩余命数 3"><div class="life-readout"><img id="life-ship-icon" alt="" aria-hidden="true"><span aria-hidden="true">×</span><b id="lives-value">3</b></div><button type="button" class="wingmen-call" id="wingmen-call" aria-label="联军支援" title="联军支援"><span class="wingmen-flames" aria-hidden="true"><i class="wingman-flame"></i><i class="wingman-flame"></i><i class="wingman-flame"></i></span><span id="wingmen-status">联军待命</span></button></div>
     <div class="mission-progress"><span id="wave-label">WAVE 01</span><i><b id="wave-fill"></b></i><span id="hud-time">00:00</span></div>
     <div class="boss-hud" id="boss-hud" hidden><div><span id="boss-name"></span><b id="boss-phase">PHASE 01</b></div><i><b id="boss-fill"></b></i></div>
@@ -100,6 +104,6 @@
    <button id="ending-pause"></button><button id="ending-skip"></button><button id="ending-sound"></button><button id="ending-return" hidden></button>
   </nav>
  </section>
- <script type="module" src="app.js?v=28"></script>
+ <script type="module" src="app.js?v=29"></script>
 </body>
 </html>

@@ -1,0 +1,9 @@
+/* A landscape desktop cockpit with a full-height 9:16 playfield. */
+@media (min-width:1000px) and (orientation:landscape){
+ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden}
+ .shell{display:grid!important;width:100vw;height:100dvh;min-height:100dvh;max-width:none;box-sizing:border-box;grid-template-columns:minmax(180px,1fr) min(56.25dvh,52vw) minmax(180px,1fr);gap:clamp(16px,2vw,38px);padding:clamp(12px,1.8vw,34px);align-items:stretch;justify-content:stretch}
+ .left-panel,.right-panel{display:flex;flex-direction:column;width:auto;max-width:420px;min-width:0;height:auto;justify-self:center}
+ .stage{width:auto!important;height:100%!important;max-height:100dvh;aspect-ratio:9/16;justify-self:center;min-width:0}
+ #canvas{width:100%;height:100%}
+ .stage:fullscreen{width:auto!important;height:100dvh!important}
+}

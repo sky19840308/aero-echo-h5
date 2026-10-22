@@ -12,7 +12,7 @@
 .battle-message span{display:block;font-size:clamp(11px,3.1cqw,14px);font-weight:600;line-height:1.6;color:#f1f8ff;text-shadow:0 2px 3px #000,0 0 5px #000,1px 0 2px #000,-1px 0 2px #000}
 .coop-network{display:block;width:max-content;max-width:85%;margin:5px 0;color:#87ddec;font:9px/1.5 ui-monospace,monospace;pointer-events:none;text-shadow:0 1px 2px #000}
 @container(max-width:360px){.lobby .online-entry .secondary{padding:8px;min-height:40px}.battle-message{bottom:18%}}
-.lobby .main-menu{grid-template-rows:repeat(4,minmax(44px,auto))}
+.lobby .main-menu{grid-template-rows:repeat(5,minmax(44px,auto))}
 .main-menu .lan-menu{grid-column:1/-1;min-height:46px;--frame:var(--metal-blue)}
 .lan-hangar{margin:14px 0;border-top:1px solid #65ddff38;padding-top:12px;min-width:0}
 .lan-hangar summary{cursor:pointer;color:#a7e9ff;padding:10px 0;line-height:1.5;font-weight:600}
@@ -59,3 +59,8 @@
 .talent-tree-foot{color:#91acb9;font-size:10px;line-height:1.5;text-align:center}
 @container(max-width:360px){.talent-paths{gap:5px}.talent-node{grid-template-columns:22px 1fr auto;padding:6px;min-height:77px}.talent-node-mark{width:20px;height:20px}.talent-node>b{font-size:9px}.talent-node>small{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.talent-node,.talent-branch-meter em{transition:none}}
+
+.main-menu [data-open="local-duo"]{grid-column:1/-1;min-height:46px;--frame:var(--metal-violet,var(--metal-blue))}
+
+.main-menu .local-duo-entry{grid-column:1/-1;min-height:46px;--frame:var(--metal-blue)}
+.local-duo-status{display:grid;gap:3px;color:#d8f5ff;font:10px/1.35 ui-monospace,monospace;text-shadow:0 1px 2px #000}

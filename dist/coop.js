@@ -1,10 +1,10 @@
-import {Game} from './engine.js?v=28';
-import {segmentHitsAabb} from './combat-geometry.js?v=28';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=28';
-import {hazardImpactArt} from './weapons.js?v=28';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=28';
-import {CoopPeer} from './coop-peer.js?v=28';
-import {normalizeProfile} from './profile.js?v=28';
+import {Game} from './engine.js?v=29';
+import {segmentHitsAabb} from './combat-geometry.js?v=29';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=29';
+import {hazardImpactArt} from './weapons.js?v=29';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=29';
+import {CoopPeer} from './coop-peer.js?v=29';
+import {normalizeProfile} from './profile.js?v=29';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -29,15 +29,15 @@ const plain=(value,depth=0)=>{
 };
 
 export class CoopGame extends Game {
- constructor({mission=0,room,crew=null,localRole='host',onEvent=()=>{},seed=Date.now()}){
-  const stage=stageConfig(Math.floor(mission/3),mission%3,'coop','quick');
-  super({stage,ship:choiceOf(room?.host?.choice).shipIndex,profile:{},difficulty:'normal',pace:'quick',seed,onEvent});
+ constructor({mission=0,room,crew=null,localRole='host',onEvent=()=>{},seed=Date.now(),difficulty='normal',pace='quick',stageMode='coop'}){
+  const stage=stageConfig(Math.floor(mission/3),mission%3,stageMode,pace);
+  super({stage,ship:choiceOf(room?.host?.choice).shipIndex,profile:{},difficulty,pace,seed,onEvent});
   this.contextDepth=0;this.eventQueue=[];const dispatch=this.emit;this.emit=event=>{
    if(this.contextDepth)this.eventQueue.push({...event,role:event.role||this.activePilot?.role});else dispatch(event);
   };this.flushEvents=()=>{if(this.contextDepth)return;const queued=this.eventQueue.splice(0);for(const event of queued)dispatch(event);};
   this.mission=mission;this.localRole=localRole;this.coop=true;this.lan=room?.mode==='lan';this.crew=ROLES.map((role,index)=>{
    const member=room?.[role]||{},choice=choiceOf(member.choice),previous=crew?.find(pilot=>pilot.role===role);
-   const fresh=new Game({stage,ship:choice.shipIndex,profile:this.lan?normalizeProfile(member.loadout):{},difficulty:'normal',pace:'quick',seed:seed+index});
+   const fresh=new Game({stage,ship:choice.shipIndex,profile:this.lan?normalizeProfile(member.loadout):{},difficulty,pace,seed:seed+index});
    // Campaign calibration assumes permanent hangar upgrades. Co-op has none,
    // so retain the stage's intrinsic firepower curve without that gear penalty.
    const baseDps=this.lan?fresh.dps:fresh.ship.dps*([180,260,380,520,700,900,1150,1450,1900][stage.chapter]/120);

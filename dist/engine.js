@@ -1,11 +1,11 @@
-import {chapterCalibration} from './economy.js?v=28';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=28';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=28';
-import {growthStats,weaponTier} from './progression.js?v=28';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=28';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=28';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from './combat-geometry.js?v=28';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=28';
+import {chapterCalibration} from './economy.js?v=29';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=29';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=29';
+import {growthStats,weaponTier} from './progression.js?v=29';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=29';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=29';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from './combat-geometry.js?v=29';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=29';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -113,14 +113,14 @@ export class Game {
    if(unit.crash){const c=unit.crash;c.age+=dt;unit.x=clamp(c.x+c.vx*c.age,10,W-10);unit.y=c.y+c.vy*c.age+180*c.age*c.age;unit.roll=c.rotation+c.age*3.6;if(c.age>=c.duration){unit.mode='gone';this.effect('Wingman_Crash_Burst',unit.x,unit.y,44,.32);this.sparks(unit.x,unit.y,WINGMEN[unit.ship].color,8);}continue;}
    unit.age+=dt;unit.hitFlash=Math.max(0,(unit.hitFlash||0)-dt);unit.contactCooldown=Math.max(0,(unit.contactCooldown||0)-dt);
    const sortieAge=unit.age-WINGMAN_PRELAUNCH;
-   if(sortieAge<0){unit.mode='assembling';const row=Math.floor(unit.index/5),column=unit.index%5-2,phase=this.clock*.62+unit.index*.73+(unit.role==='guest'?1.3:0),targetX=W/2+column*53+Math.sin(phase)*4,targetY=155+row*36+Math.sin(phase*1.4)*4,blend=Math.min(1,dt*1.35);unit.x+=(targetX-unit.x)*blend;unit.y+=(targetY-unit.y)*blend;unit.roll=clamp((targetX-unit.x)*-.009,-.18,.18);continue;}
+   if(sortieAge<0){unit.mode='assembling';const row=Math.floor(unit.index/5),column=unit.index%5-2,phase=this.clock*.62+unit.index*.73+(unit.role==='guest'?1.3:0),targetX=W/2+column*53+Math.sin(phase)*4,targetY=H*.42+row*36+Math.sin(phase*1.4)*4,blend=Math.min(1,dt*1.35);unit.x+=(targetX-unit.x)*blend;unit.y+=(targetY-unit.y)*blend;unit.roll=clamp((targetX-unit.x)*-.009,-.18,.18);continue;}
    if(sortieAge>=WINGMAN_SORTIE){unit.mode='exiting';unit.y-=150*dt;unit.x+=Math.sin(this.clock*2+unit.index)*13*dt;if(sortieAge>=WINGMAN_SORTIE+WINGMAN_EXIT)unit.mode='gone';continue;}
    const pilot=this.coop?this.crew.find(item=>item.role===unit.role):null;
    const withOwner=fn=>pilot&&typeof this.withPilot==='function'?this.withPilot(pilot,fn):fn();
    withOwner(()=>{
     const row=Math.floor(unit.index/5),column=unit.index%5-2,phase=this.clock*.82+unit.index*.73+(unit.role==='guest'?1.3:0),entry=Math.min(1,Math.max(0,sortieAge/1.08));
     const center=W/2+Math.sin(this.clock*.62+(unit.role==='guest'?1.5:0))*34;
-    let targetX=center+column*53+Math.sin(phase)*6,targetY=155+row*36+(63+row*12+Math.sin(phase*1.55)*6)*entry;
+    let targetX=center+column*53+Math.sin(phase)*6,targetY=H*.42+row*36+(63+row*12+Math.sin(phase*1.55)*6)*entry;
     let dodgeX=0,dodgeY=0;
     for(const enemy of this.enemies){if(!enemy.alive||enemy.crashing)continue;const dx=unit.x-enemy.x,dy=unit.y-enemy.y,d=Math.hypot(dx,dy);if(d>0&&d<45){const push=(45-d)*.7;dodgeX+=dx/d*push;dodgeY+=dy/d*push;}}
     for(const bullet of this.bullets){if(!bullet.alive||bullet.owner!=='enemy')continue;const dx=unit.x-bullet.x,dy=unit.y-bullet.y,d=Math.hypot(dx,dy);if(d>0&&d<43){const push=(43-d)*.52;dodgeX+=dx/d*push;dodgeY+=dy/d*push;}}
@@ -378,4 +378,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=28';
+export {AssetStore} from './asset-loader.js?v=29';
