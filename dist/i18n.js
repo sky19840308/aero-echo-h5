@@ -1,7 +1,7 @@
-import {SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIES} from './data.js?v=27';
-import {ITEM_TYPES,CONTAINERS} from './items.js?v=27';
-import {RESEARCH} from './progression.js?v=27';
-import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=27';
+import {SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIES} from './data.js?v=28';
+import {ITEM_TYPES,CONTAINERS} from './items.js?v=28';
+import {RESEARCH} from './progression.js?v=28';
+import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=28';
 
 export const LANGUAGES=[{id:'zh',label:'简体中文',html:'zh-CN'},{id:'ja',label:'日本語',html:'ja'},{id:'en',label:'English',html:'en'}];
 let locale='zh';
@@ -157,6 +157,13 @@ add('命数补给','予備ライフ補給','Spare Life Supply');
 add('命数补给冷却 -3 秒 / 级','残機補給間隔 -3 秒 / レベル','Spare life drop interval -3 seconds / level');
 add('额外补给冷却 -3 秒 / 级','補給間隔 -3 秒 / レベル','Supply interval -3 seconds / level');
 add('剩余命数 3','残りライフ 3','3 lives remaining');
+add('联军支援','連合支援','ALLIED SUPPORT');
+add('集结中','集結中','MUSTERING');
+add('出击中','出撃中','SORTIE');
+add('联军待命','支援待機','SUPPORT READY');
+add('本大关联军支援次数耗尽','この章の連合支援は使い切りました','ALLIED SUPPORT DEPLETED THIS CHAPTER');
+add('联军正在执行任务','連合支援が出撃中です','SQUADRON ON SORTIE');
+add('联军支援出击','連合支援、出撃！','ALLIED SQUADRON DEPLOYED');
 
 const map=new Map(entries.map(row=>[row[0],row]));
 const sorted=entries.slice().sort((a,b)=>b[0].length-a[0].length);

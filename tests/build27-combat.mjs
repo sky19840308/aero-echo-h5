@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=27';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=27';
-import {Renderer} from '../dist/renderer.js?v=27';
-import {stageConfig} from '../dist/data.js?v=27';
-import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=27';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from '../dist/combat-geometry.js?v=27';
+import {Game} from '../dist/engine.js?v=28';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=28';
+import {Renderer} from '../dist/renderer.js?v=28';
+import {stageConfig} from '../dist/data.js?v=28';
+import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=28';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from '../dist/combat-geometry.js?v=28';
+import {WINGMEN} from '../dist/wingmen.js?v=28';
 
 const require=createRequire(import.meta.url);
-const {createCanvas}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');
+const {createCanvas,loadImage}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');
 globalThis.window={devicePixelRatio:1};
 globalThis.ResizeObserver=class{observe(){}};
 const manifest={
@@ -203,4 +204,13 @@ assert.equal(segmentHitsAabb(225,475,225,450,210,405,240,435),false,'line-segmen
 {
  const game=new Game({stage:stageConfig(1,0,'campaign','quick'),seed:907});game.start();const enemy=game.spawn(4,180,200);game.killEnemy(enemy);assert.ok(enemy.crashing,'some destroyed enemy aircraft enter a crash animation');renderer.enemyCrash(enemy);game.updateEnemies(.7);assert.equal(enemy.crashing,null,'enemy crash animation resolves into its final explosion');
 }
-console.log(JSON.stringify({passed:true,checks:['bomb-only Japanese brush-title and hero-name callouts reveal glyph-by-glyph','Dawn plasma beam and accelerated rounds','Bastion full-damage shield, orbiting satellites and focused blasts','Wraith stealth immunity and chained slash','formation and erratic flight, recoverable kamikaze cycles, shield-safe impacts and aligned dive art in single and co-op play','five-second solo and co-op respawn protection and player/enemy crash sequences','laser warning and mixed fast/slow bullets','five-bomb cap and sparse drops']}));
+{
+ const sprites=new Map(await Promise.all(Object.values(WINGMEN).map(async wingman=>[wingman.sprite,await loadImage(new URL('../dist/'+wingman.sprite,import.meta.url).pathname)])));
+ renderer.assets.get=src=>sprites.get(src)||null;
+ const game=new Game({stage,seed:908});game.start();assert.equal(game.callWingmen(),true);
+ for(const unit of game.wingmen){unit.mode='active';unit.x=55+(unit.index%5)*85;unit.y=230+Math.floor(unit.index/5)*92;}
+ renderer.ctx.clearRect(0,0,450,800);renderer.wingmen(game,1);renderer.wingmanCallup(game,1);
+ let coloredPixels=0;for(let y=200;y<355;y+=5)for(let x=45;x<420;x+=5){const pixel=renderer.ctx.getImageData(x,y,1,1).data;if(pixel[0]+pixel[1]+pixel[2]>40)coloredPixels++;}
+ assert.ok(coloredPixels>20,'transparent squadron SVGs and arrival shield render to native Canvas');
+}
+console.log(JSON.stringify({passed:true,checks:['bomb-only Japanese brush-title and hero-name callouts reveal glyph-by-glyph','Dawn plasma beam and accelerated rounds','Bastion full-damage shield, orbiting satellites and focused blasts','Wraith stealth immunity and chained slash','formation and erratic kamikaze cycles, shield-safe impacts and aligned dive art in single and co-op play','five-second solo and co-op respawn protection and player/enemy crash sequences','laser warning and mixed fast/slow bullets','five-bomb cap, sparse drops and native-alpha wingmen rendering']}));

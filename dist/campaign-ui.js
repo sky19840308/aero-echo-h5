@@ -1,6 +1,6 @@
-import {CHAPTERS,SHIPS,ENEMIES,DIFFICULTIES,stageConfig} from './data.js?v=27';
-import {missionCleared,bossUnlocked,storyTarget,latestClear,ACHIEVEMENTS} from './campaign.js?v=27';
-import {getLocale} from './i18n.js?v=27';
+import {CHAPTERS,SHIPS,ENEMIES,DIFFICULTIES,stageConfig} from './data.js?v=28';
+import {missionCleared,bossUnlocked,storyTarget,latestClear,ACHIEVEMENTS} from './campaign.js?v=28';
+import {getLocale} from './i18n.js?v=28';
 const pad=n=>String(n).padStart(2,'0'),text=values=>values[['zh','ja','en'].indexOf(getLocale())];
 const source=meta=>meta?.fallback||meta?.src||'';
 export function flightOptionsHtml(selection){return `<span class="selection-label">难度 / DIFFICULTY</span><div class="segmented">${DIFFICULTIES.map(d=>`<button class="${selection.difficulty===d.id?'active':''}" data-action="difficulty" data-value="${d.id}" aria-pressed="${selection.difficulty===d.id}">${d.name}</button>`).join('')}</div><p class="tiny-note">休闲难度适合新手，标准保持均衡；复杂难度敌机数量与耐久增加，敌方弹幕和技能频次适度降低，为三条命与单次受击机制保留躲避空间。</p><span class="selection-label">节奏 / MISSION LENGTH</span><div class="segmented">${[['quick','快速试飞','75 秒波次 · Boss 另计'],['full','完整波次','150 秒波次 · Boss 另计']].map(([id,name,note])=>`<button class="${selection.pace===id?'active':''}" data-action="pace" data-value="${id}">${name}<small>${note}</small></button>`).join('')}</div>`;}

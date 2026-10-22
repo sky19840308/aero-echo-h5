@@ -1,6 +1,19 @@
-.lives-counter{margin-top:10px;display:flex;align-items:center;gap:9px;color:#b7d6e3}
-.life-readout{display:flex;align-items:baseline;gap:5px;font-size:8px;letter-spacing:.4px}
-.life-readout b{font-family:monospace;font-size:14px;font-weight:600;color:#dcf8ff}
-.lives-pips{display:flex;align-items:center;gap:6px;height:14px}
-.life-pip{display:block;width:8px;height:8px;transform:rotate(45deg);border:1px solid #8ceaff;background:#66dfff;box-shadow:0 0 7px #57d8ff88}
-.life-pip.spent{background:transparent;border-color:#8ca6b388;box-shadow:none;opacity:.5}
+.lives-counter{margin-top:10px;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:9px;color:#b7d6e3}
+.life-readout{display:flex;align-items:center;gap:3px;font-size:12px;letter-spacing:.1px;color:#91c8d8}
+.life-readout img{display:block;width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 5px #65dfff55)}
+.life-readout b{font-family:monospace;font-size:15px;font-weight:700;color:#e1faff}
+.wingmen-call{appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;min-width:116px;min-height:34px;padding:4px 8px;border:1px solid #65c6da66;border-radius:7px;background:linear-gradient(120deg,#143348dd,#172d43dd);color:#d5f5fb;font-family:inherit;font-size:8px;font-weight:600;line-height:1.1;letter-spacing:.2px;cursor:pointer;touch-action:manipulation;transition:border-color .16s,background .16s,opacity .16s}
+.wingmen-call:hover:not(:disabled){border-color:#86edff;background:linear-gradient(120deg,#18455add,#263c56ee)}
+.wingmen-call:focus-visible{outline:2px solid #b4f6ff;outline-offset:2px}
+.wingmen-call:disabled{cursor:default;opacity:.72}
+.wingmen-call.empty{color:#8ca6b3;border-color:#546b7a66}
+.wingmen-call.deployed{border-color:#ffcf7c88;box-shadow:0 0 10px #ffc35c24}
+.wingmen-flames{display:flex;align-items:center;gap:3px;height:18px}
+.wingman-flame{display:block;width:10px;height:15px;clip-path:polygon(49% 0,63% 28%,93% 40%,80% 64%,67% 100%,30% 100%,17% 70%,5% 46%,34% 33%);background:linear-gradient(180deg,#fff8bd 0%,#ffe879 23%,#ff9f39 57%,#ff6335 100%);filter:drop-shadow(0 0 3px #ffb34f);transform-origin:50% 90%;animation:wingman-flare .8s ease-in-out infinite alternate}
+.wingman-flame:nth-child(2){animation-delay:-.27s;transform:scale(.88)}
+.wingman-flame:nth-child(3){animation-delay:-.52s;transform:scale(.76)}
+.wingman-flame.spent{opacity:.22;filter:grayscale(1);animation:none;transform:scale(.68)}
+#wingmen-status{white-space:nowrap}
+@keyframes wingman-flare{from{filter:drop-shadow(0 0 2px #ff9b39);transform:scaleY(.85) rotate(-4deg)}to{filter:drop-shadow(0 0 6px #ffe88c);transform:scaleY(1.08) rotate(4deg)}}
+@media(max-width:460px){.lives-counter{margin-top:7px}.life-readout img{width:28px;height:28px}.wingmen-call{min-width:104px;padding-inline:6px}}
+@media(prefers-reduced-motion:reduce){.wingman-flame{animation:none}}

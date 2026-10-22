@@ -1,7 +1,7 @@
 // Schema tables and a per-packet string dictionary keep complete worlds small.
 // Combat fields and projectile membership are retained; only visual coordinates
 // are rounded (0.1 px / 1 ms) before transport.
-const ARRAYS=['enemies','bullets','pickups','hazards','effects','weaponEffects','particles','texts','lootBursts'];
+const ARRAYS=['enemies','bullets','pickups','hazards','effects','weaponEffects','particles','texts','lootBursts','wingmen'];
 const FORBIDDEN=new Set(['__proto__','prototype','constructor']);
 const POSITION=new Set(['x','y','px','py','vx','vy','originX','originY','dashX','dashY']);
 const TIME=new Set(['age','warn','duration','life','hold','burstAt']);

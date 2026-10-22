@@ -11,13 +11,13 @@
  <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
  <title>裂空回响 · AERO ECHO</title>
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="style.css?v=27">
- <link rel="stylesheet" href="ui-art.css?v=27">
- <link rel="stylesheet" href="menu-layout.css?v=27">
- <link rel="stylesheet" href="online.css?v=27">
- <link rel="stylesheet" href="ending.css?v=27">
- <link rel="stylesheet" href="flight-vitals.css?v=27">
- <link rel="stylesheet" href="experience.css?v=27">
+ <link rel="stylesheet" href="style.css?v=28">
+ <link rel="stylesheet" href="ui-art.css?v=28">
+ <link rel="stylesheet" href="menu-layout.css?v=28">
+ <link rel="stylesheet" href="online.css?v=28">
+ <link rel="stylesheet" href="ending.css?v=28">
+ <link rel="stylesheet" href="flight-vitals.css?v=28">
+ <link rel="stylesheet" href="experience.css?v=28">
 </head>
 <body class="language-pending">
  <div class="ambient-grid" aria-hidden="true"></div>
@@ -67,7 +67,7 @@
     <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div>
     <small id="coop-network" class="coop-network" hidden></small>
     <div id="coop-status" class="coop-status" aria-live="polite" hidden></div>
-    <div class="lives-counter" id="lives-counter" aria-label="剩余命数 3"><div class="life-readout"><span>命数</span><b id="lives-value">3</b></div><div class="lives-pips" id="lives-pips" aria-hidden="true"><i class="life-pip"></i><i class="life-pip"></i><i class="life-pip"></i></div></div>
+    <div class="lives-counter" id="lives-counter" aria-label="剩余命数 3"><div class="life-readout"><img id="life-ship-icon" alt="" aria-hidden="true"><span aria-hidden="true">×</span><b id="lives-value">3</b></div><button type="button" class="wingmen-call" id="wingmen-call" aria-label="联军支援" title="联军支援"><span class="wingmen-flames" aria-hidden="true"><i class="wingman-flame"></i><i class="wingman-flame"></i><i class="wingman-flame"></i></span><span id="wingmen-status">联军待命</span></button></div>
     <div class="mission-progress"><span id="wave-label">WAVE 01</span><i><b id="wave-fill"></b></i><span id="hud-time">00:00</span></div>
     <div class="boss-hud" id="boss-hud" hidden><div><span id="boss-name"></span><b id="boss-phase">PHASE 01</b></div><i><b id="boss-fill"></b></i></div>
     <div class="battle-message" id="battle-message"><img id="message-avatar" alt=""><div><small id="message-speaker"></small><span id="message-text"></span></div></div>
@@ -81,7 +81,7 @@
   </section>
   <aside class="right-panel">
    <div class="briefing"><span class="eyebrow">MISSION BRIEFING</span><span class="chapter-index" id="side-chapter">01 / 09</span><h2 id="side-name">静默海岸</h2><p id="side-story">迷雾背后的求救声</p><div class="briefing-line"></div><dl><div><dt>飞行员</dt><dd id="side-pilot">宇宙人</dd></div><div><dt>当前战机</dt><dd id="side-ship">曙光-7</dd></div><div><dt>任务难度</dt><dd id="side-difficulty">标准</dd></div><div><dt>信用点</dt><dd id="side-credits">1,000</dd></div></dl><button class="text-button" data-open="missions">更换航线 </button></div>
-   <div class="flight-manual"><span class="eyebrow">FLIGHT MANUAL</span><div><b>拖拽 / WASD / 方向键</b><p>移动与闪避，主炮自动开火。</p></div><div><kbd>Q</kbd><span>主动技</span><kbd>E</kbd><span>战术爆弹</span></div><div><kbd>SPACE</kbd><span>终极技</span><kbd>P</kbd><span>暂停</span></div><p class="manual-note">靠近敌弹，擦过发光碰撞核心；<br>击杀、擦弹与破坏弱点积累能量。</p></div>
+   <div class="flight-manual"><span class="eyebrow">FLIGHT MANUAL</span><div><b>拖拽 / WASD / 方向键</b><p>移动与闪避，主炮自动开火。</p></div><div><kbd>Q</kbd><span>主动技</span><kbd>E</kbd><span>战术爆弹</span></div><div><kbd>SPACE</kbd><span>终极技</span><kbd>R</kbd><span>联军支援</span></div><div><kbd>P</kbd><span>暂停</span></div><p class="manual-note">靠近敌弹，擦过发光碰撞核心；<br>击杀、擦弹与破坏弱点积累能量。</p></div>
    <button class="help-link" data-open="help">第一次出击？查看飞行指南 </button>
   </aside>
  </main>
@@ -100,6 +100,6 @@
    <button id="ending-pause"></button><button id="ending-skip"></button><button id="ending-sound"></button><button id="ending-return" hidden></button>
   </nav>
  </section>
- <script type="module" src="app.js?v=27"></script>
+ <script type="module" src="app.js?v=28"></script>
 </body>
 </html>

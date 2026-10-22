@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 27
+name: Deploy AERO ECHO Build 28
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
     paths:
       - .github/workflows/github-pages.yml
       - dist/**
-      - runtime-build27.sha256
+      - runtime-build28.sha256
       - tools/github/**
 
 permissions:
@@ -29,9 +29,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned Build 27 game
+      - name: Check out the versioned Build 28 game
         uses: actions/checkout@v4
-      - name: Restore verified media and apply Build 27
+      - name: Restore verified media and apply Build 28
         shell: bash
         run: |
           set -euo pipefail
@@ -88,8 +88,8 @@ jobs:
           target.write_text(json.dumps(manifest, ensure_ascii=False, separators=(',', ':')))
           PY
           cd site
-          sha256sum --check "$GITHUB_WORKSPACE/runtime-build27.sha256"
-      - name: Verify combat, lives, bombs and native Canvas effects
+          sha256sum --check "$GITHUB_WORKSPACE/runtime-build28.sha256"
+      - name: Verify combat, lives, wingmen and native Canvas effects
         shell: bash
         run: |
           set -euo pipefail
@@ -99,11 +99,12 @@ jobs:
           export CODEX_PRIMARY_RUNTIME_NODE_MODULES="$RUNNER_TEMP/aero-echo-test-deps/node_modules"
           node site/tests/lives-bombs.mjs
           node site/tests/build27-combat.mjs
+          node site/tests/wingmen.mjs
           node site/tests/talent-tree.mjs
           node site/tests/weapon-phases.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the verified Build 27 runtime
+      - name: Upload the verified Build 28 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist

@@ -1,5 +1,6 @@
 // Resolve against the deployed module, independent of the page's navigation path.
-import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=27';
+import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=28';
+import {WINGMEN} from './wingmen.js?v=28';
 
 export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','24');return url.href;};
 
@@ -8,7 +9,7 @@ export class AssetLoadError extends Error {
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=27';
+ const src='assets/manifest.json?v=28';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
@@ -79,7 +80,7 @@ export class AssetStore {
   // Abort active decorative downloads as well as queued ones. A slow optional
   // atlas must not occupy every request slot when the player enters the next mission.
   this.cancelOptional();
-  const m=this.manifest,boss=stage.boss?m.bosses[stage.chapter+1]:null,required=[m.players[ship]?.[skin]||m.players[ship]?.[0],m.backgrounds[stage.chapter+1],...stage.enemies.map(id=>m.enemies[id]),...(boss?[boss]:[]),m.projectiles.PRJ_Blue_Pulse_01,m.projectiles.PRJ_Orange_Lance_01,m.projectiles.PRJ_Blue_Lance_01,...Object.values(m.items?.atlases||{})];
+  const m=this.manifest,boss=stage.boss?m.bosses[stage.chapter+1]:null,required=[m.players[ship]?.[skin]||m.players[ship]?.[0],m.backgrounds[stage.chapter+1],...stage.enemies.map(id=>m.enemies[id]),...(boss?[boss]:[]),m.projectiles.PRJ_Blue_Pulse_01,m.projectiles.PRJ_Orange_Lance_01,m.projectiles.PRJ_Blue_Lance_01,...Object.values(m.items?.atlases||{}),...Object.values(WINGMEN).map(wingman=>({src:wingman.sprite}))];
   for(const pilot of additionalPlayers.slice(0,1)){const meta=m.players[pilot.ship]?.[pilot.skin]||m.players[pilot.ship]?.[0];if(meta)required.push(meta);}
   const pilotShips=[ship,...additionalPlayers.slice(0,1).map(p=>p.ship)];
   required.push(...pilotShips.map(id=>({src:HERO_BOMB_ASSETS[id]})));

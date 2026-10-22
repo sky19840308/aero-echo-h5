@@ -1,4 +1,4 @@
-import {STORY} from './story-content.js?v=27';
+import {STORY} from './story-content.js?v=28';
 export const W = 450, H = 800;
 export const SHIPS = [
  {id:'Dawn7', name:'曙光-7', english:'DAWN / 07', role:'均衡火力', color:'#65ddff', dps:120, speed:85, cooldown:18, skill:'等离子喷涌', ultimate:'日冕阵列', passive:'连击校准', description:'双联脉冲炮与追踪导弹。启动三段击时喷发纵向等离子激光，并显著加速主炮弹；日冕射线贯穿战场。', skillText:'1.7 秒等离子激光持续喷涌，同时提高主炮弹速与射速。', ultText:'4 秒高能纵向射线，持续伤害并清除普通敌弹。'},
