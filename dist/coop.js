@@ -1,10 +1,10 @@
-import {Game} from './engine.js?v=30';
-import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=30';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=30';
-import {hazardImpactArt} from './weapons.js?v=30';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=30';
-import {CoopPeer} from './coop-peer.js?v=30';
-import {normalizeProfile} from './profile.js?v=30';
+import {Game} from './engine.js?v=30.1';
+import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=30.1';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=30.1';
+import {hazardImpactArt} from './weapons.js?v=30.1';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=30.1';
+import {CoopPeer} from './coop-peer.js?v=30.1';
+import {normalizeProfile} from './profile.js?v=30.1';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.

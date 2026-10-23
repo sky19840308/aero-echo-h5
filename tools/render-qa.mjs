@@ -7,7 +7,7 @@ const runtime=path.resolve(process.argv[2]),output=path.resolve(process.argv[3])
 const require=createRequire(import.meta.url),{createCanvas,loadImage,GlobalFonts}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');
 GlobalFonts.registerFromPath(path.join(runtime,'assets/fonts/YujiSyuku-bombs.ttf'),'Yuji Syuku');
 globalThis.window={devicePixelRatio:1,matchMedia:()=>({matches:false})};globalThis.ResizeObserver=class{observe(){}};
-const module=name=>import(pathToFileURL(path.join(runtime,name)).href+'?v=30');
+const module=name=>import(pathToFileURL(path.join(runtime,name)).href+'?v=30.1');
 const [{Game},{Renderer},{stageConfig},{createLocalDuoGame},{HERO_BOMB_ASSETS}]=await Promise.all([module('engine.js'),module('renderer.js'),module('data.js'),module('local-duo.js'),module('hero-bombs.js')]);
 const manifest=JSON.parse(fs.readFileSync(path.join(runtime,'assets/manifest.json'))),images=new Map();
 const metas=[...Object.values(manifest.players).flat(),...Object.values(manifest.enemies),...Object.values(manifest.bosses),...Object.values(manifest.projectiles),...Object.values(manifest.backgrounds).flatMap(meta=>[meta,...(meta.frames||[]).slice(0,2)]),...Object.values(manifest.playerWeapons.atlases),manifest.weapons.atlases.GENERAL,...Object.values(manifest.items.atlases),...Object.values(HERO_BOMB_ASSETS).map(src=>({src})),...['dawn7','bastion3','wraithx'].map(name=>({src:'assets/wingmen/'+name+'-wingman.svg'}))];

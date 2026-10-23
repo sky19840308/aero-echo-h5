@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import {Game} from '../dist/engine.js?v=30';
-import {DIFFICULTIES,TALENTS,TALENT_BRANCHES,stageConfig} from '../dist/data.js?v=30';
-import {canLearnTalent,learnTalent,normalizeTalentProgress,talentTreeHtml} from '../dist/talent-tree.js?v=30';
-import {createProfile,normalizeProfile} from '../dist/profile.js?v=30';
-import {CoopGame} from '../dist/coop.js?v=30';
-import {LanSession} from '../dist/lan.js?v=30';
+import {Game} from '../dist/engine.js?v=30.1';
+import {DIFFICULTIES,TALENTS,TALENT_BRANCHES,stageConfig} from '../dist/data.js?v=30.1';
+import {canLearnTalent,learnTalent,normalizeTalentProgress,talentTreeHtml} from '../dist/talent-tree.js?v=30.1';
+import {createProfile,normalizeProfile} from '../dist/profile.js?v=30.1';
+import {CoopGame} from '../dist/coop.js?v=30.1';
+import {LanSession} from '../dist/lan.js?v=30.1';
 
 assert.equal(TALENT_BRANCHES.length,3,'the new tree has offense, mobility and survival paths');
 assert.equal(TALENTS.reduce((sum,node)=>sum+node.max,0),18,'the complete tree uses all 18 earned points');

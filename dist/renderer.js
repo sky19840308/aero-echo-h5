@@ -1,11 +1,11 @@
-import {tr} from './i18n.js?v=30';
-import {W,H,CHAPTERS} from './data.js?v=30';
-import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=30';
-import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=30';
-import {drawChapterBackground} from './chapter-background.js?v=30';
-import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_STRIKE_TIME} from './hero-bombs.js?v=30';
-import {bastionSatellitePosition,bastionUltimateTarget} from './combat-geometry.js?v=30';
-import {WINGMEN,WINGMAN_PRELAUNCH,WINGMAN_SORTIE,WINGMAN_EXIT} from './wingmen.js?v=30';
+import {tr} from './i18n.js?v=30.1';
+import {W,H,CHAPTERS} from './data.js?v=30.1';
+import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=30.1';
+import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=30.1';
+import {drawChapterBackground} from './chapter-background.js?v=30.1';
+import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_STRIKE_TIME} from './hero-bombs.js?v=30.1';
+import {bastionSatellitePosition,bastionUltimateTarget} from './combat-geometry.js?v=30.1';
+import {WINGMEN,WINGMAN_PRELAUNCH,WINGMAN_SORTIE,WINGMAN_EXIT} from './wingmen.js?v=30.1';
 const TAU=Math.PI*2,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export class Renderer {
  constructor(canvas,assets,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.assets=assets;this.settings=settings;this.stars=Array.from({length:75},(_,i)=>({x:(i*97.23)%W,y:(i*139.71)%H,size:.5+(i%4)*.35,speed:8+(i%5)*4}));this.resize();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);}

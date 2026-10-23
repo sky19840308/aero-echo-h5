@@ -3,18 +3,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
-import {Game} from '../dist/engine.js?v=30';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=30';
-import {Renderer} from '../dist/renderer.js?v=30';
-import {SHIPS,stageConfig} from '../dist/data.js?v=30';
-import {createProfile,normalizeProfile,exportProfile,parseBackup} from '../dist/profile.js?v=30';
-import {createLocalDuoGame,rememberDuoCharge,localDuoCharges,localDuoResult} from '../dist/local-duo.js?v=30';
-import {flightKeyBinding} from '../dist/flight-input.js?v=30';
-import {duoSetupHtml,duoStatusHtml,flightControlsHtml} from '../dist/flight-ui.js?v=30';
-import {missionWavePlan,missionBrief,missionHint} from '../dist/mission-flow.js?v=30';
-import {setLocale,getLocale,tr} from '../dist/i18n.js?v=30';
-import {segmentPointDistance} from '../dist/combat-geometry.js?v=30';
-import {REFERENCE_LOADOUTS} from '../dist/economy.js?v=30';
+import {Game} from '../dist/engine.js?v=30.1';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=30.1';
+import {Renderer} from '../dist/renderer.js?v=30.1';
+import {SHIPS,stageConfig} from '../dist/data.js?v=30.1';
+import {createProfile,normalizeProfile,exportProfile,parseBackup} from '../dist/profile.js?v=30.1';
+import {createLocalDuoGame,rememberDuoCharge,localDuoCharges,localDuoResult} from '../dist/local-duo.js?v=30.1';
+import {flightKeyBinding} from '../dist/flight-input.js?v=30.1';
+import {duoSetupHtml,duoStatusHtml,flightControlsHtml} from '../dist/flight-ui.js?v=30.1';
+import {missionWavePlan,missionBrief,missionHint} from '../dist/mission-flow.js?v=30.1';
+import {setLocale,getLocale,tr} from '../dist/i18n.js?v=30.1';
+import {segmentPointDistance} from '../dist/combat-geometry.js?v=30.1';
+import {REFERENCE_LOADOUTS} from '../dist/economy.js?v=30.1';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist');
 const manifestFile=path.join(root,'assets/manifest.json'),manifest=JSON.parse(fs.readFileSync(manifestFile));
@@ -39,7 +39,7 @@ for(const src of references)assert.ok(fs.existsSync(path.join(root,src)),'Missin
 for(const filename of fs.readdirSync(root).filter(name=>name.endsWith('.js'))){
  const source=fs.readFileSync(path.join(root,filename),'utf8');
  for(const match of source.matchAll(/\bfrom\s*['"](\.[^'"]+\.js(?:\?[^'"]*)?)['"]/g)){
-  assert.match(match[1],/\?v=30$/,'One shared module version prevents duplicated locale/game state: '+filename);
+  assert.match(match[1],/\?v=30\.1$/,'One shared module version prevents duplicated locale/game state: '+filename);
   assert.ok(fs.existsSync(path.resolve(root,match[1].split('?')[0])),'Missing module '+match[1]);
  }
 }

@@ -1,5 +1,7 @@
 # Build 30 — quality and visual repair
 
+The final public revision is **30.1**. All module and stylesheet cache keys are advanced together so previously cached Build 30 assets cannot hide the final visual/localization repairs.
+
 ## Confirmed defects repaired
 
 - Mixed `v=28` / `v=29` module imports created separate locale and data instances. Every runtime JavaScript import now uses the same version.
