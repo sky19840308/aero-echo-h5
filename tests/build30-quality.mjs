@@ -10,7 +10,7 @@ import {SHIPS,stageConfig} from '../dist/data.js?v=30';
 import {createProfile,normalizeProfile,exportProfile,parseBackup} from '../dist/profile.js?v=30';
 import {createLocalDuoGame,rememberDuoCharge,localDuoCharges,localDuoResult} from '../dist/local-duo.js?v=30';
 import {flightKeyBinding} from '../dist/flight-input.js?v=30';
-import {duoSetupHtml,duoStatusHtml} from '../dist/flight-ui.js?v=30';
+import {duoSetupHtml,duoStatusHtml,flightControlsHtml} from '../dist/flight-ui.js?v=30';
 import {missionWavePlan,missionBrief,missionHint} from '../dist/mission-flow.js?v=30';
 import {setLocale,getLocale,tr} from '../dist/i18n.js?v=30';
 import {segmentPointDistance} from '../dist/combat-geometry.js?v=30';
@@ -44,9 +44,12 @@ for(const filename of fs.readdirSync(root).filter(name=>name.endsWith('.js'))){
  }
 }
 setLocale('en');assert.equal(getLocale(),'en');assert.equal(tr('同屏双打'),'Local co-op');
+assert.equal(tr('第一次出击？查看飞行指南'),'First flight? Open the pilot guide');
+assert.equal(tr('游戏模式'),'Game modes');
 const english=new Game({stage:stageConfig(0,0,'campaign','quick')});assert.equal(english.ship.name,'Dawn-7','the engine sees the same localized data instance as the app');
 assert.ok(!/[\u4e00-\u9fff]/.test(duoSetupHtml({ships:SHIPS,hostShip:0,guestShip:2,enabled:true,locale:'en'})),'local co-op setup is fully translated');
 setLocale('zh');
+assert.equal(flightControlsHtml(false,'zh').split('电脑操作').length-1,1,'the solo controls have one heading');
 
 assert.equal(flightKeyBinding({code:'KeyP',repeat:true}),null,'holding pause must not toggle resume repeatedly');
 assert.equal(flightKeyBinding({code:'KeyQ',editable:true}),null,'typing in a form cannot activate skills');

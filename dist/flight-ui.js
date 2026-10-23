@@ -9,7 +9,7 @@ const key=value=>'<kbd>'+escape(value)+'</kbd>';
 
 export function flightControlsHtml(duo=false,locale='zh'){
  const c=t(locale),actions=[c.skill,c.bomb,c.wing,c.ult];
- const pilot=(role,keys,movement)=>`<section class="control-pilot" data-role="${role}"><b>${duo?(role==='host'?'P1 · '+c.host:'P2 · '+c.guest):c.keyboard}</b><p>${movement} · ${c.move}</p><dl>${keys.map((value,index)=>`<div><dt>${key(value)}</dt><dd>${actions[index]}</dd></div>`).join('')}</dl></section>`;
+ const pilot=(role,keys,movement)=>`<section class="control-pilot" data-role="${role}">${duo?`<b>${role==='host'?'P1 · '+c.host:'P2 · '+c.guest}</b>`:''}<p>${movement} · ${c.move}</p><dl>${keys.map((value,index)=>`<div><dt>${key(value)}</dt><dd>${actions[index]}</dd></div>`).join('')}</dl></section>`;
  return `<span class="eyebrow">${duo?c.together:c.keyboard}</span>${pilot('host',['Q','E','R',c.space],duo?'W A S D':'W A S D / ↑ ↓ ← →')}${duo?pilot('guest',['1','2','3','0'],'↑ ↓ ← → · '+c.numpad)+`<p class="control-alternate">${c.alternate}</p>`:''}<p class="control-footer">${key('P / Esc')} ${c.pause}${duo?'':`<br>${c.auto}`}</p>`;
 }
 

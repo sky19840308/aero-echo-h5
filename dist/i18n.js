@@ -170,6 +170,8 @@ add('LOCAL CO-OP / 同屏合作','LOCAL CO-OP / 同画面協力','LOCAL CO-OP');
 add('自动开火 · 移动闪避 · 技能反击','自動射撃・移動回避・スキル反撃','Automatic fire · dodge · counterattack');
 add('切换全屏','全画面の切替','Toggle fullscreen');
 add('全屏','全画面','Fullscreen');
+add('游戏模式','ゲームモード','Game modes');
+add('第一次出击？查看飞行指南','初出撃？飛行ガイドを見る','First flight? Open the pilot guide');
 
 const map=new Map(entries.map(row=>[row[0],row]));
 const sorted=entries.slice().sort((a,b)=>b[0].length-a[0].length);

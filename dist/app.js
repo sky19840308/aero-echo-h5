@@ -216,7 +216,7 @@ function showLanguageGate(){const pending=!profile.language;$('language-screen')
 function updateFlightLabels(){document.body.classList.toggle('local-duo-running',localDuoActive);$('flight-manual').innerHTML=flightControlsHtml(localDuoActive,getLocale());if(!game)return;$('route-objective').textContent=missionBrief(game.stage,getLocale());$('ability-art').innerHTML=gameIcon(manifest,SHIP_ICONS[game.ship.id].skill);$('bomb-art').innerHTML=gameIcon(manifest,'bomb');$('ultimate-art').innerHTML=gameIcon(manifest,SHIP_ICONS[game.ship.id].ultimate);const shortNames={Dawn7:['超频','日冕'],Bastion3:['磁场','重力'],WraithX:['相位','奇点']};$('ability-label').textContent=tr(shortNames[game.ship.id][0]);$('ultimate-label').textContent=tr(shortNames[game.ship.id][1]);$('hud-stage').textContent=tr(`${game.stage.id} / ${game.chapter.name}`);if(game.boss)$('boss-name').textContent=tr(game.chapter.boss);}
 function chooseLanguage(language){if(!setLocale(language))return;profile.language=language;applyStaticLocale(document);showLanguageGate();
  for(const stage of [game?.stage,lastResult?.stage])if(stage){const chapter=CHAPTERS[stage.chapter];stage.name=chapter.locations[stage.substage];stage.story=chapter.stories[stage.substage];stage.hazard=chapter.hazard;}
- updateLobby();updateFlightLabels();if(lastMessage){$('message-speaker').textContent=tr(lastMessage.speaker);$('message-text').textContent=tr(lastMessage.text);}
+ updateLobby();updateFlightLabels();accountChanged();if(lastMessage){$('message-speaker').textContent=tr(lastMessage.speaker);$('message-text').textContent=tr(lastMessage.text);}
  updateHud();if(loadFailure){$('loading-title').textContent=tr(loadFailure.title);$('loading-progress').textContent=tr(loadFailure.progress);}if(modalKind)rerender();save();if(saveBlocked)toast('当前存档无法读取，已停止覆盖。请先下载备份，再导入有效存档。');if(!game)$('launch').focus({preventScroll:true});tryEndingPreview();}
 $('language-screen').addEventListener('click',event=>{const button=event.target.closest('[data-language]');if(button){void audio.unlock();chooseLanguage(button.dataset.language);}});
 $('language-toggle').addEventListener('click',()=>openModal('settings'));
@@ -306,7 +306,7 @@ $('modal-body').addEventListener('click',async event=>{const button=event.target
  case 'continue-launch':{const m=latestClear(profile);if(m){selectRoute(m,'story');await launch();}break;}
  case 'boss-launch':selectedFlow='boss';await launch();break;
  case 'postflight-story':if(lastResult?.win&&lastResult.stage.chapter===8){showEnding(()=>showModal('hangar'));break;}if(lastResult?.win&&lastResult.stage.boss)showStory([...storyPages('victory',lastResult.stage.chapter),...(lastResult.stage.chapter===8?storyPages('ending',8):[])],()=>showModal('hangar'));break;
- case 'local-duo-disable':goHome();localDuoEnabled=false;showModal('local-duo');break;
+ case 'local-duo-disable':goHome();localDuoEnabled=false;break;
  case 'local-duo-start':localDuoShip=Math.max(0,Math.min(SHIPS.length-1,Number($('local-duo-ship')?.value)||0));localDuoEnabled=true;hideModal();await launch();break;
  case 'launch':case 'restart':await launch();break;
  case 'resume':if(coop)resumeCoop();else{game?.resume();hideModal();}break;
