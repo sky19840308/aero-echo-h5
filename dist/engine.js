@@ -1,12 +1,13 @@
-import {chapterCalibration} from './economy.js?v=30.1';
-import {missionWavePlan} from './mission-flow.js?v=30.1';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=30.1';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=30.1';
-import {growthStats,weaponTier} from './progression.js?v=30.1';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=30.1';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=30.1';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=30.1';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=30.1';
+import {chapterCalibration} from './economy.js?v=31';
+import {resizeBattlefield} from './battlefield-layout.js?v=31';
+import {missionWavePlan} from './mission-flow.js?v=31';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=31';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=31';
+import {growthStats,weaponTier} from './progression.js?v=31';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=31';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=31';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=31';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=31';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -19,21 +20,23 @@ class BulletPool {
 }
 
 export class Game {
- constructor({stage,ship=0,profile={},difficulty='normal',pace='quick',seed=Date.now(),onEvent=()=>{}}){
+ constructor({stage,ship=0,profile={},difficulty='normal',pace='quick',seed=Date.now(),onEvent=()=>{},width=W,height=H}){
+  this.width=Math.max(320,Math.min(3840,Math.round(Number(width)||W)));this.height=Math.max(480,Math.min(1600,Math.round(Number(height)||H)));
   this.stage=stage;this.ship=SHIPS[ship];this.chapter=CHAPTERS[stage.chapter];this.difficulty=DIFFICULTIES.find(d=>d.id===difficulty)||DIFFICULTIES[1];this.pace=pace;this.emit=onEvent;this.random=randomGenerator(seed);this.pool=new BulletPool();this.bulletCounts={enemy:0,player:0};this.uid=0;
   this.state='ready';this.time=0;this.clock=0;this.nextWave=.7;this.wave=0;this.enemies=[];this.bullets=[];this.pickups=[];this.hazards=[];this.effects=[];this.weaponEffects=[];this.particles=[];this.texts=[];this.wingmen=[];this.boss=null;this.bossAnnounced=false;this.bossDefeated=false;this.seen=new Set();this.score=0;this.combo=1;this.lastKill=0;this.kills=0;this.spawned=0;this.grazes=0;this.hits=0;this.coins=0;this.weaponXp=0;this.weaponLevel=1;this.bombFragments=0;this.lastSupply=0;this.energyAnnounced=false;this.nextHazard=24;this.shake=0;this.shock=0;this.flash=0;this.ending=0;
   this.talents=profile.talents||{};this.level=clamp(profile.levels?.[this.ship.id]||1,1,50);
   this.materials={blueprint:0,data:0};this.lootBursts=[];this.growth=growthStats(profile,this.ship.id);this.weaponTier=weaponTier(profile,this.ship.id);
   this.dps=this.ship.dps*([180,260,380,520,700,900,1150,1450,1900][stage.chapter]/120)*(1+.030*(this.level-1)+.00055*(this.level-1)**2)*(1+.025*(this.talents.assault_core||0))*this.growth.weapon/chapterCalibration(stage.chapter);
   const savedWingmenChapter=Number(profile.wingmenChapter),savedWingmenCharges=Number(profile.wingmenChargesByChapter?.[stage.chapter]??(savedWingmenChapter===stage.chapter?profile.wingmenCharges:3));
-  this.player={x:W/2,y:H*.77,targetX:W/2,targetY:H*.77,vx:0,vy:0,r:5.5,lives:3,maxLives:3,speed:this.ship.speed*4.5*(1+.04*(this.talents.mobility_core||0)),energy:0,bombs:2+(this.talents.survival_reserve?1:0),maxBombs:5,wingmanCharges:clamp(Number.isFinite(savedWingmenCharges)?savedWingmenCharges:3,0,3),wingmanCall:null,invulnerable:1.5,respawnTime:0,bombReturn:0,heroBomb:null,hitCrash:null,lastHit:-10,skillCd:0,skillTime:0,skillTick:0,slashTick:0,ultTime:0,fireTime:0,secondaryTime:0,ultTick:0,stacks:0,consecutive:0,lastShotHit:0,armorCd:0,shieldPulseCd:0,bank:0};
+  this.player={x:this.width/2,y:this.height*.77,targetX:this.width/2,targetY:this.height*.77,vx:0,vy:0,r:5.5,lives:3,maxLives:3,speed:this.ship.speed*4.5*(1+.04*(this.talents.mobility_core||0)),energy:0,bombs:2+(this.talents.survival_reserve?1:0),maxBombs:5,wingmanCharges:clamp(Number.isFinite(savedWingmenCharges)?savedWingmenCharges:3,0,3),wingmanCall:null,invulnerable:1.5,respawnTime:0,bombReturn:0,heroBomb:null,hitCrash:null,lastHit:-10,skillCd:0,skillTime:0,skillTick:0,slashTick:0,ultTime:0,fireTime:0,secondaryTime:0,ultTick:0,stacks:0,consecutive:0,lastShotHit:0,armorCd:0,shieldPulseCd:0,bank:0};
  }
+ resizeWorld(width,height){return resizeBattlefield(this,width,height);}
  start(){if(this.state!=='ready')return;this.state='playing';this.emit({type:'start'});this.combatSound('flyby');this.emit({type:'message',speaker:'回声七队 / RADIO',text:this.stage.mode==='boss'?`已锁定 ${this.chapter.boss}。保持航线。`:this.chapter.subtitle,duration:4});}
  combatSound(name,options={}){this.emit({type:'sound',name,ship:this.ship.id,chapter:this.stage.chapter,...options});}
  attackOwner(){return this.firingBoss?{boss:this.stage.chapter+1}:this.firingEnemy?{enemy:this.firingEnemy.type}:{environment:true};}
  pause(reason='manual'){if(this.state==='playing'){this.state='paused';this.emit({type:'pause',reason});}}
  resume(){if(this.state==='paused'){this.state='playing';this.emit({type:'resume'});}}
- moveTo(x,y){if(this.state!=='playing'||this.player.heroBomb)return;this.player.targetX=clamp(x,20,W-20);this.player.targetY=clamp(y,155,H-93);}
+ moveTo(x,y){if(this.state!=='playing'||this.player.heroBomb)return;this.player.targetX=clamp(x,20,this.width-20);this.player.targetY=clamp(y,155,this.height-93);}
  energy(amount){this.player.energy=clamp(this.player.energy+amount*(1+.10*(this.talents.assault_reactor||0))*this.growth.charge,0,1000);if(this.player.energy>=1000&&!this.energyAnnounced){this.energyAnnounced=true;this.combatSound('ready');this.emit({type:'toast',text:'终极技已就绪'});}}
  skill(){const p=this.player;if(this.state!=='playing'||p.skillCd>0||p.hitCrash||p.heroBomb)return false;p.skillCd=this.ship.cooldown*(1-(this.coop&&!this.persistentLoadout ? .05*(this.talents.cooldown||0) : 0));p.skillTime=this.ship.id==='Dawn7'?1.7:this.ship.id==='Bastion3'?4.8:2.15;p.skillTick=0;p.slashTick=0;
   if(this.ship.id==='WraithX')p.invulnerable=Math.max(p.invulnerable,p.skillTime+.12);
@@ -44,12 +47,12 @@ export class Game {
   const p=this.player;if(this.state!=='playing'||p.wingmanCharges<=0||p.wingmanCall||p.hitCrash||p.heroBomb)return false;
   p.wingmanCharges=clamp(p.wingmanCharges-1,0,3);const callId=++this.uid,role=this.activePilot?.role||null;
   p.wingmanCall={id:callId,age:0,ship:this.ship.id};
-  for(let index=0;index<WINGMAN_COUNT;index++)this.wingmen.push({id:++this.uid,callId,role,ship:this.ship.id,index,x:W/2,y:-60-index*11,r:8,hp:2,maxHp:2,age:0,mode:'assembling',fireTimer:.16+index*.035,specialTimer:.75+index*.18,hitFlash:0,contactCooldown:0,roll:0,crash:null});
+  for(let index=0;index<WINGMAN_COUNT;index++)this.wingmen.push({id:++this.uid,callId,role,ship:this.ship.id,index,x:this.wingmanAnchor(role),y:-60-index*11,r:8,hp:2,maxHp:2,age:0,mode:'assembling',fireTimer:.16+index*.035,specialTimer:.75+index*.18,hitFlash:0,contactCooldown:0,roll:0,crash:null});
   p.invulnerable=Math.max(p.invulnerable,WINGMAN_PRELAUNCH);this.effect('Wingman_Call_Surge',p.x,p.y,166,.92);this.shake=Math.max(this.shake,2.2);this.combatSound('charge');this.emit({type:'wingman-charge',chapter:this.stage.chapter,charges:p.wingmanCharges,role});this.emit({type:'toast',text:'联军支援出击'});return true;
  }
  heroBombStrike(){
   const p=this.player,signature=HERO_BOMB_FX[this.ship.id];this.clearBullets(true);this.shake=Math.max(this.shake,17);this.shock=.85;this.flash=.2;this.emit({type:'camera-impact',strength:16,duration:.85});
-  this.effects.push({name:signature,x:W/2,y:H*.48,size:880,duration:1.45,age:0,rotation:0});
+  this.effects.push({name:signature,x:this.width/2,y:this.height*.48,size:880,duration:1.45,age:0,rotation:0});
   const bombPower=1+.08*(this.talents.survival_bomb||0);for(const e of this.enemies)if(e.alive)this.damageEnemy(e,e.hp*4*bombPower);
   const boss=this.boss;if(boss&&!boss.dead){boss.armored=false;boss.weakTime=Math.max(boss.weakTime,1.5);const percent=.16*bombPower,target=Math.min(Math.max(0,boss.hp-1),boss.maxHp*percent);if(target>0)this.damageBoss(target/1.65,boss.x,boss.y);}
   this.sparks(p.x,p.y,this.ship.color,28);this.combatSound('bomb');
@@ -71,11 +74,11 @@ export class Game {
  spawn(id,x,y=-45,extra={}){const cfg=ENEMIES[id-1];if(!this.stage.enemies.includes(id))throw new Error('Stage enemy constraint violated');if(this.enemies.filter(e=>e.alive).length>=34)return;const size=cfg.category==='heavy'?88:cfg.category==='bomber'?69:cfg.category==='elite'?61:cfg.category==='support'?54:51;const hp=cfg.hp*1.22**this.stage.chapter*1.12*1.18*this.difficulty.enemyHp;
   const e={id:++this.uid,type:id,cfg,x,y,originX:x,originY:y,age:0,hp,maxHp:hp,size,r:size*.28,fireTimer:.65+this.random()*.4,phase:this.random()*TAU,alive:true,flash:0,phaseOut:false,dashWarning:0,diveWarning:0,diveCooldown:0,chargeTime:0,shielded:false,movementStyle:'type',speedMultiplier:.82+this.random()*.64,...extra};this.enemies.push(e);this.spawned++;this.seen.add(id);return e;
  }
- spawnWave(){this.wave++;const t=this.time/this.stage.duration;const allowed=t<.18?1:t<.48?2:3;const id=this.stage.enemies[Math.floor(this.random()*allowed)];const type=ENEMIES[id-1].category;const count=Math.max(2,Math.round((type==='scout'?6:type==='intercept'?3:2)*(this.difficulty.enemyCount||1)));const plan=missionWavePlan(this.stage,this.wave),formation=plan.formation,spread=Math.min((formation===0?66:55)*plan.spread,(W-108)/(count-1)),center=clamp((50+this.random()*(W-100))*.65+plan.center*.35,54+spread*(count-1)/2,W-54-spread*(count-1)/2),formationId=this.wave;
-  for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*spread,x=formation===0?center+offset:formation===1?center+Math.sign(offset)*Math.abs(offset)*.62:center+offset;let movementStyle=this.difficulty.id==='hard'?(formation===0?'formation':formation===2&&i===0?'kamikaze':'irregular'):formation===0?'formation':formation===1?'irregular':formation===2&&i===0?'kamikaze':i===count-1&&this.difficulty.id!=='easy'?'kamikaze':'irregular';if(['heavy','support'].includes(type)&&movementStyle==='kamikaze')movementStyle='irregular';this.spawn(id,clamp(x,35,W-35),-45-i*plan.stagger,{formation,formationId,formationCenter:center,formationOffset:formation===1?Math.sign(offset)*Math.abs(offset)*.62:offset,formationPhase:this.random()*TAU,movementStyle});}
+ spawnWave(){this.wave++;const t=this.time/this.stage.duration;const allowed=t<.18?1:t<.48?2:3;const id=this.stage.enemies[Math.floor(this.random()*allowed)];const type=ENEMIES[id-1].category;const count=Math.max(2,Math.round((type==='scout'?6:type==='intercept'?3:2)*(this.difficulty.enemyCount||1)));const plan=missionWavePlan(this.stage,this.wave,this.width),formation=plan.formation,spread=Math.min((formation===0?66:55)*plan.spread*Math.min(1.7,this.width/W),(this.width-108)/(count-1)),center=clamp((50+this.random()*(this.width-100))*.65+plan.center*.35,54+spread*(count-1)/2,this.width-54-spread*(count-1)/2),formationId=this.wave;
+  for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*spread,x=formation===0?center+offset:formation===1?center+Math.sign(offset)*Math.abs(offset)*.62:center+offset;let movementStyle=this.difficulty.id==='hard'?(formation===0?'formation':formation===2&&i===0?'kamikaze':'irregular'):formation===0?'formation':formation===1?'irregular':formation===2&&i===0?'kamikaze':i===count-1&&this.difficulty.id!=='easy'?'kamikaze':'irregular';if(['heavy','support'].includes(type)&&movementStyle==='kamikaze')movementStyle='irregular';this.spawn(id,clamp(x,35,this.width-35),-45-i*plan.stagger,{formation,formationId,formationCenter:center,formationOffset:formation===1?Math.sign(offset)*Math.abs(offset)*.62:offset,formationPhase:this.random()*TAU,movementStyle});}
   this.nextWave=this.time+Math.max(1.9,(2.45-t*.45-this.stage.chapter*.035)*plan.tempo)*(this.stage.chapter===0&&this.stage.substage===0&&this.time<10?1.2:1);
  }
- spawnBoss(){if(this.boss)return;const hp=this.chapter.hp*2.35;const count=this.stage.chapter===4?3:this.stage.chapter===7?3:2;this.boss={x:W/2,y:-175,baseY:185,age:0,hp,maxHp:hp,w:Math.min(335,285+this.stage.chapter*6),h:242,phase:1,pattern:0,fireTimer:2.5,flash:0,weakTime:0,chargeTime:0,chargeWarning:0,armored:false,dead:false,teleport:0,lDamage:0,rDamage:0,parts:Array.from({length:count},(_,i)=>({x:(i-(count-1)/2)*.23,y:.28,hp:hp*.035,maxHp:hp*.035,dead:false}))};this.emit({type:'boss',name:this.chapter.boss});this.combatSound('boss-intro',{boss:this.stage.chapter+1});this.emit({type:'message',speaker:'WARNING / 巨型目标',text:this.chapter.boss,duration:3});}
+ spawnBoss(){if(this.boss)return;const hp=this.chapter.hp*2.35;const count=this.stage.chapter===4?3:this.stage.chapter===7?3:2;this.boss={x:this.width/2,y:-175,baseY:185,age:0,hp,maxHp:hp,w:Math.min(335,285+this.stage.chapter*6),h:242,phase:1,pattern:0,fireTimer:2.5,flash:0,weakTime:0,chargeTime:0,chargeWarning:0,armored:false,dead:false,teleport:0,lDamage:0,rDamage:0,parts:Array.from({length:count},(_,i)=>({x:(i-(count-1)/2)*.23,y:.28,hp:hp*.035,maxHp:hp*.035,dead:false}))};this.emit({type:'boss',name:this.chapter.boss});this.combatSound('boss-intro',{boss:this.stage.chapter+1});this.emit({type:'message',speaker:'WARNING / 巨型目标',text:this.chapter.boss,duration:3});}
  update(dt){if(this.state!=='playing'&&this.state!=='ending')return;dt=Math.min(dt,.05);this.time+=dt;this.clock+=dt;this.shake=Math.max(0,this.shake-dt*18);this.shock=Math.max(0,(this.shock||0)-dt);this.flash=Math.max(0,this.flash-dt*2.5);
   if(this.state==='playing'){
    this.updatePlayer(dt);
@@ -92,7 +95,7 @@ export class Game {
   this.updateVisuals(dt);
  }
  updatePlayer(dt){const p=this.player;
-  if(p.hitCrash){const crash=p.hitCrash;crash.age+=dt;p.x=clamp(crash.x+crash.vx*crash.age,22,W-22);p.y=Math.min(H+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);p.invulnerable=Math.max(0,p.invulnerable-dt);if(crash.age>=crash.duration){this.effect('Explosion_Small',p.x,p.y,82,.38);this.sparks(p.x,p.y,'#ff9c62',18);p.hitCrash=null;p.x=clamp(crash.x,35,W-35);p.y=H*.77;p.targetX=p.x;p.targetY=p.y;p.respawnTime=p.lives>0?5+.2*(this.talents.survival_core||0):0;p.invulnerable=p.respawnTime;}return;}
+  if(p.hitCrash){const crash=p.hitCrash;crash.age+=dt;p.x=clamp(crash.x+crash.vx*crash.age,22,this.width-22);p.y=Math.min(this.height+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);p.invulnerable=Math.max(0,p.invulnerable-dt);if(crash.age>=crash.duration){this.effect('Explosion_Small',p.x,p.y,82,.38);this.sparks(p.x,p.y,'#ff9c62',18);p.hitCrash=null;p.x=clamp(crash.x,35,this.width-35);p.y=this.height*.77;p.targetX=p.x;p.targetY=p.y;p.respawnTime=p.lives>0?5+.2*(this.talents.survival_core||0):0;p.invulnerable=p.respawnTime;}return;}
   if(p.heroBomb){p.heroBomb.age+=dt;this.clearBullets(true);if(!p.heroBomb.attacked&&p.heroBomb.age>=HERO_BOMB_STRIKE_TIME){p.heroBomb.attacked=true;this.heroBombStrike();}if(p.heroBomb.age>=HERO_BOMB_DURATION){p.heroBomb=null;p.invulnerable=5;p.bombReturn=5;return;}else return;}
   p.bombReturn=Math.max(0,p.bombReturn-dt);p.respawnTime=Math.max(0,(p.respawnTime||0)-dt);const oldX=p.x,oldY=p.y;let slow=this.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1;const dx=p.targetX-p.x,dy=p.targetY-p.y,len=Math.hypot(dx,dy);if(len>0){const step=Math.min(len,p.speed*slow*dt*1.5);p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);
   p.invulnerable=Math.max(0,p.invulnerable-dt);p.skillCd=Math.max(0,p.skillCd-dt);p.skillTime=Math.max(0,p.skillTime-dt);p.ultTime=Math.max(0,p.ultTime-dt);p.armorCd=Math.max(0,p.armorCd-dt);p.shieldPulseCd=Math.max(0,(p.shieldPulseCd||0)-dt);
@@ -106,26 +109,27 @@ export class Game {
    else if(this.ship.id==='Bastion3'){p.ultTick-=dt;if(p.ultTick<=0){p.ultTick=.52;const {x,y}=bastionUltimateTarget(p,this.boss),radius=132;this.effect('Bastion3_Gravity_Burst',x,y,238,.3);for(const b of this.bullets)if(b.alive&&b.owner==='enemy'&&Math.hypot(b.x-x,b.y-y)<radius)b.alive=false;for(const e of this.enemies)if(e.alive&&Math.hypot(e.x-x,e.y-y)<radius+e.r)this.damageEnemy(e,this.dps*.82);if(this.boss&&!this.bossDefeated&&Math.hypot(this.boss.x-x,this.boss.y-y)<radius+this.boss.w*.22)this.damageBoss(this.dps*.82,this.boss.x,this.boss.y);this.shake=2.1;}}
   }
  }
+ wingmanAnchor(role){if(this.width<760)return this.width/2;const owner=this.coop?this.crew.find(p=>p.role===role)?.player:this.player;return clamp(owner?.x??this.width/2,150,this.width-150);}
  updateWingmen(dt){
   const pilots=this.coop?this.crew:[{role:null,player:this.player,ship:this.ship}];
   for(const pilot of pilots){const call=pilot.player.wingmanCall;if(call){call.age+=dt;if(call.age>=WINGMAN_PRELAUNCH+WINGMAN_SORTIE+WINGMAN_EXIT)pilot.player.wingmanCall=null;}}
   for(const unit of this.wingmen){
    if(unit.mode==='gone')continue;
-   if(unit.crash){const c=unit.crash;c.age+=dt;unit.x=clamp(c.x+c.vx*c.age,10,W-10);unit.y=c.y+c.vy*c.age+180*c.age*c.age;unit.roll=c.rotation+c.age*3.6;if(c.age>=c.duration){unit.mode='gone';this.effect('Wingman_Crash_Burst',unit.x,unit.y,44,.32);this.sparks(unit.x,unit.y,WINGMEN[unit.ship].color,8);}continue;}
+   if(unit.crash){const c=unit.crash;c.age+=dt;unit.x=clamp(c.x+c.vx*c.age,10,this.width-10);unit.y=c.y+c.vy*c.age+180*c.age*c.age;unit.roll=c.rotation+c.age*3.6;if(c.age>=c.duration){unit.mode='gone';this.effect('Wingman_Crash_Burst',unit.x,unit.y,44,.32);this.sparks(unit.x,unit.y,WINGMEN[unit.ship].color,8);}continue;}
    unit.age+=dt;unit.hitFlash=Math.max(0,(unit.hitFlash||0)-dt);unit.contactCooldown=Math.max(0,(unit.contactCooldown||0)-dt);
    const sortieAge=unit.age-WINGMAN_PRELAUNCH;
-   if(sortieAge<0){unit.mode='assembling';const row=Math.floor(unit.index/5),column=unit.index%5-2,phase=this.clock*.62+unit.index*.73+(unit.role==='guest'?1.3:0),targetX=W/2+column*53+Math.sin(phase)*4,targetY=H*.42+row*36+Math.sin(phase*1.4)*4,blend=Math.min(1,dt*1.35);unit.x+=(targetX-unit.x)*blend;unit.y+=(targetY-unit.y)*blend;unit.roll=clamp((targetX-unit.x)*-.009,-.18,.18);continue;}
+   if(sortieAge<0){unit.mode='assembling';const row=Math.floor(unit.index/5),column=unit.index%5-2,phase=this.clock*.62+unit.index*.73+(unit.role==='guest'?1.3:0),targetX=this.wingmanAnchor(unit.role)+column*53+Math.sin(phase)*4,targetY=this.height*.42+row*36+Math.sin(phase*1.4)*4,blend=Math.min(1,dt*1.35);unit.x+=(targetX-unit.x)*blend;unit.y+=(targetY-unit.y)*blend;unit.roll=clamp((targetX-unit.x)*-.009,-.18,.18);continue;}
    if(sortieAge>=WINGMAN_SORTIE){unit.mode='exiting';unit.y-=150*dt;unit.x+=Math.sin(this.clock*2+unit.index)*13*dt;if(sortieAge>=WINGMAN_SORTIE+WINGMAN_EXIT)unit.mode='gone';continue;}
    const pilot=this.coop?this.crew.find(item=>item.role===unit.role):null;
    const withOwner=fn=>pilot&&typeof this.withPilot==='function'?this.withPilot(pilot,fn):fn();
    withOwner(()=>{
     const row=Math.floor(unit.index/5),column=unit.index%5-2,phase=this.clock*.82+unit.index*.73+(unit.role==='guest'?1.3:0),entry=Math.min(1,Math.max(0,sortieAge/1.08));
-    const center=W/2+Math.sin(this.clock*.62+(unit.role==='guest'?1.5:0))*34;
-    let targetX=center+column*53+Math.sin(phase)*6,targetY=H*.42+row*36+(63+row*12+Math.sin(phase*1.55)*6)*entry;
+    const center=this.wingmanAnchor(unit.role)+Math.sin(this.clock*.62+(unit.role==='guest'?1.5:0))*34;
+    let targetX=center+column*53+Math.sin(phase)*6,targetY=this.height*.42+row*36+(63+row*12+Math.sin(phase*1.55)*6)*entry;
     let dodgeX=0,dodgeY=0;
     for(const enemy of this.enemies){if(!enemy.alive||enemy.crashing)continue;const dx=unit.x-enemy.x,dy=unit.y-enemy.y,d=Math.hypot(dx,dy);if(d>0&&d<45){const push=(45-d)*.7;dodgeX+=dx/d*push;dodgeY+=dy/d*push;}}
     for(const bullet of this.bullets){if(!bullet.alive||bullet.owner!=='enemy')continue;const dx=unit.x-bullet.x,dy=unit.y-bullet.y,d=Math.hypot(dx,dy);if(d>0&&d<43){const push=(43-d)*.52;dodgeX+=dx/d*push;dodgeY+=dy/d*push;}}
-    targetX=clamp(targetX+dodgeX,23,W-23);targetY=clamp(targetY+dodgeY,155,390);const blend=Math.min(1,dt*8.5),oldX=unit.x;unit.x+=(targetX-unit.x)*blend;unit.y+=(targetY-unit.y)*blend;unit.roll=clamp((unit.x-oldX)*-.012,-.24,.24);unit.mode=sortieAge<1.08?'entering':'active';
+    targetX=clamp(targetX+dodgeX,23,this.width-23);targetY=clamp(targetY+dodgeY,155,390);const blend=Math.min(1,dt*8.5),oldX=unit.x;unit.x+=(targetX-unit.x)*blend;unit.y+=(targetY-unit.y)*blend;unit.roll=clamp((unit.x-oldX)*-.012,-.24,.24);unit.mode=sortieAge<1.08?'entering':'active';
     const config=WINGMEN[unit.ship],target=this.wingmanTarget(unit);
     unit.fireTimer-=dt;if(unit.fireTimer<=0){unit.fireTimer=config.shotEvery;this.fireWingman(unit,target,config,false);}
     unit.specialTimer-=dt;if(unit.specialTimer<=0){unit.specialTimer=config.specialEvery+(unit.index%3)*.08;this.fireWingman(unit,target,config,true);}
@@ -171,37 +175,37 @@ export class Game {
   else if(this.boss&&!this.bossDefeated&&dist(this.boss,p)<540){this.damageBoss(this.dps*.58,this.boss.x,this.boss.y);this.effects.push({name:'WraithX_SlashBurst',x:this.boss.x,y:this.boss.y,size:Math.max(120,this.boss.w*.55),duration:.42,age:0,seed:this.random()*TAU});this.shake=Math.max(this.shake,1.25);}
   else{const targets=this.enemies.filter(e=>e.alive&&!e.phaseOut&&e.y>0&&dist(e,p)<540).sort((a,b)=>dist(a,p)-dist(b,p)).slice(0,3);for(let i=0;i<targets.length;i++){const e=targets[i];this.damageEnemy(e,this.dps*.76,e.x);this.effects.push({name:'WraithX_SlashBurst',x:e.x,y:e.y,size:Math.max(90,e.size*1.55),duration:.42,age:0,seed:this.random()*TAU});}if(targets.length)this.shake=Math.max(this.shake,1.25);}
  }
- updateEnemies(dt){const p=this.player;for(const e of this.enemies){if(e.crashing){const crash=e.crashing;crash.age+=dt;const t=crash.age;e.x=clamp(crash.x+crash.vx*t,12,W-12);e.y=crash.y+crash.vy*t+210*t*t;e.rotation=crash.rotation+t*3.2;if(crash.age>=crash.duration){e.crashing=null;this.effect(e.size>70?'Explosion_Large':'Explosion_Small',e.x,e.y,e.size*1.35,.36);this.sparks(e.x,e.y,'#ff9d62',12);}continue;}if(!e.alive)continue;e.age+=dt;e.flash=Math.max(0,e.flash-dt*8);e.shielded=this.enemies.some(s=>s!==e&&s.alive&&s.type===17&&dist(e,s)<92);const rate=e.cfg.speed*3*this.difficulty.enemyMove*e.speedMultiplier*(e.type===28&&e.hp<e.maxHp*.4?1.25:1);
+ updateEnemies(dt){const p=this.player;for(const e of this.enemies){if(e.crashing){const crash=e.crashing;crash.age+=dt;const t=crash.age;e.x=clamp(crash.x+crash.vx*t,12,this.width-12);e.y=crash.y+crash.vy*t+210*t*t;e.rotation=crash.rotation+t*3.2;if(crash.age>=crash.duration){e.crashing=null;this.effect(e.size>70?'Explosion_Large':'Explosion_Small',e.x,e.y,e.size*1.35,.36);this.sparks(e.x,e.y,'#ff9d62',12);}continue;}if(!e.alive)continue;e.age+=dt;e.flash=Math.max(0,e.flash-dt*8);e.shielded=this.enemies.some(s=>s!==e&&s.alive&&s.type===17&&dist(e,s)<92);const rate=e.cfg.speed*3*this.difficulty.enemyMove*e.speedMultiplier*(e.type===28&&e.hp<e.maxHp*.4?1.25:1);
    if(e.movementStyle==='kamikaze'){
     e.diveCooldown=Math.max(0,(e.diveCooldown||0)-dt);
     if(e.diveState==='diving'){const dx=e.diveTargetX-e.x,dy=e.diveTargetY-e.y,d=Math.max(1,Math.hypot(dx,dy)),speed=rate*3.2,step=Math.min(d,speed*dt);e.diveAngle=Math.atan2(dy,dx);e.x+=dx/d*step;e.y+=dy/d*step;e.rotation=e.diveAngle-Math.PI/2;if(d<=step){e.diveState='coasting';e.diveCoast=.38;}}
-    else if(e.diveState==='warning'){e.diveWarning=Math.max(0,e.diveWarning-dt);e.y+=rate*.16*dt;e.x=clamp(e.x+Math.sin(e.age*5+e.phase)*rate*.42*dt,24,W-24);if(e.diveWarning===0){e.diveState='diving';this.weaponEffect('GFX_05',e.x,e.y,72,.28);}}
+    else if(e.diveState==='warning'){e.diveWarning=Math.max(0,e.diveWarning-dt);e.y+=rate*.16*dt;e.x=clamp(e.x+Math.sin(e.age*5+e.phase)*rate*.42*dt,24,this.width-24);if(e.diveWarning===0){e.diveState='diving';this.weaponEffect('GFX_05',e.x,e.y,72,.28);}}
     else if(e.diveState==='coasting'){e.diveCoast-=dt;e.x+=Math.cos(e.diveAngle)*rate*2.1*dt;e.y+=Math.sin(e.diveAngle)*rate*2.1*dt;if(e.diveCoast<=0){e.diveState='approach';e.diveCooldown=1.1;}}
-    else{e.y+=rate*.7*dt;e.x=clamp(e.originX+Math.sin(e.age*1.8+e.phase)*32,24,W-24);if(e.y>125&&e.age>.85&&e.diveCooldown<=0){e.diveState='warning';e.diveWarning=.9;e.diveTargetX=clamp(p.x,25,W-25);e.diveTargetY=clamp(p.y,175,H-80);}}
+    else{e.y+=rate*.7*dt;e.x=clamp(e.originX+Math.sin(e.age*1.8+e.phase)*32,24,this.width-24);if(e.y>125&&e.age>.85&&e.diveCooldown<=0){e.diveState='warning';e.diveWarning=.9;e.diveTargetX=clamp(p.x,25,this.width-25);e.diveTargetY=clamp(p.y,175,this.height-80);}}
    }
-   else if(e.movementStyle==='formation'){e.y+=rate*dt;e.x=clamp((e.formationCenter??e.originX)+(e.formationOffset||0)+Math.sin(e.age*1.35+(e.formationId||0)*.28)*19,25,W-25);}
-   else if(e.movementStyle==='irregular'){e.y+=rate*.82*dt;const weave=Math.sin(e.age*(2.3+e.speedMultiplier)+e.phase)*52,cut=Math.sin(e.age*5.1+e.phase*.7)*20;e.x=clamp(e.originX+weave+cut,24,W-24);}
-   else if(e.type===1||e.type===5){e.y+=rate*dt;e.x=clamp(e.originX+Math.sin(e.age*2+e.phase)*38,25,W-25);}
+   else if(e.movementStyle==='formation'){e.y+=rate*dt;e.x=clamp((e.formationCenter??e.originX)+(e.formationOffset||0)+Math.sin(e.age*1.35+(e.formationId||0)*.28)*19,25,this.width-25);}
+   else if(e.movementStyle==='irregular'){e.y+=rate*.82*dt;const weave=Math.sin(e.age*(2.3+e.speedMultiplier)+e.phase)*52,cut=Math.sin(e.age*5.1+e.phase*.7)*20;e.x=clamp(e.originX+weave+cut,24,this.width-24);}
+   else if(e.type===1||e.type===5){e.y+=rate*dt;e.x=clamp(e.originX+Math.sin(e.age*2+e.phase)*38,25,this.width-25);}
     else if(e.type===2){if(e.age<1.35){e.y+=rate*dt;e.x+=Math.sin(e.phase)*rate*.45*dt;}else{if(e.chargeTime===0){e.chargeTime=.65;e.dashWarning=.65;e.dashX=p.x;e.dashY=p.y;}e.dashWarning=Math.max(0,e.dashWarning-dt);if(e.dashWarning===0){e.x+=(e.dashX-e.originX)*.7*dt;e.y+=rate*2.15*dt;}}}
-   else if(e.type===3){e.y+=rate*.65*dt;e.x=clamp(e.originX+Math.sin(e.age*1.2+e.phase)*65,24,W-24);}
+   else if(e.type===3){e.y+=rate*.65*dt;e.x=clamp(e.originX+Math.sin(e.age*1.2+e.phase)*65,24,this.width-24);}
     else if(e.type===4){e.y+=rate*(e.age<1.1?.45:2.3)*dt;if(e.age<1.1)e.dashWarning=1.1-e.age;}
-   else if(e.type===6){e.y+=rate*.65*dt;if(e.age>2.1&&!e.jumped){e.dashWarning=Math.max(0,2.9-e.age);if(e.age>2.9){e.x=clamp(p.x+(this.random()>.5?75:-75),30,W-30);e.originX=e.x;e.jumped=true;this.effect('WraithX_Phase_Dash',e.x,e.y,85,.4);}}}
+   else if(e.type===6){e.y+=rate*.65*dt;if(e.age>2.1&&!e.jumped){e.dashWarning=Math.max(0,2.9-e.age);if(e.age>2.9){e.x=clamp(p.x+(this.random()>.5?75:-75),30,this.width-30);e.originX=e.x;e.jumped=true;this.effect('WraithX_Phase_Dash',e.x,e.y,85,.4);}}}
    else if(e.type===10){e.y+=rate*.75*dt;e.x+=clamp(p.x-e.x,-74*dt,74*dt);}
-   else if(e.type===16){e.y+=rate*dt;e.x=clamp(e.originX+Math.sin(e.age*1.3)*95,30,W-30);}
-   else if(e.type===27){e.y+=rate*.62*dt;e.x=clamp(p.x+Math.sin(e.age*2.2+e.phase)*90,30,W-30);}
-   else if([7,8,9,11,12,13,14,15,17,18,19,20,21,22,23,24,25].includes(e.type)){e.y+=rate*(e.age>2&&e.age<8?.25:1)*dt;e.x=clamp(e.originX+Math.sin(e.age+e.phase)*14,30,W-30);}
-   else{e.y+=rate*.7*dt;e.x=clamp(e.originX+Math.sin(e.age*1.5+e.phase)*50,30,W-30);}
+   else if(e.type===16){e.y+=rate*dt;e.x=clamp(e.originX+Math.sin(e.age*1.3)*95,30,this.width-30);}
+   else if(e.type===27){e.y+=rate*.62*dt;e.x=clamp(p.x+Math.sin(e.age*2.2+e.phase)*90,30,this.width-30);}
+   else if([7,8,9,11,12,13,14,15,17,18,19,20,21,22,23,24,25].includes(e.type)){e.y+=rate*(e.age>2&&e.age<8?.25:1)*dt;e.x=clamp(e.originX+Math.sin(e.age+e.phase)*14,30,this.width-30);}
+   else{e.y+=rate*.7*dt;e.x=clamp(e.originX+Math.sin(e.age*1.5+e.phase)*50,30,this.width-30);}
    if(e.type===26)e.phaseOut=e.age%2.2>1.5;
    if(e.type===18){for(const o of this.enemies)if(o.alive&&o!==e&&dist(e,o)<120)o.hp=Math.min(o.maxHp,o.hp+o.maxHp*.03*dt);}
-   if(e.type===20&&dist(e,p)<220){p.x+=clamp(e.x-p.x,-17*dt,17*dt);p.y+=clamp(e.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,W-20);p.y=clamp(p.y,155,H-93);}
-   if(e.y>25&&e.y<H-90){e.fireTimer-=dt;if(e.fireTimer<=0){e.fireTimer=(e.type===28&&e.hp<e.maxHp*.4?1.25:1.75)/this.difficulty.rate;this.enemyFire(e);}}
-   if(e.y>H+95||e.x<-90||e.x>W+90||(e.movementStyle==='kamikaze'&&['diving','coasting'].includes(e.diveState)&&e.y<-95))e.alive=false;
+   if(e.type===20&&dist(e,p)<220){p.x+=clamp(e.x-p.x,-17*dt,17*dt);p.y+=clamp(e.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,this.width-20);p.y=clamp(p.y,155,this.height-93);}
+   if(e.y>25&&e.y<this.height-90){e.fireTimer-=dt;if(e.fireTimer<=0){e.fireTimer=(e.type===28&&e.hp<e.maxHp*.4?1.25:1.75)/this.difficulty.rate;this.enemyFire(e);}}
+   if(e.y>this.height+95||e.x<-90||e.x>this.width+90||(e.movementStyle==='kamikaze'&&['diving','coasting'].includes(e.diveState)&&e.y<-95))e.alive=false;
    if(e.alive&&!e.phaseOut)for(const unit of this.wingmen)if(['active','entering'].includes(unit.mode)&&unit.contactCooldown<=0&&dist(e,unit)<e.r+unit.r)this.damageWingman(unit);
    if(e.alive&&!e.phaseOut&&dist(e,p)<e.r+p.r){this.hurtPlayer(Math.max(65,e.cfg.damage*1.6));if(e.diveState==='diving'||e.diveState==='coasting'){e.hp=0;this.killEnemy(e);}else if(e.cfg.category==='scout')this.damageEnemy(e,e.hp+1);}
   }
   this.enemies=this.enemies.filter(e=>e.alive||e.crashing);
  }
- enemyFire(e){this.firingEnemy=e;e.salvo=(e.salvo||0)+1;const p=this.player,s=(188+this.stage.chapter*7)*this.difficulty.speed,flight=Math.min(.7,Math.hypot(p.x-e.x,p.y-e.y)/Math.max(1,s)),lead=flight*this.difficulty.aimLead,aimX=clamp(p.x+p.vx*lead,20,W-20),aimY=clamp(p.y+p.vy*lead,155,H-93),a=Math.atan2(aimY-e.y,aimX-e.x),d=e.cfg.damage*1.12**this.stage.chapter*this.difficulty.damage,fast=e.salvo%2===1,round={kind:'round',simpleRound:true,fastRound:fast,speedMultiplier:fast?1.45:.84,color:fast?'#ff977f':'#ffe29a',r:fast?3.5:5.2};
+ enemyFire(e){this.firingEnemy=e;e.salvo=(e.salvo||0)+1;const p=this.player,s=(188+this.stage.chapter*7)*this.difficulty.speed,flight=Math.min(.7,Math.hypot(p.x-e.x,p.y-e.y)/Math.max(1,s)),lead=flight*this.difficulty.aimLead,aimX=clamp(p.x+p.vx*lead,20,this.width-20),aimY=clamp(p.y+p.vy*lead,155,this.height-93),a=Math.atan2(aimY-e.y,aimX-e.x),d=e.cfg.damage*1.12**this.stage.chapter*this.difficulty.damage,fast=e.salvo%2===1,round={kind:'round',simpleRound:true,fastRound:fast,speedMultiplier:fast?1.45:.84,color:fast?'#ff977f':'#ffe29a',r:fast?3.5:5.2};
   if(e.type!==26||!e.phaseOut){this.weaponEffect(enemyMuzzleArt(e.type),e.x,e.y+12,30,.13,a);const art=enemyFireArt(e.type,e.salvo);if(art)this.weaponEffect(art,e.x,e.y+18,art.startsWith('GSPEC')?64:44,.28,art==='GSPEC_08'?a:0);}
   switch(e.type){
    case 1:case 2:case 4:case 6:this.fan(e.x,e.y,3,.23,s,d,a,round);break;
@@ -209,29 +213,29 @@ export class Game {
    case 5:this.ring(e.x,e.y,7,s*.8,d,e.phase,round);break;
    case 7:for(const x of [-15,15])this.fan(e.x+x,e.y,3,.25,s,d,a,round);break;
    case 8:this.fan(e.x,e.y,5,.65,s,d,a,round);break;
-   case 9:for(const x of [p.x-34,p.x+34])this.laser(clamp(x,25,W-25),e.y,d,{width:10,duration:.45,warn:1.25});break;
+   case 9:for(const x of [p.x-34,p.x+34])this.laser(clamp(x,25,this.width-25),e.y,d,{width:10,duration:.45,warn:1.25});break;
    case 10:this.fan(e.x,e.y,3,.25,s,d,a,round);break;
    case 11:this.ring(e.x,e.y,9,s*.9,d,e.age*1.2,{kind:'diamond'});break;
-   case 12:for(const x of [-52,0,52])this.zone(clamp(p.x+x,30,W-30),p.y,30,d,'blast',{warn:1.25});break;
-   case 13:for(const x of [-45,45])this.zone(clamp(p.x+(p.targetX-p.x)*.6+x,35,W-35),clamp(p.y,180,H-95),34,d,'blast',{warn:1.35});break;
+   case 12:for(const x of [-52,0,52])this.zone(clamp(p.x+x,30,this.width-30),p.y,30,d,'blast',{warn:1.25});break;
+   case 13:for(const x of [-45,45])this.zone(clamp(p.x+(p.targetX-p.x)*.6+x,35,this.width-35),clamp(p.y,180,this.height-95),34,d,'blast',{warn:1.35});break;
    case 14:this.zone(p.x,p.y,48,d*.35,'fire');this.fan(e.x,e.y,3,.6,s,d,a,round);break;
    case 15:for(const offset of [-.09,.09])this.shoot(e.x,e.y,a+offset,s*.65,d,'enemy',{kind:'orb',r:9,shock:true});break;
-   case 16:for(let i=0;i<5;i++)this.zone(clamp(e.x+(i-2)*50,25,W-25),Math.min(H-110,e.y+170),22,d,'mine',{warn:1.3,duration:3});break;
+   case 16:for(let i=0;i<5;i++)this.zone(clamp(e.x+(i-2)*50,25,this.width-25),Math.min(this.height-110,e.y+170),22,d,'mine',{warn:1.3,duration:3});break;
    case 17:case 18:case 19:case 20:this.fan(e.x,e.y,2,.18,s*.8,d,a,round);break;
    case 21:for(const x of [-28,28])this.fan(e.x+x,e.y,3,.65,s,d,Math.atan2(p.y-e.y,p.x-e.x),round);break;
    case 22:this.fan(e.x,e.y,5,.9,s,d,a,round);break;
    case 23:for(const x of [-25,0,25])this.fan(e.x+x,e.y,3,.3,s,d,a+x*.008,round);break;
-   case 24:for(const x of [p.x-40,p.x+40])this.laser(clamp(x,22,W-22),e.y,d,{width:16,duration:.8,warn:1.4});break;
-   case 25:if(this.enemies.length<24){const other=this.stage.enemies.filter(id=>id!==25);this.spawn(other[Math.floor(this.random()*other.length)],clamp(e.x+(this.random()-.5)*90,35,W-35),e.y+30);}this.fan(e.x,e.y,3,.3,s,d,a,round);break;
+   case 24:for(const x of [p.x-40,p.x+40])this.laser(clamp(x,22,this.width-22),e.y,d,{width:16,duration:.8,warn:1.4});break;
+   case 25:if(this.enemies.length<24){const other=this.stage.enemies.filter(id=>id!==25);this.spawn(other[Math.floor(this.random()*other.length)],clamp(e.x+(this.random()-.5)*90,35,this.width-35),e.y+30);}this.fan(e.x,e.y,3,.3,s,d,a,round);break;
    case 26:if(!e.phaseOut)this.fan(e.x,e.y,3,.5,s,d,a,{...round,kind:'round'});break;
    case 27:this.fan(e.x,e.y,3,.4,s,d,a,{...round,kind:'round'});break;
    case 28:this.fan(e.x,e.y,7,.9,s*1.1,d,a,round);break;
    case 29:this.fan(e.x,e.y,5,1.5,s*.9,d,a,{bounce:1,kind:'diamond'});break;
-   case 30:if(!this.hazards.some(h=>h.type==='time'))this.zone(e.x,Math.min(H-180,e.y+180),110,0,'time',{duration:4});this.ring(e.x,e.y,10,s,d,e.age);break;
+   case 30:if(!this.hazards.some(h=>h.type==='time'))this.zone(e.x,Math.min(this.height-180,e.y+180),110,0,'time',{duration:4});this.ring(e.x,e.y,10,s,d,e.age);break;
   }
   if(e.type!==26||!e.phaseOut)this.combatSound('enemy-fire',{enemy:e.type,x:e.x,special:[9,11,12,13,14,15,16,20,24,25,27,29,30].includes(e.type)});this.firingEnemy=null;
  }
- environmentHazard(){const c=this.stage.chapter,p=this.player;if(c===1)this.zone(p.x,p.y,50,55,'fire');else if(c===3)this.zone(W/2,H*.64,145,0,'freeze',{duration:4,warn:1.3});else if(c===7){for(const x of [55,W-55])this.laser(x,80,80,{width:26});}else if(c===8)this.zone(W/2,H*.55,125,0,'time',{duration:4});else this.laser(clamp(p.x,35,W-35),40,65,{width:c===5?20:13,warn:1.35});}
+ environmentHazard(){const c=this.stage.chapter,p=this.player;if(c===1)this.zone(p.x,p.y,50,55,'fire');else if(c===3)this.zone(this.width/2,this.height*.64,145,0,'freeze',{duration:4,warn:1.3});else if(c===7){for(const x of [55,this.width-55])this.laser(x,80,80,{width:26});}else if(c===8)this.zone(this.width/2,this.height*.55,125,0,'time',{duration:4});else this.laser(clamp(p.x,35,this.width-35),40,65,{width:c===5?20:13,warn:1.35});}
  updateBoss(dt){const b=this.boss;if(!b||b.dead)return;b.age+=dt;b.flash=Math.max(0,b.flash-dt*8);b.weakTime=Math.max(0,b.weakTime-dt);b.teleport=Math.max(0,b.teleport-dt);
   const phase=this.stage.chapter===8?(b.hp>b.maxHp*.75?1:b.hp>b.maxHp*.5?2:b.hp>b.maxHp*.2?3:4):(b.hp>b.maxHp*.65?1:b.hp>b.maxHp*.3?2:3);
   if(phase>b.phase){b.phase=phase;this.weaponEffect(bossImpactArt(this.stage.chapter),b.x,b.y,220,.7);this.weaponEffect('CFX_08',b.x,b.y,170,.5);this.weaponEffect('CFX_09',b.x,b.y,240,.5);b.weakTime=2.5;this.clearBullets();this.shake=3;this.effect('Shield_Break',b.x,b.y,320,.6);this.emit({type:'phase',phase});this.combatSound('boss-phase',{boss:this.stage.chapter+1});this.emit({type:'message',speaker:`PHASE ${phase} / 能量重构`,text:phase===4?'时间崩坏。终止递归循环。':'敌方攻击结构改变，注意预警与弱点。',duration:2.5});this.combatSound('warning');}
@@ -239,7 +243,7 @@ export class Game {
   if(b.chargeWarning>0){b.chargeWarning-=dt;if(b.chargeWarning<=0)b.chargeTime=1.2;}
   if(b.chargeTime>0){b.chargeTime-=dt;b.y=b.baseY+Math.sin((1.2-b.chargeTime)/1.2*Math.PI)*255;if(b.chargeTime<=0)b.weakTime=3;}
   else b.y+=(b.baseY+Math.sin(b.age*.9)*12-b.y)*dt*4;
-  b.x=W/2+Math.sin(b.age*.57)*((this.stage.chapter===6)?75:48);
+  b.x=this.width/2+Math.sin(b.age*.57)*Math.max((this.stage.chapter===6)?75:48,(this.width-b.w)*.29);
   b.armored=this.stage.chapter===1&&b.phase>=2&&b.age%8<3;
   if(this.stage.chapter===6&&b.age%9>7)b.weakTime=Math.max(b.weakTime,.1);
   b.fireTimer-=dt;if(b.fireTimer<=0){b.pattern++;b.fireTimer=Math.max(1.35,2.35-b.phase*.2-this.stage.chapter*.015)/this.difficulty.rate;this.bossPattern();}
@@ -247,15 +251,15 @@ export class Game {
  }
  bossPattern(){this.firingBoss=true;const b=this.boss,p=this.player,c=this.stage.chapter,a=Math.atan2(p.y-b.y,p.x-b.x),s=(132+c*6)*this.difficulty.speed,d=(50+c*7)*this.difficulty.damage,pattern=b.pattern,phase=b.phase;
   switch(c){
-   case 0:if(pattern%3===0&&phase>1){b.chargeWarning=1.15;this.zone(b.x,H*.58,45,d,'blast',{warn:1.15});}else if(pattern%2===0){for(const x of [-60,60])this.fan(b.x+x,b.y+65,3,.35,s,d,a);}else this.fan(b.x,b.y+70,5+phase*2,.95,s,d,a);break;
-   case 1:this.fan(b.x,b.y+65,9+phase*2,1.55,s,d);if(pattern%2===0)for(let i=0;i<phase+1;i++)this.zone(40+this.random()*(W-80),H*.6+this.random()*120,34,d,'fire');if(pattern%4===0){this.ring(b.x,b.y,20,s*.8,d);b.weakTime=2.5;}break;
-   case 2:this.ring(b.x,b.y,20+phase*4,s*.8,d,b.age*.4,{kind:'diamond'});if(phase>1&&pattern%2===0)this.laser(clamp(p.x,30,W-30),b.y,d,{width:16,warn:1.25});if(phase>2&&pattern%3===0)this.wall(d,s,Math.floor(this.random()*7));break;
-   case 3:this.fan(b.x,b.y+65,11,1.4,s,d,Math.PI/2,{kind:'diamond',color:'#a0e6ff'});if(pattern%3===0)this.zone(p.x,H*.66,95,0,'freeze',{duration:4});if(phase>1&&pattern%2===0)this.laser(clamp(p.x,35,W-35),b.y,d,{width:24,warn:1.4});if(pattern%4===0)b.weakTime=3.2;break;
-   case 4:this.ring(b.x,b.y,18+phase*4,s,d,b.age,{kind:'diamond'});if(pattern%2===0){const safe=Math.floor(this.random()*4);for(let i=0;i<4;i++)if(i!==safe)this.laser(55+i*110,b.y,d,{width:30,warn:1.3});}if(b.parts.every(part=>part.dead))b.weakTime=8;break;
-   case 5:{const heads=Math.min(5,1+Math.floor((1-b.hp/b.maxHp)*5));for(let i=0;i<heads;i++)this.fan(b.x+(i-(heads-1)/2)*30,b.y+60,3,.4,s,d,a);if(pattern%3===0){this.ring(b.x,b.y,24,s,d,b.age*.2,{kind:'orb',r:7});b.weakTime=2.5;}if(phase>1&&pattern%2===0)for(const x of [55,W-55])this.laser(x,b.y,d,{width:25});break;}
-   case 6:for(const x of [-80,80])this.fan(b.x+x,b.y+60,4+phase,.9,s,d,a+(x<0?.12:-.12),{kind:'diamond'});if(pattern%3===0){for(const x of [p.x-50,p.x+50])this.laser(clamp(x,20,W-20),b.y,d,{width:17,warn:1.25});b.weakTime=3;}if(phase>1&&pattern%4===0){b.chargeWarning=1;this.zone(p.x,H*.57,35,d,'blast');}break;
-   case 7:this.fan(b.x,b.y+60,7+phase*2,1.65,s,d,a,{kind:'diamond',bounce:1});if(pattern%3===0){for(let i=0;i<phase;i++)this.zone(50+this.random()*(W-100),220+this.random()*340,35,d,'blast',{warn:1.25});b.teleport=.8;b.weakTime=2;}if(b.parts.every(part=>part.dead))b.weakTime=Math.max(b.weakTime,6);break;
-   case 8:if(phase===1)this.fan(b.x,b.y+65,7,1.1,s,d,a);else if(phase===2){if(this.ship.id==='Bastion3')this.fan(b.x,b.y,5,1.0,s*1.2,d,a);else if(this.ship.id==='WraithX')this.laser(p.x,b.y,d,{width:18,warn:1.3});else for(const x of [-25,25])this.fan(b.x+x,b.y,3,.45,s*1.2,d,a);}else if(phase===3){this.ring(b.x,b.y,24,s,d,b.age,{bounce:pattern%2,kind:'diamond'});if(pattern%2===0)this.laser(p.x,b.y,d,{width:20});}else{this.ring(b.x,b.y,22,s,d,b.age*.3,{unclearable:pattern%3===0,kind:'triangle',r:6});if(pattern%3===0)this.zone(W/2,H*.55,140,0,'time',{duration:3.5});}if(pattern%4===0)b.weakTime=2;break;
+   case 0:if(pattern%3===0&&phase>1){b.chargeWarning=1.15;this.zone(b.x,this.height*.58,45,d,'blast',{warn:1.15});}else if(pattern%2===0){for(const x of [-60,60])this.fan(b.x+x,b.y+65,3,.35,s,d,a);}else this.fan(b.x,b.y+70,5+phase*2,.95,s,d,a);break;
+   case 1:this.fan(b.x,b.y+65,9+phase*2,1.55,s,d);if(pattern%2===0)for(let i=0;i<phase+1;i++)this.zone(40+this.random()*(this.width-80),this.height*.6+this.random()*120,34,d,'fire');if(pattern%4===0){this.ring(b.x,b.y,20,s*.8,d);b.weakTime=2.5;}break;
+   case 2:this.ring(b.x,b.y,20+phase*4,s*.8,d,b.age*.4,{kind:'diamond'});if(phase>1&&pattern%2===0)this.laser(clamp(p.x,30,this.width-30),b.y,d,{width:16,warn:1.25});if(phase>2&&pattern%3===0)this.wall(d,s,Math.floor(this.random()*7));break;
+   case 3:this.fan(b.x,b.y+65,11,1.4,s,d,Math.PI/2,{kind:'diamond',color:'#a0e6ff'});if(pattern%3===0)this.zone(p.x,this.height*.66,95,0,'freeze',{duration:4});if(phase>1&&pattern%2===0)this.laser(clamp(p.x,35,this.width-35),b.y,d,{width:24,warn:1.4});if(pattern%4===0)b.weakTime=3.2;break;
+   case 4:this.ring(b.x,b.y,18+phase*4,s,d,b.age,{kind:'diamond'});if(pattern%2===0){const safe=Math.floor(this.random()*4);for(let i=0;i<4;i++)if(i!==safe)this.laser(this.width*(i+.5)/4,b.y,d,{width:30,warn:1.3});}if(b.parts.every(part=>part.dead))b.weakTime=8;break;
+   case 5:{const heads=Math.min(5,1+Math.floor((1-b.hp/b.maxHp)*5));for(let i=0;i<heads;i++)this.fan(b.x+(i-(heads-1)/2)*30,b.y+60,3,.4,s,d,a);if(pattern%3===0){this.ring(b.x,b.y,24,s,d,b.age*.2,{kind:'orb',r:7});b.weakTime=2.5;}if(phase>1&&pattern%2===0)for(const x of [55,this.width-55])this.laser(x,b.y,d,{width:25});break;}
+   case 6:for(const x of [-80,80])this.fan(b.x+x,b.y+60,4+phase,.9,s,d,a+(x<0?.12:-.12),{kind:'diamond'});if(pattern%3===0){for(const x of [p.x-50,p.x+50])this.laser(clamp(x,20,this.width-20),b.y,d,{width:17,warn:1.25});b.weakTime=3;}if(phase>1&&pattern%4===0){b.chargeWarning=1;this.zone(p.x,this.height*.57,35,d,'blast');}break;
+   case 7:this.fan(b.x,b.y+60,7+phase*2,1.65,s,d,a,{kind:'diamond',bounce:1});if(pattern%3===0){for(let i=0;i<phase;i++)this.zone(50+this.random()*(this.width-100),220+this.random()*340,35,d,'blast',{warn:1.25});b.teleport=.8;b.weakTime=2;}if(b.parts.every(part=>part.dead))b.weakTime=Math.max(b.weakTime,6);break;
+   case 8:if(phase===1)this.fan(b.x,b.y+65,7,1.1,s,d,a);else if(phase===2){if(this.ship.id==='Bastion3')this.fan(b.x,b.y,5,1.0,s*1.2,d,a);else if(this.ship.id==='WraithX')this.laser(p.x,b.y,d,{width:18,warn:1.3});else for(const x of [-25,25])this.fan(b.x+x,b.y,3,.45,s*1.2,d,a);}else if(phase===3){this.ring(b.x,b.y,24,s,d,b.age,{bounce:pattern%2,kind:'diamond'});if(pattern%2===0)this.laser(p.x,b.y,d,{width:20});}else{this.ring(b.x,b.y,22,s,d,b.age*.3,{unclearable:pattern%3===0,kind:'triangle',r:6});if(pattern%3===0)this.zone(this.width/2,this.height*.55,140,0,'time',{duration:3.5});}if(pattern%4===0)b.weakTime=2;break;
   }
   this.combatSound('boss-fire',{boss:c+1,art:bossShotArt(c,pattern),x:b.x});this.bossArsenal();this.firingBoss=false;
   const skillInterval=Math.max(2,(phase===1?4:3)-this.difficulty.skillBonus);if(pattern%skillInterval===0)this.bossSkill();
@@ -274,20 +278,20 @@ export class Game {
    if(/boomerang/.test(entry.name))options.bounce=1;
    volley(()=>this.fan(x,y,2+b.phase,.3,s,d,aim,options));
   }else if(entry.kind==='weapon'){
-   if(c===5)this.zone(p.x,clamp(p.y-70,200,H-130),36,d,'mine',{art:id,warn,duration:3});
-   else if(c===8)this.zone(clamp(p.x,95,W-95),clamp(p.y-90,240,H-160),82,0,'time',{art:id,warn,duration:2.4});
+   if(c===5)this.zone(p.x,clamp(p.y-70,200,this.height-130),36,d,'mine',{art:id,warn,duration:3});
+   else if(c===8)this.zone(clamp(p.x,95,this.width-95),clamp(p.y-90,240,this.height-160),82,0,'time',{art:id,warn,duration:2.4});
    else volley(()=>{for(const dx of [-30,30])this.shoot(x+dx,y,aim,s*.75,d,'enemy',{art:id,r:8,homing:true,target:p,trackingRate:this.difficulty.id==='hard'?4:1.5,maxSpeed:s*1.5,color});});
   }else if(entry.kind==='pattern'){
    volley(()=>{if(/cluster|spread|barrage/.test(entry.name))for(const dx of [-52,0,52])this.fan(x+dx,y,3,.24,s,d,aim,{art:shot,color});else this.ring(x,y,12+b.phase*3,s*.85,d,b.age*.4,{art:shot,color,kind:'diamond'});});
   }else if(entry.kind==='beam'){
-   this.laser(clamp(p.x,35,W-35),y,d,{art:id,strip:entry.strip,emitter:entry.emitter,warn,width:18+c,duration:.7});
+   this.laser(clamp(p.x,35,this.width-35),y,d,{art:id,strip:entry.strip,emitter:entry.emitter,warn,width:18+c,duration:.7});
   }else if(entry.kind==='telegraph'){
    this.zone(p.x,p.y,42,d,'blast',{art:id,warnArt:id,impactArt:bossImpactArt(c),warn,duration:.35});
   }else if(entry.kind==='impact'){
-   this.zone(p.x,clamp(p.y-25,220,H-125),45,d,'blast',{art:id,warn,duration:.4});
+   this.zone(p.x,clamp(p.y-25,220,this.height-125),45,d,'blast',{art:id,warn,duration:.4});
   }else{
    const type=c===8?'time':c===3?'freeze':'fire';
-   this.zone(clamp(p.x,95,W-95),clamp(p.y-90,240,H-160),type==='fire'?50:82,type==='fire'?d*.5:0,type,{art:id,warn,duration:2.4});
+   this.zone(clamp(p.x,95,this.width-95),clamp(p.y-90,240,this.height-160),type==='fire'?50:82,type==='fire'?d*.5:0,type,{art:id,warn,duration:2.4});
   }
  }
  // Every boss adds a telegraphed combination, escalating with its phase.
@@ -298,25 +302,25 @@ export class Game {
   this.emit({type:'message',speaker:'WARNING / 巨型目标',text:BOSS_SKILLS[c]+' · 躲避预警区域',duration:2});
   this.combatSound('boss-skill-warning',{boss:c+1});this.weaponEffect(c===8?'CFX_14':c===1?'CFX_13':c===7?'CFX_15':'CFX_05',x,y,90,.5);
   switch(c){
-   case 0:for(const side of [-1,1]){const xx=clamp(x+side*110,35,W-35),a=aim(xx,y);volley(xx,y,1.2,()=>this.fan(xx,y,6+phase,.62,s,d,a));}break;
-   case 1:{const safe=Math.floor(this.random()*5);for(let lane=0;lane<5;lane++)if(lane!==safe)this.zone(45+lane*90,H*.71,35,d*.5,'fire',{warn:1.5,duration:2.3});volley(x,y,1.5,()=>this.ring(x,y,18+phase*4,s*.8,d,angle));break;}
+   case 0:for(const side of [-1,1]){const xx=clamp(x+side*110,35,this.width-35),a=aim(xx,y);volley(xx,y,1.2,()=>this.fan(xx,y,6+phase,.62,s,d,a));}break;
+   case 1:{const safe=Math.floor(this.random()*5);for(let lane=0;lane<5;lane++)if(lane!==safe)this.zone(45+lane*90,this.height*.71,35,d*.5,'fire',{warn:1.5,duration:2.3});volley(x,y,1.5,()=>this.ring(x,y,18+phase*4,s*.8,d,angle));break;}
    case 2:for(let n=0;n<2;n++)volley(x+(n-.5)*70,y,1.2+n*.38,()=>this.ring(x+(n-.5)*70,y,24+phase*4,s*.85,d,angle+n*.15,{kind:'diamond'}));break;
-   case 3:{const gap=Math.floor(this.random()*7);volley(W/2,135,1.4,()=>this.wall(d,s,gap));this.zone(clamp(p.x,100,W-100),H*.63,82,0,'freeze',{warn:1.4,duration:3});break;}
-   case 4:{const safe=Math.floor(this.random()*5);for(let lane=0;lane<6;lane++)if(lane!==safe&&lane!==safe+1)this.laser(35+lane*76,y,d,{width:25,warn:1.55,duration:.8});volley(x,y,1.55,()=>this.ring(x,y,16+phase*3,s*.82,d,angle));break;}
-   case 5:for(let n=0;n<3;n++)this.laser(clamp(p.x+(n-1)*72,28,W-28),y,d,{width:18,warn:1.3+n*.35,duration:.55});volley(x,y,1.5,()=>this.ring(x,y,16+phase*4,s,d,angle,{kind:'orb',r:6}));break;
-   case 6:for(const side of [-1,1]){const xx=x+side*85,a=aim(xx,y)+side*.18;volley(xx,y,1.35,()=>this.fan(xx,y,8+phase,.95,s,d,a,{kind:'diamond'}));}if(phase>1)this.zone(p.x,H*.67,42,d,'blast',{warn:1.6});break;
-   case 7:for(const side of [-1,1]){const xx=side<0?24:W-24,a=aim(xx,175);volley(xx,175,1.35,()=>this.fan(xx,175,8+phase,1.3,s*.88,d,a,{kind:'diamond',bounce:1}));}break;
-   case 8:for(let n=0;n<2;n++)volley(x,y,1.35+n*.4,()=>this.ring(x,y,18+phase*6,s*(.8+n*.14),d,angle+n*.11,{kind:'triangle',unclearable:phase===4&&n===1}));if(phase>1){const gap=Math.floor(this.random()*7);volley(W/2,135,1.6,()=>this.wall(d,s,gap));}if(phase===4)this.zone(W/2,H*.6,110,0,'time',{warn:1.6,duration:2.8});break;
+   case 3:{const gap=Math.floor(this.random()*7);volley(this.width/2,135,1.4,()=>this.wall(d,s,gap));this.zone(clamp(p.x,100,this.width-100),this.height*.63,82,0,'freeze',{warn:1.4,duration:3});break;}
+   case 4:{const safe=Math.floor(this.random()*5);for(let lane=0;lane<6;lane++)if(lane!==safe&&lane!==safe+1)this.laser(this.width*(lane+.5)/6,y,d,{width:25,warn:1.55,duration:.8});volley(x,y,1.55,()=>this.ring(x,y,16+phase*3,s*.82,d,angle));break;}
+   case 5:for(let n=0;n<3;n++)this.laser(clamp(p.x+(n-1)*72,28,this.width-28),y,d,{width:18,warn:1.3+n*.35,duration:.55});volley(x,y,1.5,()=>this.ring(x,y,16+phase*4,s,d,angle,{kind:'orb',r:6}));break;
+   case 6:for(const side of [-1,1]){const xx=x+side*85,a=aim(xx,y)+side*.18;volley(xx,y,1.35,()=>this.fan(xx,y,8+phase,.95,s,d,a,{kind:'diamond'}));}if(phase>1)this.zone(p.x,this.height*.67,42,d,'blast',{warn:1.6});break;
+   case 7:for(const side of [-1,1]){const xx=side<0?24:this.width-24,a=aim(xx,175);volley(xx,175,1.35,()=>this.fan(xx,175,8+phase,1.3,s*.88,d,a,{kind:'diamond',bounce:1}));}break;
+   case 8:for(let n=0;n<2;n++)volley(x,y,1.35+n*.4,()=>this.ring(x,y,18+phase*6,s*(.8+n*.14),d,angle+n*.11,{kind:'triangle',unclearable:phase===4&&n===1}));if(phase>1){const gap=Math.floor(this.random()*7);volley(this.width/2,135,1.6,()=>this.wall(d,s,gap));}if(phase===4)this.zone(this.width/2,this.height*.6,110,0,'time',{warn:1.6,duration:2.8});break;
   }this.firingBoss=previousBoss;
  }
- wall(damage,speed,gap){for(let i=0;i<17;i++)if(Math.abs(i-(3+gap*1.4))>1.5)this.shoot(16+i*26,135,Math.PI/2,speed,damage,'enemy',{kind:'diamond'});}
+ wall(damage,speed,gap){for(let i=0;i<17;i++)if(Math.abs(i-(3+gap*1.4))>1.5)this.shoot(this.width*(16+i*26)/450,135,Math.PI/2,speed,damage,'enemy',{kind:'diamond'});}
  updateBullets(dt){const p=this.player;for(const b of this.bullets){if(!b.alive)continue;b.age+=dt;b.px=b.x;b.py=b.y;let scale=1;if(b.owner==='enemy'&&this.ship.id==='WraithX'&&p.ultTime>0&&!b.unclearable)scale=.6;for(const h of this.hazards)if(h.type==='time'&&h.age>h.warn&&b.owner==='enemy'&&Math.hypot(h.x-b.x,h.y-b.y)<h.r)scale*=h.age-h.warn<2?.27:1.15;
    if(b.hold&&b.age<b.hold)scale=0;
    if(b.burstAt&&b.age>b.burstAt){this.weaponEffect(b.art,b.x,b.y,55,.3);this.ring(b.x,b.y,8,140*this.difficulty.speed,b.damage*.7,0,{art:b.burstArt,color:b.color});b.alive=false;continue;}
    if(b.homing&&b.target?.alive!==false&&!b.target?.dead){const a=Math.atan2(b.target.y-b.y,b.target.x-b.x),speed=b.maxSpeed||Math.min(550,300+b.age*220),t=Math.min(1,dt*(b.trackingRate||6));b.vx+=(Math.cos(a)*speed-b.vx)*t;b.vy+=(Math.sin(a)*speed-b.vy)*t;}
    b.x+=b.vx*dt*scale;b.y+=b.vy*dt*scale;
-   if(b.bounce>0&&(b.x<b.r||b.x>W-b.r)){b.x=clamp(b.x,b.r,W-b.r);b.vx*=-1;b.bounce--;}
-   if(b.x<-55||b.x>W+55||b.y<-70||b.y>H+65||b.age>10){if(b.shock&&b.owner==='enemy'&&b.y>H-130&&b.y<H+30)this.ring(b.x,Math.min(b.y,H-110),12,145,b.damage*.6);b.alive=false;continue;}
+   if(b.bounce>0&&(b.x<b.r||b.x>this.width-b.r)){b.x=clamp(b.x,b.r,this.width-b.r);b.vx*=-1;b.bounce--;}
+   if(b.x<-55||b.x>this.width+55||b.y<-70||b.y>this.height+65||b.age>10){if(b.shock&&b.owner==='enemy'&&b.y>this.height-130&&b.y<this.height+30)this.ring(b.x,Math.min(b.y,this.height-110),12,145,b.damage*.6);b.alive=false;continue;}
    if(b.owner==='player'){
     for(const e of this.enemies){if(!b.alive)break;if(!e.alive||e.phaseOut||b.hit.has(e.id))continue;const hit=b.accelerated?segmentHitsAabb(b.px,b.py,b.x,b.y,e.x-e.r-b.r,e.y-e.r-b.r,e.x+e.r+b.r,e.y+e.r+b.r):Math.abs(b.x-e.x)<e.r+b.r&&Math.abs(b.y-e.y)<e.r+b.r;if(hit){b.hit.add(e.id);this.damageEnemy(e,b.damage,b.x);if(!b.wingman){p.consecutive++;p.lastShotHit=this.time;}if(b.pierce>0)b.pierce--;else b.alive=false;}}
     const boss=this.boss,bossHit=boss&&b.accelerated?segmentHitsAabb(b.px,b.py,b.x,b.y,boss.x-boss.w*.42,boss.y-boss.h*.3,boss.x+boss.w*.42,boss.y+boss.h*.3):boss&&Math.abs(b.x-boss.x)<boss.w*.42&&Math.abs(b.y-boss.y)<boss.h*.3;if(b.alive&&boss&&!boss.dead&&bossHit){this.damageBoss(b.damage,b.x,b.y);b.alive=false;if(!b.wingman){p.consecutive++;p.lastShotHit=this.time;}}
@@ -333,9 +337,9 @@ export class Game {
  updateHazards(dt){const p=this.player;for(const h of this.hazards){if(!h.talentWarningApplied){h.warn=(Number(h.warn)||0)+.15*(this.talents.survival_warning||0);h.talentWarningApplied=true;}h.age+=dt;if(h.age<h.warn||h.visual)continue;if(!h.activated){h.activated=true;const impact=hazardImpactArt(h);this.combatSound(h.skill?'boss-skill':h.soundOwner?.boss?'boss-weapon':h.soundOwner?.enemy?'enemy-special':'environment',{...h.soundOwner,art:h.activationArt||impact||h.art,x:h.x,hazard:h.type});if(impact&&['blast','fire','mine','cross'].includes(h.type))this.weaponEffect(impact,h.x,h.y,h.r*2,.35);}if(h.volley&&!h.triggered){h.triggered=true;h.volley();}let contact=false;if(h.type==='laser')contact=Math.abs(p.x-h.x)<h.width/2+p.r&&p.y>h.y;else if(h.type==='cross'){const dx=p.x-h.x,dy=p.y-h.y;contact=Math.max(Math.abs(dx),Math.abs(dy))<h.r&&Math.min(Math.abs(dx-dy),Math.abs(dx+dy))/Math.SQRT2<10+p.r;}else if(['blast','fire','mine'].includes(h.type))contact=Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r;
    if(contact)this.hurtPlayer(h.damage);if(h.type==='mine'&&contact)h.age=h.warn+h.duration;
   }this.hazards=this.hazards.filter(h=>h.age<h.warn+h.duration);}
- drop(kind,x,y,{tier='s',amount,container=null}={}){const pickup={id:++this.uid,kind,tier:TIERS.includes(tier)?tier:'s',x:clamp(x,18,W-18),y:clamp(y,12,H-45),age:0,container};if(Number.isFinite(amount)&&amount>0)pickup.amount=amount;this.pickups.push(pickup);return pickup;}
+ drop(kind,x,y,{tier='s',amount,container=null}={}){const pickup={id:++this.uid,kind,tier:TIERS.includes(tier)?tier:'s',x:clamp(x,18,this.width-18),y:clamp(y,12,this.height-45),age:0,container};if(Number.isFinite(amount)&&amount>0)pickup.amount=amount;this.pickups.push(pickup);return pickup;}
  lootBurst(name,x,y,size=62,duration=.5){if(this.lootBursts.length<28)this.lootBursts.push({name,x,y,size,duration,age:0});}
- updatePickups(dt){const p=this.player;for(const i of this.pickups.slice()){if(i.dead)continue;i.age+=dt;const d=dist(i,p);i.attracting=i.age>.2&&(d<this.growth.magnet+35*(this.talents.mobility_magnet||0)||this.bossDefeated);if(i.attracting){const speed=this.bossDefeated?Math.min(1050,d/Math.max(dt,.001)):220+Math.max(0,this.growth.magnet-10-d)*4;const step=Math.min(d,speed*dt*(1+.25*(this.talents.mobility_salvage||0)));i.x+=(p.x-i.x)/Math.max(1,d)*step;i.y+=(p.y-i.y)/Math.max(1,d)*step;}else i.y+=50*dt;if(i.age>.2&&dist(i,p)<19)this.collect(i);if(i.y>H+25||i.age>17)i.dead=true;}this.pickups=this.pickups.filter(i=>!i.dead);}
+ updatePickups(dt){const p=this.player;for(const i of this.pickups.slice()){if(i.dead)continue;i.age+=dt;const d=dist(i,p);i.attracting=i.age>.2&&(d<this.growth.magnet+35*(this.talents.mobility_magnet||0)||this.bossDefeated);if(i.attracting){const speed=this.bossDefeated?Math.min(1050,d/Math.max(dt,.001)):220+Math.max(0,this.growth.magnet-10-d)*4;const step=Math.min(d,speed*dt*(1+.25*(this.talents.mobility_salvage||0)));i.x+=(p.x-i.x)/Math.max(1,d)*step;i.y+=(p.y-i.y)/Math.max(1,d)*step;}else i.y+=50*dt;if(i.age>.2&&dist(i,p)<19)this.collect(i);if(i.y>this.height+25||i.age>17)i.dead=true;}this.pickups=this.pickups.filter(i=>!i.dead);}
  collect(i){if(i.collected)return;i.collected=true;i.dead=true;const p=this.player,n=tierIndex(i.tier),units=n+1;
   if(i.kind==='container'){this.lootBurst('pickup_rare_gold',i.x,i.y,85,.65);const loot=containerLoot(i.container,i.tier,this.stage.chapter);loot.forEach((item,index)=>this.drop(item.kind,i.x+(index-(loot.length-1)/2)*27,i.y-48,{tier:item.tier,amount:item.amount}));this.float('补给箱已开启',p.x,p.y-55,'#ffd585');this.combatSound('pickup',{pickup:'container'});return;}
   const info=ITEM_BY_KIND[i.kind];if(!info)return;this.lootBurst(info.collect,p.x,p.y-12,65,.45);
@@ -379,4 +383,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=30.1';
+export {AssetStore} from './asset-loader.js?v=31';

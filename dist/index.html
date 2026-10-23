@@ -11,21 +11,22 @@
  <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
  <title>裂空回响 · AERO ECHO</title>
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="style.css?v=30.1">
- <link rel="stylesheet" href="ui-art.css?v=30.1">
- <link rel="stylesheet" href="menu-layout.css?v=30.1">
- <link rel="stylesheet" href="online.css?v=30.1">
- <link rel="stylesheet" href="ending.css?v=30.1">
- <link rel="stylesheet" href="flight-vitals.css?v=30.1">
- <link rel="stylesheet" href="experience.css?v=30.1">
- <link rel="stylesheet" href="desktop-play.css?v=30.1">
+ <link rel="stylesheet" href="style.css?v=31">
+ <link rel="stylesheet" href="ui-art.css?v=31">
+ <link rel="stylesheet" href="menu-layout.css?v=31">
+ <link rel="stylesheet" href="online.css?v=31">
+ <link rel="stylesheet" href="ending.css?v=31">
+ <link rel="stylesheet" href="flight-vitals.css?v=31">
+ <link rel="stylesheet" href="experience.css?v=31">
+ <link rel="stylesheet" href="desktop-play.css?v=31">
+ <link rel="stylesheet" href="desktop-wide.css?v=31">
 </head>
 <body class="language-pending">
  <div class="ambient-grid" aria-hidden="true"></div>
  <main class="shell">
   <aside class="left-panel">
    <a class="wordmark" href="./" aria-label="裂空回响首页"><span class="emblem">A</span><span>AERO ECHO<small>裂 空 回 响</small></span></a>
-  <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 30.1</div>
+  <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 31</div>
    <h1>拯救地球，<br>唤醒 X 星。</h1>
    <p class="intro-copy">X 星舰队即将入侵地球。<br>三位飞行员突破九道封锁，<br>让两个世界重获自由。</p>
    <nav class="side-nav" aria-label="游戏导航">
@@ -52,6 +53,7 @@
     <div class="ship-switcher"><button id="previous-ship" aria-label="上一位飞行员"></button><button id="ship-info" data-open="hangar"><span id="ship-name">宇宙人</span><small id="ship-role">均衡火力</small></button><button id="next-ship" aria-label="下一位飞行员"></button></div>
     <div id="pilot-strip" class="pilot-strip" aria-label="选择飞行员"></div>
     <div class="lobby-art-space" aria-hidden="true"></div>
+    <div class="desktop-hero" aria-hidden="true"><span class="desktop-orbit"></span><img id="desktop-hero-ship" alt=""></div>
     <nav class="main-menu" aria-label="游戏模式">
      <button class="menu-entry launch-button" id="launch"><span class="menu-index">01</span><span>故事模式<small>STORY MODE</small></span></button>
      <button class="menu-entry secondary" id="continue-menu" data-open="continue"><span class="menu-index">02</span><span>继续战斗<small id="continue-route">尚无通关存档</small></span></button>
@@ -104,6 +106,6 @@
    <button id="ending-pause"></button><button id="ending-skip"></button><button id="ending-sound"></button><button id="ending-return" hidden></button>
   </nav>
  </section>
- <script type="module" src="app.js?v=30.1"></script>
+ <script type="module" src="app.js?v=31"></script>
 </body>
 </html>

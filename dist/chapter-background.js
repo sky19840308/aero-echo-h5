@@ -1,4 +1,4 @@
-import {W,H} from './data.js?v=30.1';
+import {W,H} from './data.js?v=31';
 
 const TAU=Math.PI*2;
 const palettes=[['255,136,64','255,191,92'],['240,174,52','255,226,132'],['103,183,239','110,230,192'],['231,122,69','255,177,100'],['249,118,61','255,202,143'],['204,205,225','241,229,177'],['114,226,232','175,246,245'],['109,158,255','170,221,255'],['193,164,255','220,226,255']];
@@ -15,8 +15,8 @@ export function chapterFrameState(meta,time){
 }
 // A positive world offset is downward flight motion. The overlap blends the
 // unmodified square panels at the repeat seam without a hard edge or blank row.
-export function chapterScrollState(meta,time,image){
- const width=W*1.24,height=width*(image.height/image.width),overlap=Math.min(height*.24,Math.max(32,meta?.scrollOverlap||96));
+export function chapterScrollState(meta,time,image,worldWidth=W){
+ const width=worldWidth*1.24,height=width*(image.height/image.width),overlap=Math.min(height*.24,Math.max(32,meta?.scrollOverlap||96));
  const stride=height-overlap,speed=Math.max(8,meta?.scrollSpeed||28),distance=Math.max(0,time)*speed;
  return {width,height,overlap,stride,speed,distance,offset:distance%stride};
 }
@@ -26,9 +26,9 @@ function fadedTile(image,ratio){
  const mask=c.createLinearGradient(0,0,0,image.height*ratio);mask.addColorStop(0,'rgba(255,255,255,0)');mask.addColorStop(1,'rgba(255,255,255,1)');c.fillStyle=mask;c.fillRect(0,0,image.width,image.height);
  fadedTiles.set(image,{ratio,canvas});return canvas;
 }
-function scrollFrame(ctx,image,state,alpha=1){
- const {width,height,overlap,stride,offset}=state,x=(W-width)/2,tile=fadedTile(image,overlap/height);ctx.globalAlpha=alpha;
- for(let y=offset-stride*2;y<H;y+=stride){
+function scrollFrame(ctx,image,state,alpha=1,worldWidth=W,worldHeight=H){
+ const {width,height,overlap,stride,offset}=state,x=(worldWidth-width)/2,tile=fadedTile(image,overlap/height);ctx.globalAlpha=alpha;
+ for(let y=offset-stride*2;y<worldHeight;y+=stride){
   if(y+height<=0)continue;
   if(tile)ctx.drawImage(tile,x,y,width,height);
   else{
@@ -39,7 +39,7 @@ function scrollFrame(ctx,image,state,alpha=1){
  }
  ctx.globalAlpha=1;
 }
-function weather(ctx,chapter,time,speed){
+function weather(ctx,chapter,time,speed,W=450,H=800){
  const [warm,cool]=palettes[chapter];
  // Clouds, dust, ice and light remain in motion at every rendered frame,
  // independently of the six-panel storm/impact animation.
@@ -65,17 +65,17 @@ function weather(ctx,chapter,time,speed){
   }
  }
 }
-export function drawChapterBackground(ctx,assets,settings,chapter,clock){
+export function drawChapterBackground(ctx,assets,settings,chapter,clock,{width:W=450,height:H=800}={}){
  const meta=assets.manifest.backgrounds[chapter+1];if(!meta?.frames?.length)return false;
  const reduced=globalThis.window?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,moving=settings.shake!==false&&!reduced,time=moving?Math.max(0,clock):0;
  const frame=chapterFrameState(meta,time),current=assets.get(meta.frames[frame.index].src)||assets.get(meta.src);if(!current)return false;
- const state=chapterScrollState(meta,time,current);ctx.save();ctx.fillStyle='#07141f';ctx.fillRect(0,0,W,H);scrollFrame(ctx,current,state);
+ const state=chapterScrollState(meta,time,current,W);ctx.save();ctx.fillStyle='#07141f';ctx.fillRect(0,0,W,H);scrollFrame(ctx,current,state,1,W,H);
  const next=assets.get(meta.frames[frame.next].src);
  if(moving&&next&&frame.mix){
-  blendLayer??=newCanvas(W,H);
-  if(blendLayer){const layer=blendLayer.getContext('2d');layer.clearRect(0,0,W,H);scrollFrame(layer,next,chapterScrollState(meta,time,next));ctx.globalAlpha=frame.mix;ctx.drawImage(blendLayer,0,0);ctx.globalAlpha=1;}
-  else scrollFrame(ctx,next,chapterScrollState(meta,time,next),frame.mix);
+  if(!blendLayer||blendLayer.width!==W||blendLayer.height!==H)blendLayer=newCanvas(W,H);
+  if(blendLayer){const layer=blendLayer.getContext('2d');layer.clearRect(0,0,W,H);scrollFrame(layer,next,chapterScrollState(meta,time,next,W),1,W,H);ctx.globalAlpha=frame.mix;ctx.drawImage(blendLayer,0,0);ctx.globalAlpha=1;}
+  else scrollFrame(ctx,next,chapterScrollState(meta,time,next,W),frame.mix,W,H);
  }
- if(moving&&settings.detail)weather(ctx,chapter,time,state.speed);
+ if(moving&&settings.detail)weather(ctx,chapter,time,state.speed,W,H);
  const shade=ctx.createLinearGradient(0,0,0,H);shade.addColorStop(0,'#02101a55');shade.addColorStop(.48,settings.contrast?'#02101a75':'#02101a52');shade.addColorStop(1,'#01081388');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);ctx.restore();return true;
 }

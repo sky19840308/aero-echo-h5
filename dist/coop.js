@@ -1,10 +1,10 @@
-import {Game} from './engine.js?v=30.1';
-import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=30.1';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=30.1';
-import {hazardImpactArt} from './weapons.js?v=30.1';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=30.1';
-import {CoopPeer} from './coop-peer.js?v=30.1';
-import {normalizeProfile} from './profile.js?v=30.1';
+import {Game} from './engine.js?v=31';
+import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=31';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=31';
+import {hazardImpactArt} from './weapons.js?v=31';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=31';
+import {CoopPeer} from './coop-peer.js?v=31';
+import {normalizeProfile} from './profile.js?v=31';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -12,7 +12,7 @@ const ROLES=['host','guest'];
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const integer=(n,a,b)=>Number.isSafeInteger(n)&&n>=a&&n<=b;
-const advanceCrash=(player,dt,survivalCore=0)=>{const crash=player.hitCrash;if(!crash)return false;crash.age+=dt;player.x=clamp(crash.x+crash.vx*crash.age,22,W-22);player.y=Math.min(H+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);if(crash.age>=crash.duration){player.hitCrash=null;player.x=clamp(crash.x,35,W-35);player.y=H*.77;player.respawnTime=player.lives>0?5+.2*clamp(Number(survivalCore)||0,0,2):0;player.invulnerable=player.respawnTime;}return true;};
+const advanceCrash=(player,dt,survivalCore=0,{width:W=450,height:H=800}={})=>{const crash=player.hitCrash;if(!crash)return false;crash.age+=dt;player.x=clamp(crash.x+crash.vx*crash.age,22,W-22);player.y=Math.min(H+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);if(crash.age>=crash.duration){player.hitCrash=null;player.x=clamp(crash.x,35,W-35);player.y=H*.77;player.respawnTime=player.lives>0?5+.2*clamp(Number(survivalCore)||0,0,2):0;player.invulnerable=player.respawnTime;}return true;};
 const PILOT_KEYS=['ship','player','talents','growth','dps','level','weaponLevel','weaponTier','weaponXp','bombFragments','energyAnnounced'];
 const WORLD_KEYS=['state','time','clock','nextWave','wave','uid','bossAnnounced','bossDefeated','score','combo','lastKill','kills','spawned','grazes','hits','coins','lastSupply','nextHazard','shake','shock','flash','ending'];
 const WORLD_ARRAYS=['enemies','bullets','pickups','hazards','effects','weaponEffects','particles','texts','lootBursts','wingmen'];
@@ -29,15 +29,15 @@ const plain=(value,depth=0)=>{
 };
 
 export class CoopGame extends Game {
- constructor({mission=0,room,crew=null,localRole='host',onEvent=()=>{},seed=Date.now(),difficulty='normal',pace='quick',stageMode='coop'}){
+ constructor({mission=0,room,crew=null,localRole='host',onEvent=()=>{},seed=Date.now(),difficulty='normal',pace='quick',stageMode='coop',width=W,height=H}){
   const stage=stageConfig(Math.floor(mission/3),mission%3,stageMode,pace);
-  super({stage,ship:choiceOf(room?.host?.choice).shipIndex,profile:{},difficulty,pace,seed,onEvent});
+  super({stage,ship:choiceOf(room?.host?.choice).shipIndex,profile:{},difficulty,pace,seed,onEvent,width,height});
   this.contextDepth=0;this.eventQueue=[];const dispatch=this.emit;this.emit=event=>{
    if(this.contextDepth)this.eventQueue.push({...event,role:event.role||this.activePilot?.role});else dispatch(event);
   };this.flushEvents=()=>{if(this.contextDepth)return;const queued=this.eventQueue.splice(0);for(const event of queued)dispatch(event);};
   this.mission=mission;this.localRole=localRole;this.coop=true;this.lan=room?.mode==='lan';this.local=room?.mode==='local';this.persistentLoadout=this.lan||this.local;this.crew=ROLES.map((role,index)=>{
    const member=room?.[role]||{},choice=choiceOf(member.choice),previous=crew?.find(pilot=>pilot.role===role);
-   const fresh=new Game({stage,ship:choice.shipIndex,profile:this.persistentLoadout?normalizeProfile(member.loadout):{},difficulty,pace,seed:seed+index});
+   const fresh=new Game({stage,ship:choice.shipIndex,profile:this.persistentLoadout?normalizeProfile(member.loadout):{},difficulty,pace,seed:seed+index,width,height});
    // Campaign calibration assumes permanent hangar upgrades. Co-op has none,
    // so retain the stage's intrinsic firepower curve without that gear penalty.
    const baseDps=this.persistentLoadout?fresh.dps:fresh.ship.dps*([180,260,380,520,700,900,1150,1450,1900][stage.chapter]/120);
@@ -52,7 +52,7 @@ export class CoopGame extends Game {
     if(previous.reviving){pilot.player.lives=pilot.player.maxLives;pilot.player.bombs=pilot.player.maxBombs;}
    }
    if(!pilot.alive){pilot.player.lives=0;pilot.player.bombs=0;}
-   pilot.player.x=pilot.player.targetX=W*(index===0?.35:.65);pilot.player.y=pilot.player.targetY=H*.77;
+   pilot.player.x=pilot.player.targetX=this.width*(index===0?.35:.65);pilot.player.y=pilot.player.targetY=this.height*.77;
    return pilot;
   });
   this.selectPilot(localRole);
@@ -81,8 +81,8 @@ export class CoopGame extends Game {
   this.updateVisuals(dt);this.selectPilot(this.localRole);
  }
  updatePlayer(dt){for(const pilot of this.living())this.withPilot(pilot,()=>super.updatePlayer(dt));}
- updateDeadCrashes(dt){for(const pilot of this.crew){const p=pilot.player;if(pilot.alive)continue;advanceCrash(p,dt,pilot.talents?.survival_core);}}
- updateCrashes(dt){for(const pilot of this.crew)advanceCrash(pilot.player,dt,pilot.talents?.survival_core);}
+ updateDeadCrashes(dt){for(const pilot of this.crew){const p=pilot.player;if(pilot.alive)continue;advanceCrash(p,dt,pilot.talents?.survival_core,this);}}
+ updateCrashes(dt){for(const pilot of this.crew)advanceCrash(pilot.player,dt,pilot.talents?.survival_core,this);}
  shoot(x,y,angle,speed,damage,owner='enemy',options={}){return super.shoot(x,y,angle,speed,damage,owner,owner==='player'?{...options,pilot:this.activePilot.role}:options);}
  use(role,type){const pilot=this.crew.find(item=>item.role===role);if(!pilot?.alive||this.state!=='playing')return false;return this.withPilot(pilot,()=>{
   if(type==='skill'){const used=super.skill();if(used&&!this.persistentLoadout)this.player.skillCd=this.ship.cooldown*(1-.05*pilot.upgrades.cooldown);return used;}
@@ -91,7 +91,7 @@ export class CoopGame extends Game {
  updateEnemies(dt){const target=this.targetPilot();this.withPilot(target,()=>super.updateEnemies(dt));for(const pilot of this.living())if(pilot!==target)this.withPilot(pilot,()=>{
   const p=pilot.player;for(const enemy of this.enemies){
    if(!enemy.alive||enemy.phaseOut)continue;
-   if(enemy.type===20&&distance(enemy,p)<220){p.x+=clamp(enemy.x-p.x,-17*dt,17*dt);p.y+=clamp(enemy.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,W-20);p.y=clamp(p.y,155,H-93);}
+   if(enemy.type===20&&distance(enemy,p)<220){p.x+=clamp(enemy.x-p.x,-17*dt,17*dt);p.y+=clamp(enemy.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,this.width-20);p.y=clamp(p.y,155,this.height-93);}
    if(distance(enemy,p)<enemy.r+p.r){this.hurtPlayer(Math.max(65,enemy.cfg.damage*1.6));if(enemy.diveState==='diving'||enemy.diveState==='coasting'){enemy.hp=0;this.killEnemy(enemy);}else if(enemy.cfg.category==='scout')this.damageEnemy(enemy,enemy.hp+1);}
   }
  });}
@@ -105,8 +105,8 @@ export class CoopGame extends Game {
    if(b.burstAt&&b.age>b.burstAt){this.weaponEffect(b.art,b.x,b.y,55,.3);this.ring(b.x,b.y,8,170*this.difficulty.speed,b.damage*.7,0,{art:b.burstArt,color:b.color});b.alive=false;continue;}
    if(b.homing&&b.target?.alive!==false&&!b.target?.dead){const a=Math.atan2(b.target.y-b.y,b.target.x-b.x),speed=b.maxSpeed||Math.min(550,300+b.age*220),t=Math.min(1,dt*(b.trackingRate||6));b.vx+=(Math.cos(a)*speed-b.vx)*t;b.vy+=(Math.sin(a)*speed-b.vy)*t;}
    b.x+=b.vx*dt*scale;b.y+=b.vy*dt*scale;
-   if(b.bounce>0&&(b.x<b.r||b.x>W-b.r)){b.x=clamp(b.x,b.r,W-b.r);b.vx*=-1;b.bounce--;}
-   if(b.x<-55||b.x>W+55||b.y<-70||b.y>H+65||b.age>10){if(b.shock&&b.owner==='enemy'&&b.y>H-130&&b.y<H+30)this.ring(b.x,Math.min(b.y,H-110),12,145,b.damage*.6);b.alive=false;continue;}
+   if(b.bounce>0&&(b.x<b.r||b.x>this.width-b.r)){b.x=clamp(b.x,b.r,this.width-b.r);b.vx*=-1;b.bounce--;}
+   if(b.x<-55||b.x>this.width+55||b.y<-70||b.y>this.height+65||b.age>10){if(b.shock&&b.owner==='enemy'&&b.y>this.height-130&&b.y<this.height+30)this.ring(b.x,Math.min(b.y,this.height-110),12,145,b.damage*.6);b.alive=false;continue;}
    if(b.owner==='player'){
     const owner=this.crew.find(pilot=>pilot.role===b.pilot)||this.crew[0];
     this.withPilot(owner,()=>{
@@ -144,7 +144,7 @@ export class CoopGame extends Game {
  updatePickups(dt){for(const item of this.pickups.slice()){
   if(item.dead)continue;item.age+=dt;const pilot=this.living().sort((a,b)=>distance(item,a.player)-distance(item,b.player))[0];if(!pilot){item.y+=50*dt;continue;}const p=pilot.player,d=distance(item,p);
   const talents=pilot.talents||{};item.attracting=item.age>.2&&(d<pilot.growth.magnet+35*(talents.mobility_magnet||0)||this.bossDefeated);if(item.attracting){const speed=this.bossDefeated?Math.min(1050,d/Math.max(dt,.001)):220+Math.max(0,pilot.growth.magnet-10-d)*4,step=Math.min(d,speed*dt*(1+.25*(talents.mobility_salvage||0)));item.x+=(p.x-item.x)/Math.max(1,d)*step;item.y+=(p.y-item.y)/Math.max(1,d)*step;}else item.y+=50*dt;
-  if(item.age>.2&&distance(item,p)<19)this.withPilot(pilot,()=>super.collect(item));if(item.y>H+25||item.age>17)item.dead=true;
+  if(item.age>.2&&distance(item,p)<19)this.withPilot(pilot,()=>super.collect(item));if(item.y>this.height+25||item.age>17)item.dead=true;
  }this.pickups=this.pickups.filter(item=>!item.dead);}
  hurtPlayer(damage,art=''){super.hurtPlayer(damage,art);if(this.player.lives<=0)this.killPilot(this.activePilot);}
  killPilot(pilot){
@@ -164,10 +164,11 @@ export class CoopGame extends Game {
    const record=plain(item);if(key==='wingmen')record.ship=item.ship;if(key==='bullets'&&item.hit?.size)record.hitIds=[...item.hit].filter(id=>integer(id,0,Number.MAX_SAFE_INTEGER)).slice(0,120);if(key==='bullets'&&item.target){const pilot=this.crew.find(p=>p.player===item.target);if(pilot)record.targetPilot=pilot.role;else if(item.target===this.boss)record.targetBoss=true;else if(this.enemies.includes(item.target))record.targetEnemy=item.target.id;else record.targetPoint={x:item.target.x,y:item.target.y};}return record;
   });game.boss=this.boss?plain(this.boss):null;
   const crew=this.crew.map(pilot=>({role:pilot.role,shipIndex:pilot.shipIndex,skin:pilot.skin,alive:pilot.alive,points:pilot.points,upgrades:{...pilot.upgrades},ready:pilot.ready,ack:pilot.ack,commandAck:pilot.commandAck,weaponLevel:pilot.weaponLevel,weaponXp:pilot.weaponXp,bombFragments:pilot.bombFragments,energyAnnounced:pilot.energyAnnounced,player:plain(pilot.player)}));
-  return {crew,game};
+  return {crew,game,world:{width:this.width,height:this.height}};
  }
  restore(snapshot){
   snapshot=unpackCoopSnapshot(snapshot);if(!snapshot)throw new Error('Invalid co-op frame');
+  const world=snapshot.world;this.width=clamp(Number(world?.width)||W,320,3840);this.height=clamp(Number(world?.height)||H,480,1600);
   for(const key of WORLD_KEYS)if(snapshot.game?.[key]!==undefined)this[key]=snapshot.game[key];
   for(const key of WORLD_ARRAYS){const items=Array.isArray(snapshot.game?.[key])?snapshot.game[key]:[],reuse=this.localRole==='guest'&&['enemies','bullets','pickups','wingmen'].includes(key)?new Map(this[key].map(item=>[item.id,item])):null;this[key]=items.map(item=>{const old=reuse?.get(item.id);return old?Object.assign(old,item):{...item};});}
   for(const enemy of this.enemies)enemy.cfg=ENEMIES[enemy.type-1]||ENEMIES[0];for(const bullet of this.bullets){if(this.localRole==='host')bullet.hit=new Set((Array.isArray(bullet.hitIds)?bullet.hitIds:[]).filter(id=>integer(id,0,Number.MAX_SAFE_INTEGER)).slice(0,120));delete bullet.hitIds;}
@@ -180,7 +181,8 @@ export class CoopGame extends Game {
 }
 
 export class CoopSession {
- constructor({account,onEvent=()=>{},onChange=()=>{},onStage=async()=>{},now=()=>Date.now(),autoSync=true,interval=200}={}){
+ constructor({account,onEvent=()=>{},onChange=()=>{},onStage=async()=>{},now=()=>Date.now(),autoSync=true,interval=200,getViewport=()=>({width:W,height:H})}={}){
+  this.getViewport=getViewport;
   if(!account)throw new Error('A signed-in account is required');this.account=account;this.emit=onEvent;this.onChange=onChange;this.onStage=onStage;this.now=now;this.autoSync=autoSync;this.interval=clamp(interval,100,2000);
   this.state='closed';this.baseState='closed';this.role=null;this.room=null;this.code='';this.game=null;this.local=null;this.mission=0;this.seq=0;this.lastSnapshotSeq=-1;this.lastGuestSeq=-1;this.commands=[];this.commandSeq=0;this.readyRequested=false;this.pauseFlags={host:false,guest:false};this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;this.failureReason='';this.transitionLeft=0;this.target=null;this.identity=null;this.inflight=null;this.closedEpoch=0;this.stageEpoch=0;this.snapshotAge=0;this.interpolation=[];this.lastPeerAt=this.now();this.lastSuccessAt=this.now();this.stageLoading=null;this.lastStamp='';
   this.guestCompact=false;this.peerEventAck=0;this.serverSamples=new Map();this.rtt=0;this.inputTimer=null;this.lastInputSendAt=-Infinity;
@@ -229,7 +231,7 @@ export class CoopSession {
  beginStage(mission){
   const old=this.game?.crew;if(old&&mission%3===0){for(const pilot of old)if(!pilot.alive){pilot.alive=true;pilot.reviving=true;pilot.player.lives=pilot.player.maxLives;pilot.player.bombs=2;pilot.player.energy=0;pilot.player.skillCd=0;pilot.player.armorCd=0;this.emit({type:'coop-revive',role:pilot.role,mission});}}
   this.mission=mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.serverSamples.clear();this.snapshotAge=0;this.baseState='loading';this.transitionLeft=0;
-  this.game=new CoopGame({mission,room:this.room,crew:old,localRole:this.role,onEvent:event=>this.gameEvent(event)});this.local=this.game.selectPilot(this.role);this.loadStage();this.refresh();
+  this.game=new CoopGame({mission,room:this.room,crew:old,localRole:this.role,onEvent:event=>this.gameEvent(event),...this.getViewport()});this.local=this.game.selectPilot(this.role);this.loadStage();this.refresh();
  }
  loadStage(){
   const epoch=++this.stageEpoch,mission=this.mission,game=this.game;this.stageLoading=Promise.resolve().then(()=>this.onStage(game.stage,{mission,crew:game.crew,room:this.room,role:this.role})).then(()=>{
@@ -296,7 +298,7 @@ export class CoopSession {
   const pilot=this.game?.crew.find(item=>item.role===role);if(!pilot)return;
   if(role==='guest'){this.guestCompact=input.protocol===2;if(integer(input.eventAck,0,Number.MAX_SAFE_INTEGER))this.peerEventAck=Math.min(this.eventSerial,input.eventAck);}
   this.pauseFlags[role]=!!input.pause;if(input.ack===this.mission)pilot.ack=this.mission;if(this.baseState==='intermission')pilot.ready=!!input.ready;
-  if(pilot.alive&&Number.isFinite(input.target?.x)&&Number.isFinite(input.target?.y)){pilot.player.targetX=clamp(input.target.x,20,W-20);pilot.player.targetY=clamp(input.target.y,155,H-93);}
+  if(pilot.alive&&Number.isFinite(input.target?.x)&&Number.isFinite(input.target?.y)){pilot.player.targetX=clamp(input.target.x,20,this.game.width-20);pilot.player.targetY=clamp(input.target.y,155,this.game.height-93);}
   this.refresh();for(const command of (Array.isArray(input.commands)?input.commands:[]).slice(0,24)){
    if(!integer(command.seq,1,Number.MAX_SAFE_INTEGER)||command.seq<=pilot.commandAck)continue;
    pilot.commandAck=command.seq;if(command.type==='upgrade'&&this.baseState==='intermission'){if(this.game.upgrade(role,command.node))this.emit({type:'coop-upgrades',role,node:command.node});}
@@ -304,7 +306,7 @@ export class CoopSession {
   }
   this.refresh();
  }
- moveTo(x,y){if(this.state!=='playing'||!this.local?.alive||!Number.isFinite(x)||!Number.isFinite(y))return;const next={x:clamp(x,20,W-20),y:clamp(y,155,H-93)},changed=!this.target||next.x!==this.target.x||next.y!==this.target.y;this.target=next;this.local.player.targetX=next.x;this.local.player.targetY=next.y;if(changed)this.queueInput();}
+ moveTo(x,y){if(this.state!=='playing'||!this.local?.alive||!Number.isFinite(x)||!Number.isFinite(y))return;const next={x:clamp(x,20,this.game.width-20),y:clamp(y,155,this.game.height-93)},changed=!this.target||next.x!==this.target.x||next.y!==this.target.y;this.target=next;this.local.player.targetX=next.x;this.local.player.targetY=next.y;if(changed)this.queueInput();}
  queueInput(){
   if(this.peerHealthy()){if(this.role==='guest')this.sendPeerInput();return;}
   if(!this.autoSync||this.role!=='guest'||this.inputTimer||this.inflight||this.state!=='playing')return;
@@ -350,8 +352,8 @@ export class CoopSession {
   for(const key of ['enemies','bullets','hazards'])for(const item of this.game[key])if(Number.isFinite(item.age))item.age+=dt;
   this.game.updateVisuals(dt);
   this.game.shake=Math.max(0,(this.game.shake||0)-dt*18);this.game.shock=Math.max(0,(this.game.shock||0)-dt);
-  this.game.bullets=this.game.bullets.filter(b=>b.age<=10&&b.x>-100&&b.x<W+100&&b.y>-120&&b.y<H+100&&(!b.burstAt||b.age<b.burstAt));
-  const crashing=new Set();for(const pilot of this.game.crew)if(advanceCrash(pilot.player,dt,pilot.talents?.survival_core))crashing.add(pilot.role);
+  this.game.bullets=this.game.bullets.filter(b=>b.age<=10&&b.x>-100&&b.x<this.game.width+100&&b.y>-120&&b.y<this.game.height+100&&(!b.burstAt||b.age<b.burstAt));
+  const crashing=new Set();for(const pilot of this.game.crew)if(advanceCrash(pilot.player,dt,pilot.talents?.survival_core,this.game))crashing.add(pilot.role);
   const p=this.local.player;if(this.target&&this.local.alive&&!crashing.has(this.local.role)&&!p.heroBomb&&!p.hitCrash){const dx=this.target.x-p.x,dy=this.target.y-p.y,len=Math.hypot(dx,dy),slow=this.game.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1,step=Math.min(len,p.speed*slow*dt*1.5),oldX=p.x,oldY=p.y;if(len>0){p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.targetX=this.target.x;p.targetY=this.target.y;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);}
   for(const unit of this.game.wingmen){if(unit.crash)unit.crash.age=Math.min(unit.crash.duration,unit.crash.age+dt);else unit.age+=dt;}for(const pilot of this.game.crew){if(pilot.player.heroBomb)pilot.player.heroBomb.age+=dt;if(pilot.player.wingmanCall)pilot.player.wingmanCall.age+=dt;if(crashing.has(pilot.role))continue;for(const key of ['invulnerable','respawnTime','bombReturn','skillCd','skillTime','ultTime','armorCd'])if(Number.isFinite(pilot.player[key]))pilot.player[key]=Math.max(0,pilot.player[key]-dt);}
  }
@@ -370,6 +372,7 @@ export class CoopSession {
   const initial=!this.game,changed=initial||snapshot.mission!==this.mission,previousBoss=changed?null:this.game.boss&&{dead:this.game.boss.dead,phase:this.game.boss.phase};const oldPositions=new Map();if(!changed){for(const key of ['enemies','bullets','pickups','wingmen'])for(const item of this.game[key])oldPositions.set(`${key}:${item.id}`,{x:item.x,y:item.y});for(const pilot of this.game.crew)oldPositions.set(`pilot:${pilot.role}`,{x:pilot.player.x,y:pilot.player.y});if(this.game.boss)oldPositions.set('boss',{x:this.game.boss.x,y:this.game.boss.y});}
   const ownPause=this.pauseFlags[this.role];
   if(changed){this.mission=snapshot.mission;this.target=null;this.commands=[];this.readyRequested=false;this.interpolation=[];this.serverSamples.clear();this.game=new CoopGame({mission:this.mission,room:this.room,localRole:this.role,onEvent:this.role==='host'?event=>this.gameEvent(event):()=>{}});this.local=this.game.selectPilot(this.role);this.loadStage();}
+  const resized=snapshot.world&&(this.game.width!==snapshot.world.width||this.game.height!==snapshot.world.height);if(resized){this.target=null;oldPositions.clear();this.interpolation=[];this.serverSamples.clear();}
   const ownAck=this.local.ack;this.game.restore(snapshot);this.local=this.game.selectPilot(this.role);if(ownAck===this.mission)this.local.ack=ownAck;
   if(changed)this.local.ack=-1;this.baseState=changed&&snapshot.state==='playing'?'loading':snapshot.state;this.failureReason=String(snapshot.failureReason||'');this.transitionLeft=Number(snapshot.transitionLeft)||0;this.pauseFlags={host:!!snapshot.pauseFlags?.host,guest:!!snapshot.pauseFlags?.guest};this.pauseFlags[this.role]=ownPause;this.remoteNetworkPaused=this.role==='guest'&&!!snapshot.networkPaused;
   if(this.readyRequested&&this.baseState==='intermission')this.local.ready=true;
@@ -386,7 +389,7 @@ export class CoopSession {
   };
   for(const key of ['enemies','bullets','pickups','wingmen'])for(const item of this.game[key])track(`${key}:${item.id}`,item,key==='bullets'?{vx:item.vx||0,vy:item.vy||0,hold:Math.max(0,(item.hold||0)-(item.age||0))}:{});
   if(this.game.boss)track('boss',this.game.boss);
-  for(const pilot of this.game.crew){const old=oldPositions.get(`pilot:${pilot.role}`);if(pilot.player.hitCrash){advanceCrash(pilot.player,this.snapshotAge,pilot.talents?.survival_core);continue;}if(!pilot.alive)continue;
+  for(const pilot of this.game.crew){const old=oldPositions.get(`pilot:${pilot.role}`);if(pilot.player.hitCrash){advanceCrash(pilot.player,this.snapshotAge,pilot.talents?.survival_core,this.game);continue;}if(!pilot.alive)continue;
    // Only movement is predicted. Health, death, skill costs and damage always
    // come from the host. Never interpolate a local input back toward an old pose.
    if(pilot.role===this.role&&this.target&&old){pilot.player.x=old.x;pilot.player.y=old.y;pilot.player.targetX=this.target.x;pilot.player.targetY=this.target.y;}

@@ -1,11 +1,11 @@
 // A repeatable route vocabulary: learn a formation, then recognize its variation.
 // The three allowed enemy types and the original clear conditions stay intact.
-export function missionWavePlan(stage,wave){
+export function missionWavePlan(stage,wave,width=450){
  const route=stage.chapter*3+stage.substage,index=Math.max(0,wave-1),order=[0,1,2,3];
  let state=Math.imul(route+1,2654435761)>>>0;
  for(let i=3;i>0;i--){state=(Math.imul(state,1664525)+1013904223)>>>0;const j=state%(i+1);[order[i],order[j]]=[order[j],order[i]];}
  const lane=(index+stage.chapter+stage.substage)%3;
- return {formation:order[index%4],center:[125,225,325][lane],spread:stage.substage===1?.82:stage.substage===2?.94:1,stagger:[30,40,27][stage.substage],tempo:[1.16,1.04,1.1][stage.substage]};
+ return {formation:order[index%4],center:width*[5/18,.5,13/18][lane],spread:stage.substage===1?.82:stage.substage===2?.94:1,stagger:[30,40,27][stage.substage],tempo:[1.16,1.04,1.1][stage.substage]};
 }
 
 const briefs={

@@ -1,7 +1,7 @@
-import {SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIES} from './data.js?v=30.1';
-import {ITEM_TYPES,CONTAINERS} from './items.js?v=30.1';
-import {RESEARCH} from './progression.js?v=30.1';
-import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=30.1';
+import {SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIES} from './data.js?v=31';
+import {ITEM_TYPES,CONTAINERS} from './items.js?v=31';
+import {RESEARCH} from './progression.js?v=31';
+import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=31';
 
 export const LANGUAGES=[{id:'zh',label:'简体中文',html:'zh-CN'},{id:'ja',label:'日本語',html:'ja'},{id:'en',label:'English',html:'en'}];
 let locale='zh';

@@ -2,7 +2,9 @@
 
 [立即试玩](https://sky19840308.github.io/aero-echo-h5/) · [账户与双人协作版](https://aero-echo-sky.spy-liver.chatgpt.site/game)
 
-Build 30：简体中文、日本語、English；9 章、27 关、3 位飞行员、9 位 Boss。
+Build 31：电脑原生横屏，主界面与战斗画面铺满窗口；简体中文、日本語、English；9 章、27 关、3 位飞行员、9 位 Boss。
+
+[Build 31 横屏适配与验收](BUILD31.md)：战场随电脑窗口比例扩展，敌机、Boss、碰撞及同屏双人活动范围同步适配；机库、剧情和设置采用宽屏布局。
 
 [Build 30 修复与验收记录](BUILD30.md)：统一模块与语言状态、同屏合作存档和升级、桌面/手机比例、清晰敌弹与干净技能按钮；入口资源清单约 161 KB。
 
@@ -23,6 +25,6 @@ GitHub Pages 版可以离线使用本地存档。云存档与在线协作请进�
 
 ## 发布校验
 
-工作流恢复 SHA256 校验的不可变 Build 13 媒体，叠加 Build 30 代码与英雄动画，重建皮肤清单，再核对 `runtime-build30.sha256` 中的全部运行文件。部署前执行命数、复杂难度、僚机、技能、炸弹、天赋树与协作测试、原生 Canvas 特效测试及武器阶段回归。
+工作流恢复 SHA256 校验的不可变 Build 13 媒体，叠加 Build 31 代码与英雄动画，重建皮肤清单，再核对 `runtime-build30.sha256` 中的全部运行文件。部署前执行战斗回归和电脑横屏检查，包括完整宽度内的移动与碰撞、双人同步及九章横屏 Boss 受控模拟。
 
 回归测试：`tests/lives-bombs.mjs` 校验命数、敌机难度、爆弹和协作状态；`tests/build27-combat.mjs` 校验战斗、逐字炸弹艺术字、敌机行为、返场保护和原生 Canvas 僚机渲染；`tests/wingmen.mjs` 校验支援次数、5 秒集结与保护、15 秒出击、三位英雄的专属攻击、僚机坠毁、存档和协作快照；`tests/talent-tree.mjs` 校验旧存档迁移、节点解锁、平衡效果和复杂难度弹幕；`tests/weapon-phases.mjs` 使用原生 Canvas 校验弹幕预警、冲击特效和动画图集帧裁切。

@@ -1,5 +1,5 @@
-import {SHIPS} from './data.js?v=30.1';
-import {weaponCap,researchCap} from './economy.js?v=30.1';
+import {SHIPS} from './data.js?v=31';
+import {weaponCap,researchCap} from './economy.js?v=31';
 
 export const WEAPON_MULTIPLIERS=[1,1.35,1.9,2.65,3.6];
 const WEAPON_COSTS=[{blueprint:6,credits:300},{blueprint:12,credits:650},{blueprint:24,credits:1200},{blueprint:40,credits:2000}];

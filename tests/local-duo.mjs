@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {createLocalDuoGame,localDuoActionForKey,moveLocalDuoPilots} from '../dist/local-duo.js?v=30.1';
+import {createLocalDuoGame,localDuoActionForKey,moveLocalDuoPilots} from '../dist/local-duo.js?v=31';
 
 const events=[];
 const game=createLocalDuoGame({mission:0,hostShip:0,hostSkin:0,guestShip:2,guestSkin:1,seed:9029,onEvent:event=>events.push(event)});

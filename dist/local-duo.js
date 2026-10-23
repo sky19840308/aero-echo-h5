@@ -1,4 +1,4 @@
-import {CoopGame} from './coop.js?v=30.1';
+import {CoopGame} from './coop.js?v=31';
 
 export const LOCAL_DUO_MOVEMENT={
  host:{up:'KeyW',left:'KeyA',down:'KeyS',right:'KeyD'},
@@ -48,9 +48,9 @@ export function rememberDuoCharge(profile,event){
  profile.localDuoWingmenChargesByChapter||={};profile.localDuoWingmenChargesByChapter[event.chapter]=budget;return true;
 }
 
-export function createLocalDuoGame({mission,hostShip,hostSkin=0,guestShip,guestSkin=0,profile={},difficulty='normal',pace='quick',stageMode='campaign',onEvent=()=>{},seed=Date.now()}){
+export function createLocalDuoGame({mission,hostShip,hostSkin=0,guestShip,guestSkin=0,profile={},difficulty='normal',pace='quick',stageMode='campaign',onEvent=()=>{},seed=Date.now(),width=450,height=800}){
  const room={mode:'local',host:{id:'local-host',name:'P1',loadout:profile,choice:{shipIndex:hostShip,skin:hostSkin}},guest:{id:'local-guest',name:'P2',loadout:profile,choice:{shipIndex:guestShip,skin:guestSkin}}};
- const game=new CoopGame({mission,room,localRole:'host',difficulty,pace,stageMode,onEvent,seed});
+ const game=new CoopGame({mission,room,localRole:'host',difficulty,pace,stageMode,onEvent,seed,width,height});
  const charges=localDuoCharges(profile,game.stage.chapter);
  for(const pilot of game.crew)pilot.player.wingmanCharges=charges[pilot.role];
  return game;

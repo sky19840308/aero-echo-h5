@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=30.1';
-import {CoopGame} from '../dist/coop.js?v=30.1';
-import {stageConfig} from '../dist/data.js?v=30.1';
-import {createProfile,normalizeProfile} from '../dist/profile.js?v=30.1';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE,WINGMAN_EXIT} from '../dist/wingmen.js?v=30.1';
-import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=30.1';
+import {Game} from '../dist/engine.js?v=31';
+import {CoopGame} from '../dist/coop.js?v=31';
+import {stageConfig} from '../dist/data.js?v=31';
+import {createProfile,normalizeProfile} from '../dist/profile.js?v=31';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE,WINGMAN_EXIT} from '../dist/wingmen.js?v=31';
+import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=31';
 
 const stage=stageConfig(0,0,'campaign','quick');
 {
