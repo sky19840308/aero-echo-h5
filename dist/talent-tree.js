@@ -1,4 +1,4 @@
-import {TALENTS,TALENT_BRANCHES,TALENT_TREE_VERSION} from './data.js?v=28';
+import {TALENTS,TALENT_BRANCHES,TALENT_TREE_VERSION} from './data.js?v=30';
 
 const byId=new Map(TALENTS.map(node=>[node.id,node]));
 const levelOf=(talents,id)=>Math.max(0,Math.min(byId.get(id)?.max||0,Math.floor(Number(talents?.[id])||0)));

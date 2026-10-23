@@ -3,29 +3,29 @@
 <head>
  <meta charset="utf-8">
  <base href="./">
- <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
- <link rel="preconnect" href="https://fonts.googleapis.com">
- <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&text=%E4%B8%89%E6%AE%B5%E6%92%83%E9%A2%A8%E6%9E%97%E7%81%AB%E5%B1%B1%E5%BF%8D%E8%A1%93%E7%9A%86%E4%BC%9D%E7%B9%94%E7%94%B0%E4%BF%A1%E9%95%B7%E6%AD%A6%E7%94%B0%E4%BF%A1%E7%8E%84%E6%9C%8D%E9%83%A8%E5%8D%8A%E8%94%B5&display=swap">
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+
+ <link rel="preload" href="assets/fonts/YujiSyuku-bombs.ttf" as="font" type="font/ttf" crossorigin>
  <meta name="theme-color" content="#06111a">
  <meta name="description" content="裂空回响 AERO ECHO — 竖屏弹幕空战。驾驶三架战机，穿越九章二十七个关卡，三位飞行员突入 X 星，拯救地球并重写 ECHO-0。">
  <title>裂空回响 · AERO ECHO</title>
  <link rel="icon" href="icon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="style.css?v=29">
- <link rel="stylesheet" href="ui-art.css?v=29">
- <link rel="stylesheet" href="menu-layout.css?v=29">
- <link rel="stylesheet" href="online.css?v=29">
- <link rel="stylesheet" href="ending.css?v=29">
- <link rel="stylesheet" href="flight-vitals.css?v=29">
- <link rel="stylesheet" href="experience.css?v=29">
- <link rel="stylesheet" href="desktop-play.css?v=29">
+ <link rel="stylesheet" href="style.css?v=30">
+ <link rel="stylesheet" href="ui-art.css?v=30">
+ <link rel="stylesheet" href="menu-layout.css?v=30">
+ <link rel="stylesheet" href="online.css?v=30">
+ <link rel="stylesheet" href="ending.css?v=30">
+ <link rel="stylesheet" href="flight-vitals.css?v=30">
+ <link rel="stylesheet" href="experience.css?v=30">
+ <link rel="stylesheet" href="desktop-play.css?v=30">
 </head>
 <body class="language-pending">
  <div class="ambient-grid" aria-hidden="true"></div>
  <main class="shell">
   <aside class="left-panel">
    <a class="wordmark" href="./" aria-label="裂空回响首页"><span class="emblem">A</span><span>AERO ECHO<small>裂 空 回 响</small></span></a>
-  <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 29</div>
+  <div class="edition"><span class="status-light"></span> H5 / FLIGHT BUILD 30</div>
    <h1>拯救地球，<br>唤醒 X 星。</h1>
    <p class="intro-copy">X 星舰队即将入侵地球。<br>三位飞行员突破九道封锁，<br>让两个世界重获自由。</p>
    <nav class="side-nav" aria-label="游戏导航">
@@ -52,7 +52,7 @@
     <div class="ship-switcher"><button id="previous-ship" aria-label="上一位飞行员"></button><button id="ship-info" data-open="hangar"><span id="ship-name">宇宙人</span><small id="ship-role">均衡火力</small></button><button id="next-ship" aria-label="下一位飞行员"></button></div>
     <div id="pilot-strip" class="pilot-strip" aria-label="选择飞行员"></div>
     <div class="lobby-art-space" aria-hidden="true"></div>
-    <nav class="main-menu" aria-label="手机游戏导航">
+    <nav class="main-menu" aria-label="游戏模式">
      <button class="menu-entry launch-button" id="launch"><span class="menu-index">01</span><span>故事模式<small>STORY MODE</small></span></button>
      <button class="menu-entry secondary" id="continue-menu" data-open="continue"><span class="menu-index">02</span><span>继续战斗<small id="continue-route">尚无通关存档</small></span></button>
      <button class="menu-entry secondary" data-open="missions"><span class="menu-index">03</span><span>关卡选择<small>STAGE SELECT</small></span></button>
@@ -60,7 +60,7 @@
      <button class="menu-entry secondary" data-open="bosses"><span class="menu-index">05</span><span>BOSS挑战<small>BOSS CHALLENGE</small></span></button>
      <button class="menu-entry secondary" data-open="archive"><span class="menu-index">06</span><span>图库及成就<small>GALLERY / ACHIEVEMENTS</small></span></button>
      <button class="menu-entry secondary lan-menu" data-open="lan"><span class="menu-index">07</span><span>本地双人合作<small>LOCAL CO-OP · LAN</small></span></button>
-     <button class="menu-entry secondary local-duo-entry" data-open="local-duo"><span class="menu-index">08</span><span>同屏双打<small>LOCAL DUEL · ONE KEYBOARD</small></span></button>
+     <button class="menu-entry secondary local-duo-entry" data-open="local-duo"><span class="menu-index">08</span><span>同屏双打<small>LOCAL CO-OP · ONE KEYBOARD</small></span></button>
     </nav>
     <div class="online-entry"><button class="secondary" data-open="online">双人协作 </button><button class="secondary" data-open="account">账户与云存档 </button></div>
     <span id="account-badge" class="account-badge" role="status">游客 · 本机存档</span>
@@ -69,8 +69,8 @@
    <div class="game-hud" id="game-hud" hidden>
     <div class="hud-top"><div><span class="hud-stage" id="hud-stage">01—01 / 静默海岸</span><strong id="hud-score">000000</strong><span class="combo" id="hud-combo">COMBO ×1.00</span></div><div><button class="icon-button" data-action="fullscreen" aria-label="切换全屏" title="切换全屏">⛶</button><button class="icon-button pause-button" id="pause" aria-label="暂停">Ⅱ</button></div></div>
     <small id="coop-network" class="coop-network" hidden></small>
-    <div id="coop-status" class="coop-status" aria-live="polite" hidden></div>
-    <div id="local-duo-status" class="coop-status local-duo-status" aria-live="polite" hidden></div>
+    <div id="coop-status" class="coop-status" aria-live="off" hidden></div>
+    <div id="local-duo-status" class="coop-status local-duo-status" aria-live="off" hidden></div>
     <div class="lives-counter" id="lives-counter" aria-label="剩余命数 3"><div class="life-readout"><img id="life-ship-icon" alt="" aria-hidden="true"><span aria-hidden="true">×</span><b id="lives-value">3</b></div><button type="button" class="wingmen-call" id="wingmen-call" aria-label="联军支援" title="联军支援"><span class="wingmen-flames" aria-hidden="true"><i class="wingman-flame"></i><i class="wingman-flame"></i><i class="wingman-flame"></i></span><span id="wingmen-status">联军待命</span></button></div>
     <div class="mission-progress"><span id="wave-label">WAVE 01</span><i><b id="wave-fill"></b></i><span id="hud-time">00:00</span></div>
     <div class="boss-hud" id="boss-hud" hidden><div><span id="boss-name"></span><b id="boss-phase">PHASE 01</b></div><i><b id="boss-fill"></b></i></div>
@@ -84,8 +84,8 @@
    <div id="loading" class="loading" hidden><span class="spinner" id="loading-spinner"></span><strong id="loading-title">正在接入战场</strong><small id="loading-progress">准备飞行资源</small><button class="secondary" id="loading-retry" hidden>重试加载</button><button class="text-button" id="loading-dismiss" hidden>返回基地</button></div>
   </section>
   <aside class="right-panel">
-   <div class="briefing"><span class="eyebrow">MISSION BRIEFING</span><span class="chapter-index" id="side-chapter">01 / 09</span><h2 id="side-name">静默海岸</h2><p id="side-story">迷雾背后的求救声</p><div class="briefing-line"></div><dl><div><dt>飞行员</dt><dd id="side-pilot">宇宙人</dd></div><div><dt>当前战机</dt><dd id="side-ship">曙光-7</dd></div><div><dt>任务难度</dt><dd id="side-difficulty">标准</dd></div><div><dt>信用点</dt><dd id="side-credits">1,000</dd></div></dl><button class="text-button" data-open="missions">更换航线 </button></div>
-   <div class="flight-manual"><span class="eyebrow">FLIGHT MANUAL</span><div><b>拖拽 / WASD / 方向键</b><p>移动与闪避，主炮自动开火。</p></div><div><kbd>Q</kbd><span>主动技</span><kbd>E</kbd><span>战术爆弹</span></div><div><kbd>SPACE</kbd><span>终极技</span><kbd>R</kbd><span>联军支援</span></div><div><kbd>P</kbd><span>暂停</span></div><p class="manual-note">靠近敌弹，擦过发光碰撞核心；<br>击杀、擦弹与破坏弱点积累能量。</p></div>
+   <div class="briefing"><span class="eyebrow">MISSION BRIEFING</span><span class="chapter-index" id="side-chapter">01 / 09</span><h2 id="side-name">静默海岸</h2><p id="side-story">迷雾背后的求救声</p><p class="route-objective" id="route-objective"></p><div class="briefing-line"></div><dl><div><dt>飞行员</dt><dd id="side-pilot">宇宙人</dd></div><div><dt>当前战机</dt><dd id="side-ship">曙光-7</dd></div><div><dt>任务难度</dt><dd id="side-difficulty">标准</dd></div><div><dt>信用点</dt><dd id="side-credits">1,000</dd></div></dl><button class="text-button" data-open="missions">更换航线 </button></div>
+   <div class="flight-manual" id="flight-manual"><span class="eyebrow">FLIGHT MANUAL</span><div><b>拖拽 / WASD / 方向键</b><p>移动与闪避，主炮自动开火。</p></div><div><kbd>Q</kbd><span>主动技</span><kbd>E</kbd><span>战术爆弹</span></div><div><kbd>SPACE</kbd><span>终极技</span><kbd>R</kbd><span>联军支援</span></div><div><kbd>P</kbd><span>暂停</span></div><p class="manual-note">靠近敌弹，擦过发光碰撞核心；<br>击杀、擦弹与破坏弱点积累能量。</p></div>
    <button class="help-link" data-open="help">第一次出击？查看飞行指南 </button>
   </aside>
  </main>
@@ -104,6 +104,6 @@
    <button id="ending-pause"></button><button id="ending-skip"></button><button id="ending-sound"></button><button id="ending-return" hidden></button>
   </nav>
  </section>
- <script type="module" src="app.js?v=29"></script>
+ <script type="module" src="app.js?v=30"></script>
 </body>
 </html>

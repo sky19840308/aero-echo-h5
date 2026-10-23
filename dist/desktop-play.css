@@ -1,9 +1,96 @@
-/* A landscape desktop cockpit with a full-height 9:16 playfield. */
-@media (min-width:1000px) and (orientation:landscape){
- html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden}
- .shell{display:grid!important;width:100vw;height:100dvh;min-height:100dvh;max-width:none;box-sizing:border-box;grid-template-columns:minmax(180px,1fr) min(56.25dvh,52vw) minmax(180px,1fr);gap:clamp(16px,2vw,38px);padding:clamp(12px,1.8vw,34px);align-items:stretch;justify-content:stretch}
- .left-panel,.right-panel{display:flex;flex-direction:column;width:auto;max-width:420px;min-width:0;height:auto;justify-self:center}
- .stage{width:auto!important;height:100%!important;max-height:100dvh;aspect-ratio:9/16;justify-self:center;min-width:0}
- #canvas{width:100%;height:100%}
- .stage:fullscreen{width:auto!important;height:100dvh!important}
+@font-face{font-family:"Yuji Syuku";font-style:normal;font-weight:400 900;font-display:swap;src:url("assets/fonts/YujiSyuku-bombs.ttf") format("truetype")}
+/* One proportional playfield. Side panels may scroll on short laptop screens. */
+.shell{--cockpit-pad:clamp(12px,2.4dvh,28px);--cockpit-gap:clamp(18px,3vw,48px);width:100%;height:100dvh;padding:var(--cockpit-pad);gap:var(--cockpit-gap)}
+.stage{width:min(56vw,calc((100dvh - var(--cockpit-pad)*2)*.5625))!important;height:auto!important;aspect-ratio:9/16;min-width:0}
+#canvas{width:100%;height:100%}
+@media(min-width:1000px) and (orientation:landscape){
+ .shell{display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;justify-content:stretch}
+ .left-panel,.right-panel{display:flex;flex-direction:column;width:min(100%,280px);min-width:0;max-height:calc(100dvh - var(--cockpit-pad)*2);overflow-y:auto;scrollbar-width:thin;justify-self:center}
+ .side-nav{display:none}
+ .left-panel .edition-foot{display:flex;gap:12px;flex-wrap:wrap;line-height:1.6;margin-top:28px}
+ .left-panel h1{margin:28px 0 18px}
+ .right-panel .briefing-line{margin:22px 0}
+ .right-panel .briefing dl{font-size:12px}
+ .right-panel .briefing p,.right-panel .briefing dd,.intro-copy{color:#a4bdcb}
 }
+@media(max-width:999px),(orientation:portrait){
+ .shell{--cockpit-pad:0px;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);display:flex!important;align-items:center;justify-content:center}
+ .left-panel,.right-panel{display:none!important}
+ .stage{width:min(100vw,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom))*.5625))!important;border-radius:0}
+}
+/* Lobby hierarchy: start and aircraft first, connected modes below. */
+.lobby{grid-template-rows:auto auto auto minmax(12px,1fr) auto auto auto auto auto;gap:7px;padding:14px 18px;scroll-padding:12px}
+.lobby .lobby-top{grid-row:1;min-height:40px}
+.lobby-top>span{font-size:8px;max-width:40%;color:#b3cedb}
+.lobby-top>div{gap:4px}
+.lobby-top .icon-button{width:36px;min-width:36px;height:40px;min-height:40px}
+.lobby .title-block{grid-row:2}
+.lobby .title-block .game-title{font-size:clamp(38px,11cqw,58px);line-height:.98;margin:7px 0}
+.lobby .title-block p{font-size:11px;color:#b9d1df;line-height:1.5}
+.lobby .lobby-wallet{grid-row:3;min-height:30px;font-size:12px}
+.lobby .lobby-art-space{grid-row:4;min-height:12px}
+.lobby .ship-switcher{display:none}
+.lobby .pilot-strip{grid-row:5;gap:7px}
+.pilot-strip .pilot-choice{grid-template-rows:42px auto;min-height:68px;padding:6px;gap:5px}
+.pilot-strip .pilot-choice img{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 2px 4px #0009)}
+.pilot-strip .pilot-choice span{font-size:11px;line-height:1.3}
+.lobby .main-menu{grid-row:6;grid-template-rows:repeat(5,minmax(44px,auto));gap:7px}
+.main-menu .menu-entry{padding:8px 10px;min-height:44px}
+.main-menu .menu-entry>span:not(.menu-index){font-size:13px;gap:4px;line-height:1.3;letter-spacing:0}
+.main-menu .menu-entry small{font-size:8px;line-height:1.35;letter-spacing:0;color:#bed3df}
+.main-menu .launch-button{grid-column:1/-1;min-height:50px}
+.main-menu .launch-button>span:not(.menu-index){font-size:16px}
+.main-menu .lan-menu{grid-column:auto}
+.main-menu .local-duo-entry{grid-column:1/-1}
+.lobby .online-entry{grid-row:7;gap:7px}
+.lobby .online-entry button{font-size:11px;min-height:40px;padding:8px}
+.lobby .account-badge{grid-row:8;font-size:10px;line-height:1.4;max-width:100%;color:#b2cbd9}
+.lobby .lobby-note{grid-row:9;font-size:10px;color:#a6becb}
+/* Replace contaminated raster slot crops with clean scalable metal frames. */
+.hud-top{gap:8px}
+.hud-top>div:last-child{flex-wrap:nowrap;max-width:none;gap:7px}
+.hud-top .icon-button{min-width:36px;min-height:36px}
+.hud-stage{font-size:10px;letter-spacing:.4px}
+.hud-combo,.combo,.mission-progress{font-size:9px}
+.battle-bottom{gap:8px;left:4%;right:4%;bottom:2.5%}
+.weapon-status{min-width:0;gap:4px;max-width:35%;text-shadow:0 1px 3px #000}
+.weapon-status>span,.weapon-status>small{font-size:9px;line-height:1.4;letter-spacing:0}
+.ability-buttons{gap:7px;flex-shrink:0}
+.ability,.ability.bomb,.ability.ultimate{--ability:#72dfff;flex:0 0 auto;width:62px;height:78px;padding:6px 4px;gap:3px;border:1px solid color-mix(in srgb,var(--ability) 72%,#516578);border-radius:9px;background:linear-gradient(145deg,#648194 0%,#172f42 6%,#081826 28%,#0c2033 78%,#395267 95%,#8ca1ae 100%)!important;box-shadow:inset 0 0 0 2px #04101b,inset 0 0 0 3px #60788855,0 4px 12px #0008;color:#effaff}
+.ability.bomb{--ability:#ffc77f}
+.ability.ultimate{--ability:#c6a5ff}
+.ability::before{content:"";position:absolute;inset:4px;border:1px solid color-mix(in srgb,var(--ability) 40%,transparent);border-radius:5px;pointer-events:none;animation:none}
+.ability .ability-icon,.ability .game-icon,.ability.bomb .ability-icon{width:29px;height:29px}
+.ability b,html[data-locale="en"] .ability b{font-size:10px;font-weight:600;padding:0;line-height:1.2}
+html[data-locale="en"] .ability b{font-size:8.5px;letter-spacing:0}
+.ability small{font-size:10px;color:#d2e4ef;line-height:1.2}
+.ability>i{border-top:1px solid #a2d9ec33;background:#14344a99;z-index:0}
+.ability.ultimate>i{background:#8870c34d}
+.ability.ready{border-color:#efdcff;box-shadow:inset 0 0 0 2px #081421,0 0 16px #c6a5ff70}
+.ability.ready::before{border-color:#decaff;box-shadow:inset 0 0 10px #c6a5ff33}
+.flight-tip{bottom:16%;left:5%;width:90%;padding:7px 10px;font-size:11px;line-height:1.5;letter-spacing:0;background:#051626d9;border:1px solid #8dbbc033;border-radius:6px}
+.wingmen-call{font-size:10px;min-height:36px}
+.local-duo-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-width:none;background:none;padding:0;margin-top:8px}
+.duo-pilot{--pilot:#77e6ff;display:grid;gap:4px;padding:7px 8px;border:1px solid color-mix(in srgb,var(--pilot) 40%,transparent);border-top:2px solid var(--pilot);border-radius:6px;background:#041725d9;color:#e1eff7;min-width:0}
+.duo-pilot[data-role="guest"]{--pilot:#ffcc84}
+.duo-pilot strong{font-size:10px;line-height:1.35;color:var(--pilot);overflow-wrap:anywhere}
+.duo-pilot span,.duo-pilot small{font-size:9px;line-height:1.4}
+.duo-pilot.fallen{opacity:.65;border-color:#e68b9f;color:#ffc1cf}
+.local-duo-running .lives-counter{display:none}
+.modal-body select{width:100%;min-height:44px;padding:10px 12px;color:#e2f5ff;background:#102a3d;border:1px solid #7bb4ce77;border-radius:6px;font:inherit;line-height:1.5}
+.modal-body p{font-size:12px;color:#bbd0df}
+.modal-body .tiny-note{font-size:11px;color:#a7c3d2}
+.duo-controls{margin:16px 0;padding:12px;background:#04182599;border:1px solid #82ccdf33;border-radius:8px}
+.control-pilot{margin-top:12px;padding-top:8px;border-top:1px solid #91ccdf2b}
+.control-pilot>b{font-size:12px;color:#98e9fa;letter-spacing:.3px}
+.control-pilot[data-role="guest"]>b{color:#ffce95}
+.control-pilot p,.flight-manual .control-pilot p{margin:6px 0;font-size:11px;color:#bed2df;line-height:1.6}
+.control-pilot dl{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin:8px 0}
+.control-pilot dl>div{display:flex;align-items:center;gap:7px;min-width:0;font-size:11px}
+.control-pilot dt,.control-pilot dd{margin:0;min-width:0;line-height:1.4}
+.control-pilot kbd,.control-footer kbd{display:inline-flex;min-width:27px;min-height:24px;align-items:center;justify-content:center;padding:2px 5px;border:1px solid #749eb55e;border-bottom-width:3px;border-radius:4px;background:#112e42;color:#e5f6ff;font:10px ui-monospace,monospace}
+.control-alternate,.flight-manual .control-alternate,.control-footer,.flight-manual .control-footer{font-size:10px;color:#b3cbd9;line-height:1.8;margin:12px 0 0}
+.flight-manual{margin-top:22px}
+.briefing .route-objective{padding:10px 12px;border-left:2px solid #77dded;border-radius:0 5px 5px 0;background:#092236b3;color:#d2e8f4;font-size:12px;line-height:1.75;margin:16px 0}
+@container(max-width:350px){.lobby{padding:10px 12px;gap:5px}.lobby-top>span{max-width:34%;font-size:7px}.lobby-top .icon-button{width:31px;min-width:31px}.main-menu .menu-entry>span:not(.menu-index){font-size:11px}.ability,.ability.bomb,.ability.ultimate{width:54px;height:74px}.ability-buttons{gap:5px}.weapon-status>span,.weapon-status>small{font-size:8px}.duo-pilot{padding:5px}.duo-pilot span,.duo-pilot small{font-size:8px}.duo-pilot strong{font-size:9px}}
+@media(max-height:720px){.lobby .title-block .game-title{font-size:38px}.lobby .title-block p{display:none}.pilot-strip .pilot-choice{grid-template-rows:32px auto;min-height:54px}.pilot-strip .pilot-choice img{height:32px;width:32px}.lobby .lobby-art-space{min-height:0}.lobby{gap:5px}.lobby .main-menu{gap:5px}}

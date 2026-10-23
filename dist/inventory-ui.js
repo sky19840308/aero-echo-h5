@@ -1,4 +1,4 @@
-import {ITEM_TYPES,CONTAINERS,TIERS,TIER_NAMES,itemArtKey} from './items.js?v=28';
+import {ITEM_TYPES,CONTAINERS,TIERS,TIER_NAMES,itemArtKey} from './items.js?v=30';
 
 export function normalizeMaterials(value){return Object.fromEntries(['blueprint','data'].map(kind=>[kind,Number.isFinite(Number(value?.[kind]))?Math.max(0,Math.floor(Number(value[kind]))):0]));}
 function icon(meta,atlas,label,size=32){if(!meta||!atlas)return '';const ratio=size/atlas.cell;return `<span class="item-art" role="img" aria-label="${label}" style="width:${size}px;height:${size}px;background-image:url('${meta.src}');background-size:${atlas.width*ratio}px ${atlas.height*ratio}px;background-position:-${meta.x*ratio}px -${meta.y*ratio}px"></span>`;}

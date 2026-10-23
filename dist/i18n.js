@@ -1,7 +1,7 @@
-import {SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIES} from './data.js?v=28';
-import {ITEM_TYPES,CONTAINERS} from './items.js?v=28';
-import {RESEARCH} from './progression.js?v=28';
-import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=28';
+import {SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIES} from './data.js?v=30';
+import {ITEM_TYPES,CONTAINERS} from './items.js?v=30';
+import {RESEARCH} from './progression.js?v=30';
+import {STORY,PILOT_TEXT,STORY_UI} from './story-content.js?v=30';
 
 export const LANGUAGES=[{id:'zh',label:'简体中文',html:'zh-CN'},{id:'ja',label:'日本語',html:'ja'},{id:'en',label:'English',html:'en'}];
 let locale='zh';
@@ -12,7 +12,7 @@ const original=structuredClone({SHIPS,CHAPTERS,ENEMIES,SKINS,TALENTS,DIFFICULTIE
 
 const shipText=[
  {name:['ドーン-7','Dawn-7'],role:['バランス型','Balanced firepower'],skill:['プラズマ噴流','Plasma Torrent'],ultimate:['コロナ・アレイ','Corona Array'],passive:['連続命中補正','Combo Calibration'],description:['連装パルス砲と追尾ミサイル。「三段撃ち」は縦方向へプラズマ光線を噴出し、主砲弾を大幅に加速する。コロナ光線が戦場を貫く。','Twin pulse cannons and homing missiles. Three Stage Fire erupts as a vertical plasma beam and greatly accelerates primary rounds; the corona beam cuts through the battlefield.'],skillText:['1.7 秒間のプラズマ光線。発動中は主砲弾の速度と連射力も上がる。','A 1.7-second plasma torrent; primary rounds also gain speed and fire rate.'],ultText:['4 秒間の高出力縦方向ビーム。継続ダメージを与え、通常敵弾を消す。','A 4-second high-energy vertical beam deals continuous damage and clears ordinary enemy bullets.']},
- {name:['バスティオン-3','Bastion-3'],role:['磁場制圧型','Magnetic Control'],skill:['磁場ドーム','Magnetic Dome'],ultimate:['重力砲撃','Gravity Bombardment'],passive:['磁場護衛','Magnetic Escort'],description:['五連重散弾砲と常に周回する小型衛星 2 機。「風林火山」は防護ドームを展開し、弾幕とあらゆるダメージを防ぐ。重力砲撃は短時間の小範囲爆発。','Five-way heavy shotgun and two continuously orbiting satellites. Wind Forest Fire Mountain deploys a dome that absorbs bullets and blocks all damage. Gravity strikes are brief and localized.'],skillText:['4.8 秒間、近くの敵弾を吸収し、すべてのダメージを無効化する。','Absorbs nearby enemy rounds and negates all damage for 4.8 seconds.'],ultText:['2.8 秒間の集中砲撃。爆発時間と範囲を縮小。','Focused strikes for 2.8 seconds, with shorter and smaller explosions.']},
+ {name:['バスティオン-3','Bastion-3'],role:['磁場制圧型','Magnetic Control'],skill:['磁場ドーム','Magnetic Dome'],ultimate:['重力砲撃','Gravity Bombardment'],passive:['磁場護衛','Magnetic Escort'],description:['五連重散弾砲と常に周回する小型衛星 2 機。ボス戦では弾道を収束させ、遠距離での火力損失を減らす。「風林火山」は防護ドームを展開し、弾幕とあらゆるダメージを防ぐ。重力砲撃は短時間の小範囲爆発。','Five-way heavy shotgun and two continuously orbiting satellites. The primary spread narrows during Boss fights to retain ranged damage. Wind Forest Fire Mountain deploys a dome that absorbs bullets and blocks all damage. Gravity strikes are brief and localized.'],skillText:['4.8 秒間、近くの敵弾を吸収し、すべてのダメージを無効化する。','Absorbs nearby enemy rounds and negates all damage for 4.8 seconds.'],ultText:['2.8 秒間の集中砲撃。爆発時間と範囲を縮小。','Focused strikes for 2.8 seconds, with shorter and smaller explosions.']},
  {name:['レイス-X','Wraith-X'],role:['高機動・かすり型','High-mobility grazer'],skill:['隠密','Stealth'],ultimate:['特異点斬撃','Singularity Slash'],passive:['かすり位相','Graze Phase'],description:['貫通レーザー針と連鎖電弧。「忍術皆伝」で 2.15 秒間姿を消してダメージを受けず、自動連斬が敵機を一瞬で切り裂く。','Piercing laser needles and chain arcs. Ninjutsu Mastery grants 2.15 seconds of damage-free stealth; automatic chained slashes cut through fighters in a flash.'],skillText:['2.15 秒間姿を消し、あらゆるダメージを無効化する。','Turn invisible and ignore all damage for 2.15 seconds.'],ultText:['最大 6 体を攻撃。通常敵弾を 3 秒間 40% 減速する。','Lock onto up to 6 targets and slow ordinary bullets by 40% for 3 seconds.']}
 ];
 for(let i=0;i<3;i++)for(const [field,pair] of Object.entries(shipText[i]))add(original.SHIPS[i][field],...pair);
@@ -164,6 +164,12 @@ add('联军待命','支援待機','SUPPORT READY');
 add('本大关联军支援次数耗尽','この章の連合支援は使い切りました','ALLIED SUPPORT DEPLETED THIS CHAPTER');
 add('联军正在执行任务','連合支援が出撃中です','SQUADRON ON SORTIE');
 add('联军支援出击','連合支援、出撃！','ALLIED SQUADRON DEPLOYED');
+add('同屏双打','同画面協力','Local co-op');
+add('本地双打准备','同画面協力の準備','Local co-op setup');
+add('LOCAL CO-OP / 同屏合作','LOCAL CO-OP / 同画面協力','LOCAL CO-OP');
+add('自动开火 · 移动闪避 · 技能反击','自動射撃・移動回避・スキル反撃','Automatic fire · dodge · counterattack');
+add('切换全屏','全画面の切替','Toggle fullscreen');
+add('全屏','全画面','Fullscreen');
 
 const map=new Map(entries.map(row=>[row[0],row]));
 const sorted=entries.slice().sort((a,b)=>b[0].length-a[0].length);

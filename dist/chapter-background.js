@@ -1,4 +1,4 @@
-import {W,H} from './data.js?v=28';
+import {W,H} from './data.js?v=30';
 
 const TAU=Math.PI*2;
 const palettes=[['255,136,64','255,191,92'],['240,174,52','255,226,132'],['103,183,239','110,230,192'],['231,122,69','255,177,100'],['249,118,61','255,202,143'],['204,205,225','241,229,177'],['114,226,232','175,246,245'],['109,158,255','170,221,255'],['193,164,255','220,226,255']];
@@ -77,5 +77,5 @@ export function drawChapterBackground(ctx,assets,settings,chapter,clock){
   else scrollFrame(ctx,next,chapterScrollState(meta,time,next),frame.mix);
  }
  if(moving&&settings.detail)weather(ctx,chapter,time,state.speed);
- const shade=ctx.createLinearGradient(0,0,0,H);shade.addColorStop(0,'#02101a35');shade.addColorStop(.48,'#02101a3d');shade.addColorStop(1,'#01081372');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);ctx.restore();return true;
+ const shade=ctx.createLinearGradient(0,0,0,H);shade.addColorStop(0,'#02101a55');shade.addColorStop(.48,settings.contrast?'#02101a75':'#02101a52');shade.addColorStop(1,'#01081388');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);ctx.restore();return true;
 }

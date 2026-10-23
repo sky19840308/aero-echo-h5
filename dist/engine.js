@@ -1,11 +1,12 @@
-import {chapterCalibration} from './economy.js?v=29';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=29';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=29';
-import {growthStats,weaponTier} from './progression.js?v=29';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=29';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=29';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from './combat-geometry.js?v=29';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=29';
+import {chapterCalibration} from './economy.js?v=30';
+import {missionWavePlan} from './mission-flow.js?v=30';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=30';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=30';
+import {growthStats,weaponTier} from './progression.js?v=30';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=30';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=30';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=30';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=30';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -34,7 +35,7 @@ export class Game {
  resume(){if(this.state==='paused'){this.state='playing';this.emit({type:'resume'});}}
  moveTo(x,y){if(this.state!=='playing'||this.player.heroBomb)return;this.player.targetX=clamp(x,20,W-20);this.player.targetY=clamp(y,155,H-93);}
  energy(amount){this.player.energy=clamp(this.player.energy+amount*(1+.10*(this.talents.assault_reactor||0))*this.growth.charge,0,1000);if(this.player.energy>=1000&&!this.energyAnnounced){this.energyAnnounced=true;this.combatSound('ready');this.emit({type:'toast',text:'终极技已就绪'});}}
- skill(){const p=this.player;if(this.state!=='playing'||p.skillCd>0||p.hitCrash||p.heroBomb)return false;p.skillCd=this.ship.cooldown*(1-(this.coop&&!this.lan ? .05*(this.talents.cooldown||0) : 0));p.skillTime=this.ship.id==='Dawn7'?1.7:this.ship.id==='Bastion3'?4.8:2.15;p.skillTick=0;p.slashTick=0;
+ skill(){const p=this.player;if(this.state!=='playing'||p.skillCd>0||p.hitCrash||p.heroBomb)return false;p.skillCd=this.ship.cooldown*(1-(this.coop&&!this.persistentLoadout ? .05*(this.talents.cooldown||0) : 0));p.skillTime=this.ship.id==='Dawn7'?1.7:this.ship.id==='Bastion3'?4.8:2.15;p.skillTick=0;p.slashTick=0;
   if(this.ship.id==='WraithX')p.invulnerable=Math.max(p.invulnerable,p.skillTime+.12);
   this.weaponEffect(this.ship.id==='Dawn7'?'P_DAWN_laser_emitter':this.ship.id==='WraithX'?'P_WRAITH_target':playerEffectArt(this.ship.id,'muzzle'),p.x,p.y-24,82,.5,-Math.PI/2);
   this.effect(this.ship.id==='Dawn7'?'Dawn7_Overclock':this.ship.id==='Bastion3'?'Bastion3_Magnetic_Dome':'WraithX_Phase_Dash',p.x,p.y,130,.7);this.shake=Math.max(this.shake,this.ship.id==='Dawn7'?2.4:1.5);this.combatSound('skill');return true;}
@@ -70,9 +71,9 @@ export class Game {
  spawn(id,x,y=-45,extra={}){const cfg=ENEMIES[id-1];if(!this.stage.enemies.includes(id))throw new Error('Stage enemy constraint violated');if(this.enemies.filter(e=>e.alive).length>=34)return;const size=cfg.category==='heavy'?88:cfg.category==='bomber'?69:cfg.category==='elite'?61:cfg.category==='support'?54:51;const hp=cfg.hp*1.22**this.stage.chapter*1.12*1.18*this.difficulty.enemyHp;
   const e={id:++this.uid,type:id,cfg,x,y,originX:x,originY:y,age:0,hp,maxHp:hp,size,r:size*.28,fireTimer:.65+this.random()*.4,phase:this.random()*TAU,alive:true,flash:0,phaseOut:false,dashWarning:0,diveWarning:0,diveCooldown:0,chargeTime:0,shielded:false,movementStyle:'type',speedMultiplier:.82+this.random()*.64,...extra};this.enemies.push(e);this.spawned++;this.seen.add(id);return e;
  }
- spawnWave(){this.wave++;const t=this.time/this.stage.duration;const allowed=t<.18?1:t<.48?2:3;const id=this.stage.enemies[Math.floor(this.random()*allowed)];const type=ENEMIES[id-1].category;const count=Math.max(2,Math.round((type==='scout'?6:type==='intercept'?3:2)*(this.difficulty.enemyCount||1)));const formation=this.wave%4,spread=Math.min(formation===0?66:55,(W-108)/(count-1)),center=clamp(50+this.random()*(W-100),54+spread*(count-1)/2,W-54-spread*(count-1)/2),formationId=this.wave;
-  for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*spread,x=formation===0?center+offset:formation===1?center+Math.sign(offset)*Math.abs(offset)*.62:center+offset;let movementStyle=this.difficulty.id==='hard'?(formation===0?'formation':formation===2&&i===0?'kamikaze':'irregular'):formation===0?'formation':formation===1?'irregular':formation===2&&i===0?'kamikaze':i===count-1&&this.difficulty.id!=='easy'?'kamikaze':'irregular';if(['heavy','support'].includes(type)&&movementStyle==='kamikaze')movementStyle='irregular';this.spawn(id,clamp(x,35,W-35),-45-i*34,{formation,formationId,formationCenter:center,formationOffset:formation===1?Math.sign(offset)*Math.abs(offset)*.62:offset,formationPhase:this.random()*TAU,movementStyle});}
-  this.nextWave=this.time+Math.max(1.75,2.45-t*.45-this.stage.chapter*.035);
+ spawnWave(){this.wave++;const t=this.time/this.stage.duration;const allowed=t<.18?1:t<.48?2:3;const id=this.stage.enemies[Math.floor(this.random()*allowed)];const type=ENEMIES[id-1].category;const count=Math.max(2,Math.round((type==='scout'?6:type==='intercept'?3:2)*(this.difficulty.enemyCount||1)));const plan=missionWavePlan(this.stage,this.wave),formation=plan.formation,spread=Math.min((formation===0?66:55)*plan.spread,(W-108)/(count-1)),center=clamp((50+this.random()*(W-100))*.65+plan.center*.35,54+spread*(count-1)/2,W-54-spread*(count-1)/2),formationId=this.wave;
+  for(let i=0;i<count;i++){const offset=(i-(count-1)/2)*spread,x=formation===0?center+offset:formation===1?center+Math.sign(offset)*Math.abs(offset)*.62:center+offset;let movementStyle=this.difficulty.id==='hard'?(formation===0?'formation':formation===2&&i===0?'kamikaze':'irregular'):formation===0?'formation':formation===1?'irregular':formation===2&&i===0?'kamikaze':i===count-1&&this.difficulty.id!=='easy'?'kamikaze':'irregular';if(['heavy','support'].includes(type)&&movementStyle==='kamikaze')movementStyle='irregular';this.spawn(id,clamp(x,35,W-35),-45-i*plan.stagger,{formation,formationId,formationCenter:center,formationOffset:formation===1?Math.sign(offset)*Math.abs(offset)*.62:offset,formationPhase:this.random()*TAU,movementStyle});}
+  this.nextWave=this.time+Math.max(1.9,(2.45-t*.45-this.stage.chapter*.035)*plan.tempo)*(this.stage.chapter===0&&this.stage.substage===0&&this.time<10?1.2:1);
  }
  spawnBoss(){if(this.boss)return;const hp=this.chapter.hp*2.35;const count=this.stage.chapter===4?3:this.stage.chapter===7?3:2;this.boss={x:W/2,y:-175,baseY:185,age:0,hp,maxHp:hp,w:Math.min(335,285+this.stage.chapter*6),h:242,phase:1,pattern:0,fireTimer:2.5,flash:0,weakTime:0,chargeTime:0,chargeWarning:0,armored:false,dead:false,teleport:0,lDamage:0,rDamage:0,parts:Array.from({length:count},(_,i)=>({x:(i-(count-1)/2)*.23,y:.28,hp:hp*.035,maxHp:hp*.035,dead:false}))};this.emit({type:'boss',name:this.chapter.boss});this.combatSound('boss-intro',{boss:this.stage.chapter+1});this.emit({type:'message',speaker:'WARNING / 巨型目标',text:this.chapter.boss,duration:3});}
  update(dt){if(this.state!=='playing'&&this.state!=='ending')return;dt=Math.min(dt,.05);this.time+=dt;this.clock+=dt;this.shake=Math.max(0,this.shake-dt*18);this.shock=Math.max(0,(this.shock||0)-dt);this.flash=Math.max(0,this.flash-dt*2.5);
@@ -158,7 +159,7 @@ export class Game {
   return true;
  }
  firePlayer(){const p=this.player;const upgraded=1+(this.weaponLevel-1)*.13;const disturbed=this.enemies.some(e=>e.alive&&e.type===19)?.8:1;const damage=this.dps*upgraded;
-  if(this.ship.id==='Bastion3'){for(let i=0;i<5;i++)this.shoot(p.x+(i-2)*5,p.y-28,-Math.PI/2+(i-2)*.16,510*disturbed,damage*.22/5,'player',{kind:'heavy',r:5});}
+  if(this.ship.id==='Bastion3'){const focus=this.boss&&!this.boss.dead&&this.boss.y>80&&this.boss.y<p.y;for(let i=0;i<5;i++)this.shoot(p.x+(i-2)*5,p.y-28,-Math.PI/2+(i-2)*(focus?.065:.16),(focus?540:510)*disturbed,damage*.22/5*(focus?1.12:1),'player',{kind:'heavy',r:5});}
   else if(this.ship.id==='WraithX')this.shoot(p.x,p.y-34,-Math.PI/2,860*disturbed,damage*.14,'player',{kind:'needle',pierce:2,r:3,art:this.weaponLevel>1?'P_WRAITH_AP_round':'P_WRAITH_round'});
   else{for(const x of [-11,11])this.shoot(p.x+x,p.y-29,-Math.PI/2,660*disturbed,damage*.14/2,'player',{kind:'pulse',pierce:p.skillTime>0?1:0,art:p.skillTime>0?'P_DAWN_AP_round':undefined});if(this.weaponLevel>=3)for(const a of [-.17,.17])this.shoot(p.x,p.y-24,-Math.PI/2+a,640,damage*.035,'player',{kind:'pulse'});}
   this.weaponEffect(playerEffectArt(this.ship.id,'muzzle'),p.x,p.y-34,25,.08,-Math.PI/2);
@@ -200,7 +201,7 @@ export class Game {
   }
   this.enemies=this.enemies.filter(e=>e.alive||e.crashing);
  }
- enemyFire(e){this.firingEnemy=e;e.salvo=(e.salvo||0)+1;const p=this.player,s=(188+this.stage.chapter*7)*this.difficulty.speed,flight=Math.min(.7,Math.hypot(p.x-e.x,p.y-e.y)/Math.max(1,s)),lead=flight*this.difficulty.aimLead,aimX=clamp(p.x+p.vx*lead,20,W-20),aimY=clamp(p.y+p.vy*lead,155,H-93),a=Math.atan2(aimY-e.y,aimX-e.x),d=e.cfg.damage*1.12**this.stage.chapter*this.difficulty.damage,fast=e.salvo%2===1,round={kind:'round',simpleRound:true,fastRound:fast,speedMultiplier:fast?1.45:.84,color:fast?'#ff977f':'#85ddff',r:fast?3.5:5.2};
+ enemyFire(e){this.firingEnemy=e;e.salvo=(e.salvo||0)+1;const p=this.player,s=(188+this.stage.chapter*7)*this.difficulty.speed,flight=Math.min(.7,Math.hypot(p.x-e.x,p.y-e.y)/Math.max(1,s)),lead=flight*this.difficulty.aimLead,aimX=clamp(p.x+p.vx*lead,20,W-20),aimY=clamp(p.y+p.vy*lead,155,H-93),a=Math.atan2(aimY-e.y,aimX-e.x),d=e.cfg.damage*1.12**this.stage.chapter*this.difficulty.damage,fast=e.salvo%2===1,round={kind:'round',simpleRound:true,fastRound:fast,speedMultiplier:fast?1.45:.84,color:fast?'#ff977f':'#ffe29a',r:fast?3.5:5.2};
   if(e.type!==26||!e.phaseOut){this.weaponEffect(enemyMuzzleArt(e.type),e.x,e.y+12,30,.13,a);const art=enemyFireArt(e.type,e.salvo);if(art)this.weaponEffect(art,e.x,e.y+18,art.startsWith('GSPEC')?64:44,.28,art==='GSPEC_08'?a:0);}
   switch(e.type){
    case 1:case 2:case 4:case 6:this.fan(e.x,e.y,3,.23,s,d,a,round);break;
@@ -322,7 +323,7 @@ export class Game {
    }else{
     const target=this.wingmen.filter(unit=>['active','entering'].includes(unit.mode)&&!unit.crash).sort((a,c)=>dist(b,a)-dist(b,c)).find(unit=>dist(b,unit)<b.r+unit.r);
     if(target){this.damageWingman(target);b.alive=false;}
-    else{const d=dist(b,p);if(d<b.r+p.r){if(p.invulnerable<=0){this.hurtPlayer(b.damage);b.alive=false;if(b.shock)this.ring(b.x,b.y,12,140,b.damage*.6);}}
+    else{const d=segmentPointDistance(b.px,b.py,b.x,b.y,p.x,p.y);if(d<b.r+p.r){if(p.invulnerable<=0){this.hurtPlayer(b.damage);b.alive=false;if(b.shock)this.ring(b.x,b.y,12,140,b.damage*.6);}}
     else if(!b.grazed&&d<b.r+p.r+15+5*(this.talents.mobility_graze||0)){b.grazed=true;this.grazes++;this.score+=15;this.energy((this.ship.id==='WraithX'?11:5)+3*(this.talents.mobility_feedback||0));if(this.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
     }
    }
@@ -378,4 +379,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=29';
+export {AssetStore} from './asset-loader.js?v=30';

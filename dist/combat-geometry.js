@@ -15,3 +15,9 @@ export function segmentHitsAabb(x0,y0,x1,y1,left,top,right,bottom){
  }
  return low<=high;
 }
+
+export function segmentPointDistance(x0,y0,x1,y1,x,y){
+ const dx=x1-x0,dy=y1-y0,length=dx*dx+dy*dy;
+ const t=length>0?Math.max(0,Math.min(1,((x-x0)*dx+(y-y0)*dy)/length)):0;
+ return Math.hypot(x-(x0+dx*t),y-(y0+dy*t));
+}

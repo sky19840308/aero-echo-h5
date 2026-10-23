@@ -1,12 +1,12 @@
-import {CoopSession} from './coop.js?v=28';
-import {CoopPeer} from './coop-peer.js?v=28';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=28';
-import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=28';
-import {settleEconomy,upgradeHull} from './economy.js?v=28';
-import {upgradeWeapon,upgradeResearch} from './progression.js?v=28';
-import {rememberClear,unlockAchievements} from './campaign.js?v=28';
-import {SHIPS} from './data.js?v=28';
-import {learnTalent} from './talent-tree.js?v=28';
+import {CoopSession} from './coop.js?v=30';
+import {CoopPeer} from './coop-peer.js?v=30';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=30';
+import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=30';
+import {settleEconomy,upgradeHull} from './economy.js?v=30';
+import {upgradeWeapon,upgradeResearch} from './progression.js?v=30';
+import {rememberClear,unlockAchievements} from './campaign.js?v=30';
+import {SHIPS} from './data.js?v=30';
+import {learnTalent} from './talent-tree.js?v=30';
 
 export const LAN_STORAGE='aero-echo.lan.v1';
 const CAPABILITY='aero-echo.lan-capability';

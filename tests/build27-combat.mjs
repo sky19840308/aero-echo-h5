@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=28';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=28';
-import {Renderer} from '../dist/renderer.js?v=28';
-import {stageConfig} from '../dist/data.js?v=28';
-import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=28';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from '../dist/combat-geometry.js?v=28';
-import {WINGMEN} from '../dist/wingmen.js?v=28';
+import {Game} from '../dist/engine.js?v=30';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=30';
+import {Renderer} from '../dist/renderer.js?v=30';
+import {stageConfig} from '../dist/data.js?v=30';
+import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=30';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from '../dist/combat-geometry.js?v=30';
+import {WINGMEN} from '../dist/wingmen.js?v=30';
 
 const require=createRequire(import.meta.url);
 const {createCanvas,loadImage}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');
@@ -21,7 +21,7 @@ const manifest={
 const canvas=createCanvas(450,800);canvas.getBoundingClientRect=()=>({width:450,height:800});
 const renderer=new Renderer(canvas,{manifest,get:()=>null},{detail:false,shake:false,flash:false,numbers:false});
 const stage=stageConfig(0,0,'campaign','quick');
-assert.match(fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8'),/Yuji\+Syuku/,'the brush font is loaded as a compact subset containing every bomb callout glyph');
+assert.match(fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8'),/YujiSyuku-bombs\.ttf/,'the compact brush font is bundled locally and preloaded for bomb callouts');
 
 const bombCallouts=[['三段撃','織田信長'],['風林火山','武田信玄'],['忍術皆伝','服部半蔵']];
 for(const [ship,action,name] of bombCallouts.map(([action,name],index)=>[index,action,name])){

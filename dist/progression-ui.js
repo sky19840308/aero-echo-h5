@@ -1,6 +1,6 @@
-import {gameIcon,RESEARCH_ICONS} from './ui-art.js?v=28';
-import {RESEARCH,WEAPON_MULTIPLIERS,weaponTier,weaponCost,researchLevel,researchCost} from './progression.js?v=28';
-import {weaponCap,researchCap} from './economy.js?v=28';
+import {gameIcon,RESEARCH_ICONS} from './ui-art.js?v=30';
+import {RESEARCH,WEAPON_MULTIPLIERS,weaponTier,weaponCost,researchLevel,researchCost} from './progression.js?v=30';
+import {weaponCap,researchCap} from './economy.js?v=30';
 const weaponGate=tier=>['','首通第 1 大关后开放','首通第 3 大关后开放','首通第 5 大关后开放','第 9 大关训练达到 LV.45 后开放'][tier];
 const researchGate=level=>['','首通第 3 大关后开放','首通第 6 大关后开放','第 9 大关训练达到 LV.47 后开放'][level];
 

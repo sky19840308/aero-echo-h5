@@ -1,10 +1,10 @@
-import {SHIPS,SKINS} from './data.js?v=28';
-import {talentTreeHtml} from './talent-tree.js?v=28';
-import {getLocale} from './i18n.js?v=28';
-import {onlineText,escapeHtml} from './online-ui.js?v=28';
-import {trainingHtml} from './growth-ui.js?v=28';
-import {progressionHtml} from './progression-ui.js?v=28';
-import {canUpgradeHull,fleetLevel,upgradeCost} from './economy.js?v=28';
+import {SHIPS,SKINS} from './data.js?v=30';
+import {talentTreeHtml} from './talent-tree.js?v=30';
+import {getLocale} from './i18n.js?v=30';
+import {onlineText,escapeHtml} from './online-ui.js?v=30';
+import {trainingHtml} from './growth-ui.js?v=30';
+import {progressionHtml} from './progression-ui.js?v=30';
+import {canUpgradeHull,fleetLevel,upgradeCost} from './economy.js?v=30';
 const strings={
  title:['本地双人合作','ローカル2人協力','Local Two-player Co-op'],
  note:['两台设备连接同一个 Wi-Fi（关闭访客网络隔离），打开本游戏。一人建房，另一人输入房间码；无需登录。配对需要联网，战斗数据由两台设备直传，不经过游戏服务器转发。','2台を同じWi-Fiに接続し、ルームコードで参加。ログイン不要。ペアリング時はインターネットが必要、戦闘は端末間で直接通信し、ゲームサーバーでは中継しません。ゲストWi-Fiの端末隔離を解除してください。','Connect both devices to the same Wi-Fi and join by room code. No sign-in. Pairing requires internet; battle traffic goes directly between devices without a game-server relay. Disable guest-network client isolation.'],

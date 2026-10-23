@@ -1,4 +1,4 @@
-import {CoopGame} from './coop.js?v=29';
+import {CoopGame} from './coop.js?v=30';
 
 export const LOCAL_DUO_MOVEMENT={
  host:{up:'KeyW',left:'KeyA',down:'KeyS',right:'KeyD'},
@@ -35,7 +35,27 @@ export function moveLocalDuoPilots(game,keys,dt){
  return moved;
 }
 
-export function createLocalDuoGame({mission,hostShip,hostSkin=0,guestShip,guestSkin=0,difficulty='normal',pace='quick',stageMode='campaign',onEvent=()=>{},seed=Date.now()}){
- const room={mode:'local',host:{id:'local-host',name:'P1 / 主机',choice:{shipIndex:hostShip,skin:hostSkin}},guest:{id:'local-guest',name:'P2 / 副机',choice:{shipIndex:guestShip,skin:guestSkin}}};
- return new CoopGame({mission,room,localRole:'host',difficulty,pace,stageMode,onEvent,seed});
+export function localDuoCharges(profile,chapter){
+ const saved=profile?.localDuoWingmenChargesByChapter?.[chapter];
+ const charge=role=>Number.isFinite(Number(saved?.[role]))?Math.max(0,Math.min(3,Math.floor(Number(saved[role])))):3;
+ return {host:charge('host'),guest:charge('guest')};
+}
+
+export function rememberDuoCharge(profile,event){
+ if(event?.type!=='wingman-charge'||!Number.isInteger(event.chapter)||event.chapter<0||event.chapter>8||!['host','guest'].includes(event.role))return false;
+ const budget=localDuoCharges(profile,event.chapter);
+ budget[event.role]=Math.max(0,Math.min(3,Math.floor(Number(event.charges)||0)));
+ profile.localDuoWingmenChargesByChapter||={};profile.localDuoWingmenChargesByChapter[event.chapter]=budget;return true;
+}
+
+export function createLocalDuoGame({mission,hostShip,hostSkin=0,guestShip,guestSkin=0,profile={},difficulty='normal',pace='quick',stageMode='campaign',onEvent=()=>{},seed=Date.now()}){
+ const room={mode:'local',host:{id:'local-host',name:'P1',loadout:profile,choice:{shipIndex:hostShip,skin:hostSkin}},guest:{id:'local-guest',name:'P2',loadout:profile,choice:{shipIndex:guestShip,skin:guestSkin}}};
+ const game=new CoopGame({mission,room,localRole:'host',difficulty,pace,stageMode,onEvent,seed});
+ const charges=localDuoCharges(profile,game.stage.chapter);
+ for(const pilot of game.crew)pilot.player.wingmanCharges=charges[pilot.role];
+ return game;
+}
+
+export function localDuoResult(game,win){
+ return {type:'result',win,stage:game.stage,score:Math.round(game.score),kills:game.kills,grazes:game.grazes,hits:game.hits,coins:game.coins,materials:{...game.materials},time:game.time,stars:win?1+(game.kills/Math.max(1,game.spawned)>=.65?1:0)+(game.hits===0?1:0):0,seen:[...game.seen],difficulty:game.difficulty.id,pace:game.pace,ship:game.crew[0].ship.id,level:game.crew[0].level};
 }

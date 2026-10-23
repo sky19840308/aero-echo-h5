@@ -1,6 +1,6 @@
 // Resolve against the deployed module, independent of the page's navigation path.
-import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=28';
-import {WINGMEN} from './wingmen.js?v=28';
+import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=30';
+import {WINGMEN} from './wingmen.js?v=30';
 
 export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','24');return url.href;};
 
@@ -9,7 +9,7 @@ export class AssetLoadError extends Error {
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=28';
+ const src='assets/manifest.json?v=30';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{

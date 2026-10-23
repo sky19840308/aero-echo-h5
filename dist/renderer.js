@@ -1,11 +1,11 @@
-import {tr} from './i18n.js?v=28';
-import {W,H,CHAPTERS} from './data.js?v=28';
-import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=28';
-import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=28';
-import {drawChapterBackground} from './chapter-background.js?v=28';
-import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_STRIKE_TIME} from './hero-bombs.js?v=28';
-import {bastionSatellitePosition,bastionUltimateTarget} from './combat-geometry.js?v=28';
-import {WINGMEN,WINGMAN_PRELAUNCH,WINGMAN_SORTIE,WINGMAN_EXIT} from './wingmen.js?v=28';
+import {tr} from './i18n.js?v=30';
+import {W,H,CHAPTERS} from './data.js?v=30';
+import {ITEM_BY_KIND,CONTAINER_BY_ID,itemArtKey,tierIndex} from './items.js?v=30';
+import {EFFECT_ART,playerTrailArt,enemyFieldArt,hazardPhaseArt} from './weapons.js?v=30';
+import {drawChapterBackground} from './chapter-background.js?v=30';
+import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_STRIKE_TIME} from './hero-bombs.js?v=30';
+import {bastionSatellitePosition,bastionUltimateTarget} from './combat-geometry.js?v=30';
+import {WINGMEN,WINGMAN_PRELAUNCH,WINGMAN_SORTIE,WINGMAN_EXIT} from './wingmen.js?v=30';
 const TAU=Math.PI*2,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export class Renderer {
  constructor(canvas,assets,settings){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.assets=assets;this.settings=settings;this.stars=Array.from({length:75},(_,i)=>({x:(i*97.23)%W,y:(i*139.71)%H,size:.5+(i%4)*.35,speed:8+(i%5)*4}));this.resize();this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);}
@@ -35,7 +35,7 @@ export class Renderer {
  frame(name,x,y,size,age,duration,rotation=0){if(EFFECT_ART[name]&&this.weapon(EFFECT_ART[name],x,y,size*(.8+age/duration*.4),undefined,rotation,Math.min(1,(1-age/duration)*1.5)))return;const meta=this.assets.manifest.fx[name];if(!meta)return;const im=this.assets.get(meta.src);if(!im)return;const frame=Math.min(meta.frames-1,Math.floor(age/duration*meta.frames)),s=meta.frameSize;const ctx=this.ctx;ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.88;ctx.drawImage(im,frame%meta.columns*s,Math.floor(frame/meta.columns)*s,s,s,-size/2,-size/2,size,size);ctx.restore();}
  draw(game,clock,chapter=0,skin=0){const ctx=this.ctx;ctx.setTransform(this.sx,0,0,this.sy,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);ctx.save();if(game&&this.settings.shake&&game.shake>0&&game.state!=='paused'&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){const impact=Math.min(1,(game.shock||0)/.9);ctx.translate(W/2,H/2);ctx.rotate(Math.sin(clock*43)*impact*.009);ctx.scale(1+impact*.014,1+impact*.014);ctx.translate(-W/2+Math.sin(clock*67)*game.shake,-H/2+Math.cos(clock*89)*game.shake*.72);}
   this.background(game?.stage.chapter??chapter,game?game.clock:clock,!!game);
-  if(game){for(const h of game.hazards)this.hazard(h,clock,false);for(const e of game.enemies)if(e.crashing)this.enemyCrash(e);else if(e.alive)this.enemy(e,game,clock);if(game.boss)this.boss(game.boss,game,clock);for(const b of game.bullets)if(b.alive&&b.owner==='enemy')this.bullet(b,clock);for(const i of game.pickups)this.pickup(i,clock,game);this.wingmen(game,clock);this.wingmanCallup(game,clock);this.players(game,skin,clock);for(const b of game.bullets)if(b.alive&&b.owner==='player')this.bullet(b,clock);this.ultimates(game,clock);for(const f of game.effects){if(f.art)this.weaponEffect(f);else if(f.name==='WraithX_SlashBurst')this.slashBurst(f);else if(f.name==='Bastion3_ShieldImpact')this.shieldImpact(f,clock);else if(f.name.startsWith('Wingman_'))this.wingmanEffect(f,clock);else this.frame(f.name,f.x,f.y,f.size,f.age,f.duration,f.rotation);}for(const f of game.weaponEffects||[])this.weaponEffect(f);for(const f of game.lootBursts||[])this.lootBurst(f);for(const p of game.particles){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);}ctx.globalAlpha=1;for(const h of game.hazards)this.hazard(h,clock,true);this.bombCinematics(game,clock);if(this.settings.numbers){ctx.font='bold 12px monospace';ctx.textAlign='center';for(const t of game.texts){ctx.globalAlpha=1-t.age/.85;ctx.fillStyle=t.color;ctx.fillText(tr(t.text),t.x,t.y);}ctx.globalAlpha=1;}if(this.settings.flash&&game.flash>0){ctx.fillStyle=`rgba(110,205,255,${game.flash*.65})`;ctx.fillRect(0,0,W,H);}}
+  if(game){for(const h of game.hazards)this.hazard(h,clock,false);for(const e of game.enemies)if(e.crashing)this.enemyCrash(e);else if(e.alive)this.enemy(e,game,clock);if(game.boss)this.boss(game.boss,game,clock);for(const i of game.pickups)this.pickup(i,clock,game);this.wingmen(game,clock);this.wingmanCallup(game,clock);this.players(game,skin,clock);for(const b of game.bullets)if(b.alive&&b.owner==='player')this.bullet(b,clock);this.ultimates(game,clock);for(const f of game.effects){if(f.art)this.weaponEffect(f);else if(f.name==='WraithX_SlashBurst')this.slashBurst(f);else if(f.name==='Bastion3_ShieldImpact')this.shieldImpact(f,clock);else if(f.name.startsWith('Wingman_'))this.wingmanEffect(f,clock);else this.frame(f.name,f.x,f.y,f.size,f.age,f.duration,f.rotation);}for(const f of game.weaponEffects||[])this.weaponEffect(f);for(const f of game.lootBursts||[])this.lootBurst(f);for(const p of game.particles){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);}ctx.globalAlpha=1;for(const h of game.hazards)this.hazard(h,clock,true);this.bombCinematics(game,clock);if(this.settings.numbers){ctx.font='bold 12px monospace';ctx.textAlign='center';for(const t of game.texts){ctx.globalAlpha=1-t.age/.85;ctx.fillStyle=t.color;ctx.fillText(tr(t.text),t.x,t.y);}ctx.globalAlpha=1;}if(this.settings.flash&&game.flash>0){ctx.fillStyle=`rgba(110,205,255,${game.flash*.65})`;ctx.fillRect(0,0,W,H);}for(const b of game.bullets)if(b.alive&&b.owner==='enemy')this.bullet(b,clock);this.pilotMarkers(game);}
   ctx.restore();
  }
  menuBackground(clock){
@@ -79,6 +79,16 @@ export class Renderer {
   if(b.weakTime>0){ctx.strokeStyle='#ffe0a2';ctx.lineWidth=1;ctx.beginPath();ctx.arc(b.x,b.y+25,30+Math.sin(clock*6)*3,0,TAU);ctx.stroke();ctx.fillStyle='#ffe0a2';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText(tr('CORE EXPOSED'),b.x,b.y+b.h*.48);}
   if(b.chargeWarning>0){ctx.fillStyle='#ffc18b';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(tr('↓ 冲锋预警 ↓'),b.x,b.y+b.h*.45);ctx.strokeStyle='#ffb07b80';ctx.setLineDash([5,7]);ctx.strokeRect(b.x-b.w*.24,b.y,b.w*.48,H-b.y);ctx.setLineDash([]);}
  }
+ pilotMarkers(game){
+  const pilots=game.coop?game.crew:[{player:game.player,alive:game.player.lives>0}];const ctx=this.ctx;
+  for(const pilot of pilots){const p=pilot.player;if(!pilot.alive||p.hitCrash||p.heroBomb)continue;
+   const color=pilot.role==='guest'?'#ffcf8a':'#92eaff';ctx.save();ctx.fillStyle='#081625';ctx.strokeStyle='#03101b';ctx.lineWidth=3;
+   ctx.beginPath();ctx.arc(p.x,p.y,p.r+1,0,TAU);ctx.fill();ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.stroke();
+   ctx.fillStyle='#fffdf2';ctx.beginPath();ctx.arc(p.x,p.y,Math.max(1.8,p.r*.45),0,TAU);ctx.fill();
+   if(game.coop){const y=Math.min(H-88,p.y+49);ctx.fillStyle='#041523e8';ctx.fillRect(p.x-14,y-10,28,16);ctx.strokeStyle=color;ctx.lineWidth=1;ctx.strokeRect(p.x-14,y-10,28,16);ctx.fillStyle=color;ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pilot.role==='guest'?'P2':'P1',p.x,y-2);}
+   ctx.restore();
+  }
+ }
  players(game,skin,clock){if(!game.coop)return this.player(game,skin,clock);for(const pilot of game.crew){if(!pilot.alive&&!pilot.player.hitCrash)continue;game.selectPilot(pilot.role);this.player(game,pilot.skin,clock);}game.selectPilot(game.localRole);}
  ultimates(game,clock){if(!game.coop)return this.ultimate(game,clock);for(const pilot of game.crew){if(!pilot.alive)continue;game.selectPilot(pilot.role);this.ultimate(game,clock);}game.selectPilot(game.localRole);}
  player(game,skin,clock){const p=game.player,ctx=this.ctx,meta=this.assets.manifest.players[game.ship.id][skin]||this.assets.manifest.players[game.ship.id][0],src=meta.src;if(p.hitCrash){this.playerCrash(game,meta,clock);return;}if(p.heroBomb)return;const stealth=game.ship.id==='WraithX'&&p.skillTime>0,flicker=p.invulnerable>0&&p.lastHit>0?(Math.sin(clock*40)>0?.45:1):1;
@@ -104,7 +114,7 @@ export class Renderer {
  bombCinematics(game,clock){
   const pilots=game.coop?game.crew.filter(pilot=>pilot.alive&&pilot.player.heroBomb):game.player.heroBomb?[{role:null,player:game.player}]:[];
   for(const pilot of pilots){if(game.coop)game.selectPilot(pilot.role);const p=game.player,state=p.heroBomb;if(!state)continue;const ctx=this.ctx,age=state.age,ship=game.ship.id;
-   if(age>=HERO_BOMB_STRIKE_TIME){const t=Math.max(0,Math.min(1,(age-HERO_BOMB_STRIKE_TIME)/1.65)),fade=Math.sin(Math.PI*t);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.28+.55*fade;
+   if(age>=HERO_BOMB_STRIKE_TIME){const t=Math.max(0,Math.min(1,(age-HERO_BOMB_STRIKE_TIME)/1.65)),fade=Math.sin(Math.PI*t);ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(.28+.55*fade)/Math.max(1,pilots.length);
     if(ship==='Dawn7'){
      for(let i=0;i<3;i++){const x=W*(i+1)/4+Math.sin(clock*4+i)*18,beam=ctx.createLinearGradient(x,0,x,H);beam.addColorStop(0,'#ffffff00');beam.addColorStop(.18,'#9ceaffcc');beam.addColorStop(.56,'#f5fdff');beam.addColorStop(1,'#5bdcff00');ctx.fillStyle=beam;ctx.fillRect(x-13,0,26,H);}
     }else if(ship==='Bastion3'){
@@ -114,7 +124,7 @@ export class Renderer {
     }
     ctx.restore();
    }
-   const image=this.assets.get(HERO_BOMB_ASSETS[ship]),bob=Math.sin(clock*5+age*3)*5,scale=1+.025*Math.sin(clock*7),width=255*scale,height=275*scale,alpha=age>2.65?Math.max(0,(HERO_BOMB_DURATION-age)/.35):1,heroY=H*.48+bob,titleY=heroY-height*.5-24;if(image){const frame=age<.4?0:age<HERO_BOMB_STRIKE_TIME?1:age<2.45?2:3,col=frame%2,row=Math.floor(frame/2),cellW=image.width/2,cellH=image.height/2;ctx.save();ctx.globalAlpha=alpha;ctx.shadowBlur=26;ctx.shadowColor=ship==='Dawn7'?'#80e8ff':ship==='Bastion3'?'#ffc36d':'#caa6ff';ctx.translate(p.x,heroY);ctx.rotate(Math.sin(clock*3+age)*.025);ctx.drawImage(image,col*cellW,row*cellH,cellW,cellH,-width/2,-height/2,width,height);ctx.restore();}this.bombHeroName(ship,state.action,age-.28,p.x,titleY,alpha,'title');this.bombHeroName(ship,state.name,age-.68,p.x,titleY+42,alpha,'hero');
+   const image=this.assets.get(HERO_BOMB_ASSETS[ship]),bob=Math.sin(clock*5+age*3)*5,scale=1+.025*Math.sin(clock*7),compact=pilots.length>1,layoutScale=compact?.68:1,anchorX=compact?W*(pilot.role==='guest'?.74:.26):clamp(p.x,120,W-120),width=255*scale*layoutScale,height=275*scale*layoutScale,alpha=age>2.65?Math.max(0,(HERO_BOMB_DURATION-age)/.35):1,heroY=H*(compact?.46:.48)+bob,titleY=heroY-height*.5-24;if(image){const frame=age<.4?0:age<HERO_BOMB_STRIKE_TIME?1:age<2.45?2:3,col=frame%2,row=Math.floor(frame/2),cellW=image.width/2,cellH=image.height/2;ctx.save();ctx.globalAlpha=alpha;ctx.shadowBlur=26;ctx.shadowColor=ship==='Dawn7'?'#80e8ff':ship==='Bastion3'?'#ffc36d':'#caa6ff';ctx.translate(anchorX,heroY);ctx.rotate(Math.sin(clock*3+age)*.025);ctx.drawImage(image,col*cellW,row*cellH,cellW,cellH,-width/2,-height/2,width,height);ctx.restore();}ctx.save();ctx.translate(anchorX,titleY);ctx.scale(layoutScale,layoutScale);this.bombHeroName(ship,state.action,age-.28,0,0,alpha,'title');this.bombHeroName(ship,state.name,age-.68,0,42,alpha,'hero');ctx.restore();
   }
   if(game.coop)game.selectPilot(game.localRole);
  }
@@ -128,7 +138,14 @@ export class Renderer {
    this.weapon(tail,tx,ty,missile?23:26,missile?10:6,travel,.35+.1*Math.sin(clock*36+b.id));
    if(this.weapon(b.art,b.x,b.y,playerMeta.direction==='right'?length:width,playerMeta.direction==='right'?width:length,rotation))return;
   }
-  if(b.owner==='enemy'&&b.simpleRound){const fast=!!b.fastRound,length=fast?25:11,r=fast?b.r*.82:b.r*1.22,tx=b.x-Math.cos(travel)*length,ty=b.y-Math.sin(travel)*length;ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=b.color||'#9ceaff';ctx.globalAlpha=fast?.62:.4;ctx.lineWidth=fast?2.4:3.8;ctx.shadowColor=b.color||'#9ceaff';ctx.shadowBlur=fast?11:7;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(b.x-Math.cos(travel)*r,b.y-Math.sin(travel)*r);ctx.stroke();const glow=ctx.createRadialGradient(b.x-r*.25,b.y-r*.25,0,b.x,b.y,r*2.1);glow.addColorStop(0,'#ffffff');glow.addColorStop(.2,b.color||'#9ceaff');glow.addColorStop(1,'#ffffff00');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(b.x,b.y,r*2.1,0,TAU);ctx.fill();ctx.restore();return;}
+  if(b.owner==='enemy'&&b.simpleRound){
+   const fast=!!b.fastRound,r=Math.max(b.r,fast?4:5.5),length=fast?25:12,color=b.color||(fast?'#ffad85':'#ffe29a');
+   ctx.save();ctx.globalAlpha=fast?.65:.45;ctx.strokeStyle=color;ctx.lineWidth=fast?2.5:3.5;
+   ctx.beginPath();ctx.moveTo(b.x-Math.cos(travel)*length,b.y-Math.sin(travel)*length);ctx.lineTo(b.x,b.y);ctx.stroke();
+   ctx.globalAlpha=1;ctx.fillStyle=color;ctx.strokeStyle='#100c16';ctx.lineWidth=this.settings.contrast?3:2.4;
+   ctx.beginPath();ctx.arc(b.x,b.y,r,0,TAU);ctx.fill();ctx.stroke();ctx.strokeStyle='#fff4d3';ctx.lineWidth=1;ctx.stroke();
+   ctx.fillStyle='#fffdf3';ctx.beginPath();ctx.arc(b.x,b.y,Math.max(1.5,r*.35),0,TAU);ctx.fill();ctx.restore();return;
+  }
   if(meta){const size=b.owner==='player'?(b.kind==='missile'?31:b.kind==='needle'?28:26):Math.max(18,b.r*3.2),ratio=meta.width/meta.height,w=size*Math.min(1,ratio),h=size*Math.min(1,1/ratio),spin=/blade|chakram|boomerang/.test(meta.name)?clock*3:meta.direction==='orb'?clock*.6:Number.isFinite(meta.sourceAngle)?travel-meta.sourceAngle:meta.direction==='right'?travel:angle;
    if(/missile|rocket/.test(meta.name))this.weapon('GFX_11',b.x-b.vx*.035,b.y-b.vy*.035,23,6,travel,.45);else if(b.owner==='player'&&b.kind==='needle')this.weapon('GFX_18',b.x,b.y+18,10,30,angle,.3);if(this.weapon(b.art,b.x,b.y,w,h,spin)){if(b.unclearable||this.settings.contrast){ctx.strokeStyle=b.unclearable?'#ffccd4':'#fff4d3';ctx.lineWidth=b.unclearable?2:1;ctx.beginPath();ctx.arc(b.x,b.y,b.r+1,0,TAU);ctx.stroke();if(b.unclearable){ctx.beginPath();ctx.arc(b.x,b.y,b.r+4,0,TAU);ctx.stroke();}}return;}}
   if(b.owner==='player'){const a=angle;const key=b.kind==='heavy'?'PRJ_Orange_Lance_01':b.kind==='needle'?'PRJ_Blue_Lance_01':'PRJ_Blue_Pulse_01';const src=this.assets.manifest.projectiles[key]?.src;const im=src?this.assets.get(src):null;if(im){this.sprite(src,b.x,b.y,b.kind==='needle'?6:b.kind==='heavy'?10:9,b.kind==='needle'?35:25,a);return;}ctx.fillStyle='#a7eeff';ctx.fillRect(b.x-2,b.y-12,4,24);return;}

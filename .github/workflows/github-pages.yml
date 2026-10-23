@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 29
+name: Deploy AERO ECHO Build 30
 
 on:
   workflow_dispatch:
@@ -7,7 +7,9 @@ on:
     paths:
       - .github/workflows/github-pages.yml
       - dist/**
-      - runtime-build29.sha256
+      - runtime-build30.sha256
+      - tests/**
+      - tools/*.mjs
       - tools/github/**
 
 permissions:
@@ -29,9 +31,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned Build 29 game
+      - name: Check out the versioned Build 30 game
         uses: actions/checkout@v4
-      - name: Restore verified media and apply Build 29
+      - name: Restore verified media and apply Build 30
         shell: bash
         run: |
           set -euo pipefail
@@ -87,8 +89,9 @@ jobs:
           manifest.update(update)
           target.write_text(json.dumps(manifest, ensure_ascii=False, separators=(',', ':')))
           PY
+          node tools/prepare-manifest.mjs site/dist
           cd site
-          sha256sum --check "$GITHUB_WORKSPACE/runtime-build29.sha256"
+          sha256sum --check "$GITHUB_WORKSPACE/runtime-build30.sha256"
       - name: Verify combat, lives, wingmen and native Canvas effects
         shell: bash
         run: |
@@ -103,9 +106,10 @@ jobs:
           node site/tests/talent-tree.mjs
           node site/tests/weapon-phases.mjs
           node site/tests/local-duo.mjs
+          node site/tests/build30-quality.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the verified Build 29 runtime
+      - name: Upload the verified Build 30 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist
