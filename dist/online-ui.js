@@ -1,5 +1,5 @@
-import {SHIPS,SKINS} from './data.js?v=31';
-import {getLocale} from './i18n.js?v=31';
+import {SHIPS,SKINS} from './data.js?v=32';
+import {getLocale} from './i18n.js?v=32';
 
 const text={
  account:['账户与云存档','アカウントとクラウド保存','Account & Cloud Save'],

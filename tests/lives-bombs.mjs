@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=31';
-import {CoopGame} from '../dist/coop.js?v=31';
-import {DIFFICULTIES,stageConfig} from '../dist/data.js?v=31';
-import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=31';
+import {Game} from '../dist/engine.js?v=32';
+import {CoopGame} from '../dist/coop.js?v=32';
+import {DIFFICULTIES,stageConfig} from '../dist/data.js?v=32';
+import {HERO_BOMB_ASSETS,HERO_BOMB_DURATION,HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME} from '../dist/hero-bombs.js?v=32';
 
 const stage=stageConfig(0,0,'campaign','quick');
 const difficultyRuns=DIFFICULTIES.map(({id})=>{

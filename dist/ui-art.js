@@ -8,5 +8,5 @@ export const SHIP_ICONS={
 export const RESEARCH_ICONS={charge:'charge',supply:'repair',magnet:'gravity'};
 export function gameIcon(manifest,name,extra=''){
  const meta=manifest?.menuArt?.icons?.[name]||manifest?.menuArt?.ui?.[name];
- return meta?`<img class="game-icon ${extra}" src="${meta.src}" data-fallback="${meta.fallback}" alt="" aria-hidden="true" decoding="async" loading="lazy">`:'';
+ return meta?`<img class="game-icon ${extra}" src="${meta.src}" ${meta.fallback?`data-fallback="${meta.fallback}"`:''} alt="" aria-hidden="true" decoding="async" loading="lazy">`:'';
 }

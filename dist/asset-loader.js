@@ -1,15 +1,15 @@
 // Resolve against the deployed module, independent of the page's navigation path.
-import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=31';
-import {WINGMEN} from './wingmen.js?v=31';
-
-export const resourceUrl=src=>{const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp)$/i.test(url.pathname)&&!url.searchParams.has('v'))url.searchParams.set('v','24');return url.href;};
+import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=32';
+import {WINGMEN} from './wingmen.js?v=32';
+import {resourceUrl,imageSources} from './image-sources.js?v=32';
+export {resourceUrl} from './image-sources.js?v=32';
 
 export class AssetLoadError extends Error {
  constructor(src,kind='load'){super('Asset load failed: '+(src.startsWith('data:')?'embedded image':src));this.name='AssetLoadError';this.src=src;this.kind=kind;}
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=31';
+ const src='assets/manifest.json?v=32';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
@@ -56,13 +56,18 @@ export class AssetStore {
    catch(error){if(signal.aborted||attempt===this.retries)throw error;await new Promise((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(new AssetLoadError(src,'cancelled'));};const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},this.retryDelayMs);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});}
   }
  }
+ async loadTexture(meta,options={}){
+  let failure;
+  for(const src of imageSources(meta))try{return await this.load(src,options);}catch(error){failure=error;if(error.kind==='cancelled')throw error;}
+  throw failure||new AssetLoadError(meta?.src||'image','manifest');
+ }
  loadImage(src,attempt,signal){return new Promise((resolve,reject)=>{
   const image=new Image();image.decoding='async';let settled=false;
   const abort=()=>finish(new AssetLoadError(src,'cancelled'));
   const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',abort);image.onload=image.onerror=null;if(error){try{image.src='';}catch{}reject(error);}else resolve(image);};
   const timer=setTimeout(()=>finish(new AssetLoadError(src,'timeout')),src.startsWith('data:')?Math.max(1500,this.timeoutMs):this.timeoutMs);
   signal.addEventListener('abort',abort,{once:true});if(signal.aborted){abort();return;}
-  image.onload=()=>finish();image.onerror=()=>finish(new AssetLoadError(src));
+  image.onload=async()=>{try{if(typeof image.decode==='function')await image.decode();if(!image.naturalWidth||!image.naturalHeight)throw new Error('Empty image');finish();}catch{finish(new AssetLoadError(src,'decode'));}};image.onerror=()=>finish(new AssetLoadError(src));
   const url=new URL(resourceUrl(src));if(attempt&&url.protocol!=='data:')url.searchParams.set('retry',String(attempt));
   try{image.src=url.href;}catch{finish(new AssetLoadError(src));}
  });}
@@ -70,7 +75,7 @@ export class AssetStore {
  forMenu(){
   const frames=this.manifest.menuArt?.frames||[],epoch=this.stageEpoch;
   this.menuReady=Promise.all(frames.map(async meta=>{
-   if(meta.fallback&&!this.fallbacks.has(meta.src))try{this.fallbacks.set(meta.src,await this.load(meta.fallback));}catch{}
+   if(meta.fallback&&!this.fallbacks.has(meta.src))try{const image=await this.loadTexture(meta);if(epoch===this.stageEpoch)this.fallbacks.set(meta.src,image);}catch{}
    if(epoch!==this.stageEpoch)return;
    try{await this.load(meta.src);}catch{}
   }));return this.menuReady;
@@ -92,7 +97,7 @@ export class AssetStore {
   // Release textures from previous chapters instead of retaining every decoded background.
   for(const src of this.images.keys())if(!keep.has(src)){const job=this.jobs.get(src);if(job)this.cancelJob(job);else this.images.delete(src);}
   for(const src of this.fallbacks.keys())if(!keep.has(src))this.fallbacks.delete(src);
-  let done=0;await Promise.all(resources.map(async meta=>{let image;try{image=await this.load(meta.fallback||meta.src,{priority:true});}catch(error){if(!playerAtlases.includes(meta)&&!bossAtlases.includes(meta)&&meta!==generalAtlas)throw error;}if(epoch===this.stageEpoch&&meta.fallback&&image)this.fallbacks.set(meta.src,image);progress(++done,paths.length);}));
+  let done=0;await Promise.all(resources.map(async meta=>{let image;try{image=await this.loadTexture(meta,{priority:true});}catch(error){if(!playerAtlases.includes(meta)&&!bossAtlases.includes(meta)&&meta!==generalAtlas)throw error;}if(epoch===this.stageEpoch&&meta.fallback&&image)this.fallbacks.set(meta.src,image);progress(++done,paths.length);}));
   // Every essential texture is immediately available from the already-loaded manifest.
   // Ship changes, skins, backgrounds and enemies no longer depend on new PNG requests.
   if(epoch===this.stageEpoch){this.essentialReady=Promise.all(resources.map(meta=>meta.fallback?this.load(meta.src).catch(()=>this.get(meta.src)):this.get(meta.src)));if(boss)this.bossReady=this.load(boss.src).catch(()=>this.get(boss.src));}

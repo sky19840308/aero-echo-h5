@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 31
+name: Deploy AERO ECHO Build 32
 
 on:
   workflow_dispatch:
@@ -31,9 +31,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned Build 31 game
+      - name: Check out the versioned Build 32 game
         uses: actions/checkout@v4
-      - name: Restore verified media and apply Build 31
+      - name: Restore verified media and apply Build 32
         shell: bash
         run: |
           set -euo pipefail
@@ -108,9 +108,10 @@ jobs:
           node site/tests/local-duo.mjs
           node site/tests/build30-quality.mjs
           node site/tests/desktop-wide.mjs
+          node site/tests/asset-recovery.mjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the verified Build 31 runtime
+      - name: Upload the verified Build 32 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist

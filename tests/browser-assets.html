@@ -1,0 +1,32 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>AERO ECHO 图片与手机尺寸复查</title>
+<style>body{margin:0;background:#142437;color:#e8f6ff;font:14px system-ui}header{position:sticky;top:0;padding:8px 16px;background:#071321;z-index:2;display:flex;gap:10px;align-items:center}button{padding:8px}iframe{display:block;border:1px solid #80adcb;margin:10px 16px;background:#071321;width:390px;height:844px}#checks{padding:16px}canvas{width:180px;height:320px;border:1px solid #67d3ef;margin:6px}.proof{display:inline-flex;vertical-align:top;flex-direction:column;align-items:center}.proof img{width:80px;height:80px;object-fit:contain}#status{color:#c5ecaa}</style>
+<header><b>游戏图片检查</b><button data-size="390,844">竖屏390×844</button><button data-size="844,390">横屏844×390</button><button data-size="360,640">竖屏360×640</button><span id="status">检查素材…</span></header>
+<iframe id="phone" title="手机尺寸游戏" src="index.html?build=32"></iframe><section id="checks"></section>
+<script type="module">
+import {readManifest,AssetStore} from './asset-loader.js?v=32';
+import {installImageRecovery} from './image-sources.js?v=32';
+import {Renderer} from './renderer.js?v=32';
+import {Game} from './engine.js?v=32';
+import {SHIPS,stageConfig} from './data.js?v=32';
+const frame=document.querySelector('iframe');
+document.querySelector('header').addEventListener('click',e=>{const b=e.target.closest('[data-size]');if(!b)return;const [w,h]=b.dataset.size.split(',');frame.style.width=w+'px';frame.style.height=h+'px';});
+const manifest=await readManifest(),test=structuredClone(manifest),root=document.querySelector('#checks');
+for(const ship of SHIPS){
+ test.pilots[ship.id].fallback='assets/missing-test-portrait-'+ship.id+'.png';
+ const figure=document.createElement('figure');figure.className='proof';const image=document.createElement('img');image.src=test.pilots[ship.id].fallback;image.alt=ship.id+' 头像恢复';figure.append(image);root.append(figure);
+ for(let skin=0;skin<4;skin++){const img=document.createElement('img');img.src=manifest.players[ship.id][skin].fallback;img.alt=ship.id+' skin '+skin;figure.append(img);}
+ test.players[ship.id][0].fallback='assets/missing-test-aircraft-'+ship.id+'.png';
+}
+installImageRecovery(test);
+let planes=0;
+for(let i=0;i<3;i++){
+ const ship=SHIPS[i],assets=new AssetStore(test,{retries:0,timeoutMs:5000});await assets.forStage(stageConfig(0,0,'campaign','quick'),ship.id,0);await assets.essentialReady;
+ const canvas=document.createElement('canvas');canvas.setAttribute('aria-label',ship.id+' 战斗素材恢复');root.append(canvas);
+ const renderer=new Renderer(canvas,assets,{detail:false,numbers:false,shake:false,flash:false,contrast:true}),game=new Game({stage:stageConfig(0,0,'campaign','quick'),ship:i});game.start();game.clock=1;renderer.draw(game,1);
+ const image=assets.get(test.players[ship.id][0].src);if(!image?.naturalWidth)throw new Error('Missing '+ship.id);planes++;
+ await Promise.all([assets.effectsReady,assets.backgroundReady]);
+}
+await Promise.all([...root.querySelectorAll('img')].map(image=>image.complete&&image.naturalWidth?Promise.resolve():new Promise((yes,no)=>{image.addEventListener('load',yes,{once:true});image.addEventListener('error',()=>setTimeout(()=>image.naturalWidth?yes():no(new Error(image.alt)),1000),{once:true});})));
+const pictures=[...root.querySelectorAll('img')];document.querySelector('#status').textContent=`通过：${pictures.filter(i=>i.naturalWidth>0).length}/${pictures.length} 张图片，${planes}/3 架战机恢复`;
+document.body.dataset.passed='true';
+</script></html>

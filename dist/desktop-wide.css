@@ -1,5 +1,17 @@
 /* Native desktop cockpit: the stage itself occupies the complete viewport. */
 .desktop-hero{display:none}
+@media(max-width:759px),(orientation:portrait){
+ .lobby{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto 110px auto auto auto auto auto;align-content:start}
+ .lobby .lobby-art-space{display:none}
+ .lobby .desktop-hero{display:grid;grid-column:1;grid-row:4;place-items:center;position:relative;min-height:110px;height:110px;pointer-events:none}
+ .desktop-hero img{display:block;width:auto;height:108px;max-width:72%;object-fit:contain;filter:drop-shadow(0 10px 12px #010710aa) drop-shadow(0 0 12px #65ddff44)}
+ .desktop-orbit{position:absolute;width:64%;height:42px;bottom:7px;border:1px solid #77cddd38;border-radius:50%}
+ .lobby .pilot-strip .pilot-choice{grid-template-rows:46px auto;min-height:72px}
+ .lobby .pilot-strip .pilot-choice img{display:block;width:46px;height:46px;object-fit:contain}
+}
+@media(max-width:759px) and (orientation:portrait){
+ .shell .stage{width:100vw!important;height:100dvh!important;max-height:none;aspect-ratio:auto}
+}
 @media(min-width:760px) and (orientation:landscape){
  .shell{display:block!important;width:100vw;height:100dvh;padding:0;gap:0}
  .shell>.left-panel,.shell>.right-panel{display:none!important}
