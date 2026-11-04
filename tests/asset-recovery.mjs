@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {AssetStore} from '../dist/asset-loader.js?v=33.1';
-import {resourceUrl,imageSources,imageKey,indexImageSources,installImageRecovery} from '../dist/image-sources.js?v=33.1';
-import {stageConfig,SHIPS} from '../dist/data.js?v=33.1';
-import {gameIcon} from '../dist/ui-art.js?v=33.1';
+import {AssetStore} from '../dist/asset-loader.js?v=33.2';
+import {resourceUrl,imageSources,imageKey,indexImageSources,installImageRecovery} from '../dist/image-sources.js?v=33.2';
+import {stageConfig,SHIPS} from '../dist/data.js?v=33.2';
+import {gameIcon} from '../dist/ui-art.js?v=33.2';
 
 assert.deepEqual(imageSources({src:'full.png',fallback:'preview.png',originalSrc:'original.jpg'}),['preview.png','full.png','original.jpg']);
 assert.deepEqual(imageSources({src:'full.png',fallback:'undefined'}),['full.png']);
-assert.equal(imageKey('full.png?v=24'),imageKey('full.png?v=33.1&retry=1'));
-assert.equal(new URL(resourceUrl('full.png?v=24')).searchParams.get('v'),'33.1');
+assert.equal(imageKey('full.png?v=24'),imageKey('full.png?v=33.2&retry=1'));
+assert.equal(new URL(resourceUrl('full.png?v=24')).searchParams.get('v'),'33.2');
 
 const manifest=JSON.parse(fs.readFileSync(new URL('../dist/assets/manifest.json',import.meta.url)));
 const requested=[],blocked=new Set(),badDecode=new Set();

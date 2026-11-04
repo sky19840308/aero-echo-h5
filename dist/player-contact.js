@@ -31,3 +31,9 @@ export function playerBulletContact(b,p,margin=0){
  if(t===null)return null;
  return {x:(b.px??b.x)+(b.x-(b.px??b.x))*t,y:(b.py??b.y)+(b.y-(b.py??b.y))*t,t};
 }
+export function playerHazardContact(h,p,height=800){
+ if(h.type==='laser')return playerBulletContact({px:h.x,py:h.y,x:h.x,y:height+60,r:h.width/2},p);
+ if(h.type==='cross')return playerBulletContact({px:h.x-h.r,py:h.y-h.r,x:h.x+h.r,y:h.y+h.r,r:10},p)||playerBulletContact({px:h.x-h.r,py:h.y+h.r,x:h.x+h.r,y:h.y-h.r,r:10},p);
+ if(['blast','fire','mine'].includes(h.type))return playerBulletContact({x:h.x,y:h.y,r:h.r},p);
+ return null;
+}

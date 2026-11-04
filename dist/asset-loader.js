@@ -1,15 +1,15 @@
 // Resolve against the deployed module, independent of the page's navigation path.
-import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=33.1';
-import {WINGMEN} from './wingmen.js?v=33.1';
-import {resourceUrl,imageSources} from './image-sources.js?v=33.1';
-export {resourceUrl} from './image-sources.js?v=33.1';
+import {HERO_BOMB_ASSETS} from './hero-bombs.js?v=33.2';
+import {WINGMEN} from './wingmen.js?v=33.2';
+import {resourceUrl,imageSources} from './image-sources.js?v=33.2';
+export {resourceUrl} from './image-sources.js?v=33.2';
 
 export class AssetLoadError extends Error {
  constructor(src,kind='load'){super('Asset load failed: '+(src.startsWith('data:')?'embedded image':src));this.name='AssetLoadError';this.src=src;this.kind=kind;}
 }
 
 export async function readManifest({timeoutMs=30000,retries=1}={}){
- const src='assets/manifest.json?v=33.1';
+ const src='assets/manifest.json?v=33.2';
  for(let attempt=0;attempt<=retries;attempt++){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{

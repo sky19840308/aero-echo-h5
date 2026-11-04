@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=33.1';
-import {CoopStream} from '../dist/coop-stream.js?v=33.1';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=33.2';
+import {CoopStream} from '../dist/coop-stream.js?v=33.2';
 const room={code:'ABCDEFGH',status:'playing',host:{id:'a',choice:{shipIndex:0}},guest:{id:'b',choice:{shipIndex:2}}};
 const game=new CoopGame({mission:0,room,width:1422,height:800,seed:33});game.start();
 const host=new CoopSession({account:{user:{id:'a'}},autoSync:false});Object.assign(host,{room,role:'host',code:room.code,identity:'a',game,local:game.selectPilot('host'),baseState:'playing',state:'playing'});for(const p of game.crew)p.ack=0;

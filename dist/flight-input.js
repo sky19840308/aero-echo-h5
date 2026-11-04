@@ -1,4 +1,4 @@
-import {localDuoActionForKey,LOCAL_DUO_KEY_CODES} from './local-duo.js?v=33.1';
+import {localDuoActionForKey,LOCAL_DUO_KEY_CODES} from './local-duo.js?v=33.2';
 
 const movement=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 const soloActions={KeyQ:'skill',KeyE:'bomb',KeyR:'wingmen',Space:'ultimate'};

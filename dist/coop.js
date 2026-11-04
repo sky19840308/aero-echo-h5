@@ -1,12 +1,12 @@
-import {CoopStream} from './coop-stream.js?v=33.1';
-import {playerBulletContact} from './player-contact.js?v=33.1';
-import {Game} from './engine.js?v=33.1';
-import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33.1';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=33.1';
-import {hazardImpactArt} from './weapons.js?v=33.1';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=33.1';
-import {CoopPeer} from './coop-peer.js?v=33.1';
-import {normalizeProfile} from './profile.js?v=33.1';
+import {CoopStream} from './coop-stream.js?v=33.2';
+import {playerBulletContact,playerHazardContact} from './player-contact.js?v=33.2';
+import {Game} from './engine.js?v=33.2';
+import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33.2';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=33.2';
+import {hazardImpactArt} from './weapons.js?v=33.2';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=33.2';
+import {CoopPeer} from './coop-peer.js?v=33.2';
+import {normalizeProfile} from './profile.js?v=33.2';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -94,7 +94,7 @@ export class CoopGame extends Game {
   const p=pilot.player;for(const enemy of this.enemies){
    if(!enemy.alive||enemy.phaseOut)continue;
    if(enemy.type===20&&distance(enemy,p)<220){p.x+=clamp(enemy.x-p.x,-17*dt,17*dt);p.y+=clamp(enemy.y-p.y,-9*dt,9*dt);p.x=clamp(p.x,20,this.width-20);p.y=clamp(p.y,155,this.height-93);}
-   if(distance(enemy,p)<enemy.r+p.r){this.hurtPlayer(Math.max(65,enemy.cfg.damage*1.6));if(enemy.diveState==='diving'||enemy.diveState==='coasting'){enemy.hp=0;this.killEnemy(enemy);}else if(enemy.cfg.category==='scout')this.damageEnemy(enemy,enemy.hp+1);}
+   if(playerBulletContact({x:enemy.x,y:enemy.y,r:enemy.r},p)){this.hurtPlayer(Math.max(65,enemy.cfg.damage*1.6));if(enemy.diveState==='diving'||enemy.diveState==='coasting'){enemy.hp=0;this.killEnemy(enemy);}else if(enemy.cfg.category==='scout')this.damageEnemy(enemy,enemy.hp+1);}
   }
  });}
  updateBoss(dt){const target=this.targetPilot();this.withPilot(target,()=>super.updateBoss(dt));const boss=this.boss;if(!boss||boss.dead)return;for(const pilot of this.living())if(pilot!==target&&Math.abs(pilot.player.x-boss.x)<boss.w*.32&&Math.abs(pilot.player.y-boss.y)<boss.h*.27)this.withPilot(pilot,()=>this.hurtPlayer(160*this.difficulty.damage));}
@@ -135,11 +135,8 @@ export class CoopGame extends Game {
    if(!h.activated){h.activated=true;const impact=hazardImpactArt(h);this.combatSound(h.skill?'boss-skill':h.soundOwner?.boss?'boss-weapon':h.soundOwner?.enemy?'enemy-special':'environment',{...h.soundOwner,art:h.activationArt||impact||h.art,x:h.x,hazard:h.type});if(impact&&['blast','fire','mine','cross'].includes(h.type))this.weaponEffect(impact,h.x,h.y,h.r*2,.35);}
    if(h.volley&&!h.triggered){h.triggered=true;h.volley();}
    for(const pilot of this.living()){
-    const p=pilot.player;let contact=false;
-    if(h.type==='laser')contact=Math.abs(p.x-h.x)<h.width/2+p.r&&p.y>h.y;
-    else if(h.type==='cross'){const dx=p.x-h.x,dy=p.y-h.y;contact=Math.max(Math.abs(dx),Math.abs(dy))<h.r&&Math.min(Math.abs(dx-dy),Math.abs(dx+dy))/Math.SQRT2<10+p.r;}
-    else if(['blast','fire','mine'].includes(h.type))contact=Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r;
-    if(contact){this.withPilot(pilot,()=>this.hurtPlayer(h.damage));if(h.type==='mine')h.age=h.warn+h.duration;}
+    const p=pilot.player,contact=playerHazardContact(h,p,this.height);
+    if(contact){this.withPilot(pilot,()=>this.hitByBullet({damage:h.damage,art:h.impactArt||hazardImpactArt(h)||''},contact));if(h.type==='mine')h.age=h.warn+h.duration;}
    }
   }this.hazards=this.hazards.filter(h=>h.age<h.warn+h.duration);
  }

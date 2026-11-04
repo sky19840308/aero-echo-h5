@@ -1,5 +1,5 @@
 // Image URLs are anchored to the game modules, including account-hosted pages.
-export const IMAGE_VERSION='33.1';
+export const IMAGE_VERSION='33.2';
 export function validImageSource(value){return typeof value==='string'&&!!value.trim()&&!['undefined','null'].includes(value.trim())&&!/^javascript:/i.test(value);}
 export function resourceUrl(src){const url=new URL(src,import.meta.url);if(url.protocol!=='data:'&&/\.(png|jpe?g|webp|svg)$/i.test(url.pathname))url.searchParams.set('v',IMAGE_VERSION);return url.href;}
 export function imageSources(meta){return [...new Set([meta?.fallback,meta?.src,meta?.originalSrc].filter(validImageSource))];}

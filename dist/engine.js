@@ -1,14 +1,14 @@
-import {playerBulletContact} from './player-contact.js?v=33.1';
-import {chapterCalibration} from './economy.js?v=33.1';
-import {resizeBattlefield} from './battlefield-layout.js?v=33.1';
-import {missionWavePlan} from './mission-flow.js?v=33.1';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=33.1';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=33.1';
-import {growthStats,weaponTier} from './progression.js?v=33.1';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=33.1';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=33.1';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33.1';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=33.1';
+import {playerBulletContact,playerHazardContact} from './player-contact.js?v=33.2';
+import {chapterCalibration} from './economy.js?v=33.2';
+import {resizeBattlefield} from './battlefield-layout.js?v=33.2';
+import {missionWavePlan} from './mission-flow.js?v=33.2';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=33.2';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=33.2';
+import {growthStats,weaponTier} from './progression.js?v=33.2';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=33.2';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=33.2';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33.2';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=33.2';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -202,7 +202,7 @@ export class Game {
    if(e.y>25&&e.y<this.height-90){e.fireTimer-=dt;if(e.fireTimer<=0){e.fireTimer=(e.type===28&&e.hp<e.maxHp*.4?1.25:1.75)/this.difficulty.rate;this.enemyFire(e);}}
    if(e.y>this.height+95||e.x<-90||e.x>this.width+90||(e.movementStyle==='kamikaze'&&['diving','coasting'].includes(e.diveState)&&e.y<-95))e.alive=false;
    if(e.alive&&!e.phaseOut)for(const unit of this.wingmen)if(['active','entering'].includes(unit.mode)&&unit.contactCooldown<=0&&dist(e,unit)<e.r+unit.r)this.damageWingman(unit);
-   if(e.alive&&!e.phaseOut&&dist(e,p)<e.r+p.r){this.hurtPlayer(Math.max(65,e.cfg.damage*1.6));if(e.diveState==='diving'||e.diveState==='coasting'){e.hp=0;this.killEnemy(e);}else if(e.cfg.category==='scout')this.damageEnemy(e,e.hp+1);}
+   if(e.alive&&!e.phaseOut&&playerBulletContact({x:e.x,y:e.y,r:e.r},p)){this.hurtPlayer(Math.max(65,e.cfg.damage*1.6));if(e.diveState==='diving'||e.diveState==='coasting'){e.hp=0;this.killEnemy(e);}else if(e.cfg.category==='scout')this.damageEnemy(e,e.hp+1);}
   }
   this.enemies=this.enemies.filter(e=>e.alive||e.crashing);
  }
@@ -335,8 +335,8 @@ export class Game {
   }
   const remaining=[];for(const b of this.bullets)if(b.alive)remaining.push(b);else{this.bulletCounts[b.owner]--;this.pool.release(b);}this.bullets=remaining;
  }
- updateHazards(dt){const p=this.player;for(const h of this.hazards){if(!h.talentWarningApplied){h.warn=(Number(h.warn)||0)+.15*(this.talents.survival_warning||0);h.talentWarningApplied=true;}h.age+=dt;if(h.age<h.warn||h.visual)continue;if(!h.activated){h.activated=true;const impact=hazardImpactArt(h);this.combatSound(h.skill?'boss-skill':h.soundOwner?.boss?'boss-weapon':h.soundOwner?.enemy?'enemy-special':'environment',{...h.soundOwner,art:h.activationArt||impact||h.art,x:h.x,hazard:h.type});if(impact&&['blast','fire','mine','cross'].includes(h.type))this.weaponEffect(impact,h.x,h.y,h.r*2,.35);}if(h.volley&&!h.triggered){h.triggered=true;h.volley();}let contact=false;if(h.type==='laser')contact=Math.abs(p.x-h.x)<h.width/2+p.r&&p.y>h.y;else if(h.type==='cross'){const dx=p.x-h.x,dy=p.y-h.y;contact=Math.max(Math.abs(dx),Math.abs(dy))<h.r&&Math.min(Math.abs(dx-dy),Math.abs(dx+dy))/Math.SQRT2<10+p.r;}else if(['blast','fire','mine'].includes(h.type))contact=Math.hypot(p.x-h.x,p.y-h.y)<h.r+p.r;
-   if(contact)this.hurtPlayer(h.damage);if(h.type==='mine'&&contact)h.age=h.warn+h.duration;
+ updateHazards(dt){const p=this.player;for(const h of this.hazards){if(!h.talentWarningApplied){h.warn=(Number(h.warn)||0)+.15*(this.talents.survival_warning||0);h.talentWarningApplied=true;}h.age+=dt;if(h.age<h.warn||h.visual)continue;if(!h.activated){h.activated=true;const impact=hazardImpactArt(h);this.combatSound(h.skill?'boss-skill':h.soundOwner?.boss?'boss-weapon':h.soundOwner?.enemy?'enemy-special':'environment',{...h.soundOwner,art:h.activationArt||impact||h.art,x:h.x,hazard:h.type});if(impact&&['blast','fire','mine','cross'].includes(h.type))this.weaponEffect(impact,h.x,h.y,h.r*2,.35);}if(h.volley&&!h.triggered){h.triggered=true;h.volley();}const contact=playerHazardContact(h,p,this.height);
+   if(contact)this.hitByBullet({damage:h.damage,art:h.impactArt||hazardImpactArt(h)||''},contact);if(h.type==='mine'&&contact)h.age=h.warn+h.duration;
   }this.hazards=this.hazards.filter(h=>h.age<h.warn+h.duration);}
  drop(kind,x,y,{tier='s',amount,container=null}={}){const pickup={id:++this.uid,kind,tier:TIERS.includes(tier)?tier:'s',x:clamp(x,18,this.width-18),y:clamp(y,12,this.height-45),age:0,container};if(Number.isFinite(amount)&&amount>0)pickup.amount=amount;this.pickups.push(pickup);return pickup;}
  lootBurst(name,x,y,size=62,duration=.5){if(this.lootBursts.length<28)this.lootBursts.push({name,x,y,size,duration,age:0});}
@@ -394,4 +394,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=33.1';
+export {AssetStore} from './asset-loader.js?v=33.2';
