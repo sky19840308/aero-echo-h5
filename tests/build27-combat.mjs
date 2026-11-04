@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import fs from 'node:fs';
-import {Game} from '../dist/engine.js?v=32';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=32';
-import {Renderer} from '../dist/renderer.js?v=32';
-import {stageConfig} from '../dist/data.js?v=32';
-import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=32';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from '../dist/combat-geometry.js?v=32';
-import {WINGMEN} from '../dist/wingmen.js?v=32';
+import {Game} from '../dist/engine.js?v=33';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=33';
+import {Renderer} from '../dist/renderer.js?v=33';
+import {stageConfig} from '../dist/data.js?v=33';
+import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=33';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb} from '../dist/combat-geometry.js?v=33';
+import {WINGMEN} from '../dist/wingmen.js?v=33';
 
 const require=createRequire(import.meta.url);
 const {createCanvas,loadImage}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/@napi-rs/canvas');

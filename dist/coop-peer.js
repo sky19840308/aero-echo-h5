@@ -4,7 +4,7 @@ const MAGIC=0xaee0beef,CHUNK=10000,MAX_BYTES=450000;
 const token=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export class CoopPeer {
- constructor({role,code,request,onPacket=()=>{},onState=()=>{},now=()=>Date.now(),rtc=globalThis.RTCPeerConnection,iceServers=[{urls:'stun:stun.cloudflare.com:3478'}],trickle=false}={}){
+ constructor({role,code,request,onPacket=()=>{},onState=()=>{},now=()=>Date.now(),rtc=globalThis.RTCPeerConnection,iceServers=[{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun.l.google.com:19302'}],trickle=false}={}){
   this.role=role;this.code=code;this.request=request;this.onPacket=onPacket;this.onState=onState;this.now=now;this.rtc=rtc;this.iceServers=iceServers;
   this.state='off';this.key='';this.closed=false;this.fragments=new Map();this.serial=0;this.lastSeen=0;this.rtt=0;this.sending=false;
   this.trickle=trickle;this.revision=0;this.localCandidates=[];this.remoteCandidates=new Set();this.lastError='';this.localSignal=null;this.signalDirty=false;this.startedAt=this.now();

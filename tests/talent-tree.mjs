@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import {Game} from '../dist/engine.js?v=32';
-import {DIFFICULTIES,TALENTS,TALENT_BRANCHES,stageConfig} from '../dist/data.js?v=32';
-import {canLearnTalent,learnTalent,normalizeTalentProgress,talentTreeHtml} from '../dist/talent-tree.js?v=32';
-import {createProfile,normalizeProfile} from '../dist/profile.js?v=32';
-import {CoopGame} from '../dist/coop.js?v=32';
-import {LanSession} from '../dist/lan.js?v=32';
+import {Game} from '../dist/engine.js?v=33';
+import {DIFFICULTIES,TALENTS,TALENT_BRANCHES,stageConfig} from '../dist/data.js?v=33';
+import {canLearnTalent,learnTalent,normalizeTalentProgress,talentTreeHtml} from '../dist/talent-tree.js?v=33';
+import {createProfile,normalizeProfile} from '../dist/profile.js?v=33';
+import {CoopGame} from '../dist/coop.js?v=33';
+import {LanSession} from '../dist/lan.js?v=33';
 
 assert.equal(TALENT_BRANCHES.length,3,'the new tree has offense, mobility and survival paths');
 assert.equal(TALENTS.reduce((sum,node)=>sum+node.max,0),18,'the complete tree uses all 18 earned points');
@@ -28,7 +28,7 @@ const lanPilot=lanGame.crew.find(pilot=>pilot.role==='host');
 assert.equal(lanPilot.talents.mobility_graze,1,'LAN construction retains the allocated graze talent');
 assert.equal(lanPilot.talents.survival_core,2,'LAN construction retains the allocated reentry talent');
 const p=lanPilot.player;lanGame.pickups=[];
-const graze={id:100,owner:'enemy',alive:true,x:p.x+26,y:p.y,px:p.x+26,py:p.y,vx:0,vy:0,r:3,age:0,damage:1,hit:new Set()};
+const graze={id:100,owner:'enemy',alive:true,x:p.x+56,y:p.y+10,px:p.x+56,py:p.y+10,vx:0,vy:0,r:3,age:0,damage:1,hit:new Set()};
 lanGame.bullets=[graze];lanGame.bulletCounts.enemy=1;p.energy=0;lanGame.updateBullets(.01);
 assert.equal(graze.grazed,true,'LAN pilots use the five-pixel graze radius talent');
 assert.equal(p.energy,8,'LAN graze feedback grants the talent’s extra three energy');

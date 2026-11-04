@@ -1,4 +1,4 @@
-name: Deploy AERO ECHO Build 32
+name: Deploy AERO ECHO Build 33
 
 on:
   workflow_dispatch:
@@ -11,9 +11,10 @@ on:
       - tests/**
       - tools/*.mjs
       - tools/github/**
+      - desktop/**
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -31,9 +32,9 @@ jobs:
       BUNDLE_URL: https://github.com/${{ github.repository }}/releases/download/build-13/aero-echo-build13-fixed-github.zip
       BUNDLE_SHA256: a3639de52fa2e66ca43561cb7edeb36f635fec8aced9e0e53071a52469e46a69
     steps:
-      - name: Check out the versioned Build 32 game
+      - name: Check out the versioned Build 33 game
         uses: actions/checkout@v4
-      - name: Restore verified media and apply Build 32
+      - name: Restore verified media and apply Build 33
         shell: bash
         run: |
           set -euo pipefail
@@ -109,12 +110,66 @@ jobs:
           node site/tests/build30-quality.mjs
           node site/tests/desktop-wide.mjs
           node site/tests/asset-recovery.mjs
+          node site/tests/build33-contact.mjs
+          node site/tests/build33-network.mjs
+      - name: Keep the verified runtime for the Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: aero-runtime-33
+          path: site/dist
+          include-hidden-files: true
+          retention-days: 7
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload the verified Build 32 runtime
+      - name: Upload the verified Build 33 runtime
         uses: actions/upload-pages-artifact@v4
         with:
           path: site/dist
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  windows:
+    needs: deploy
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: aero-runtime-33
+          path: site/dist
+      - name: Install the pinned desktop packager
+        run: npm --prefix desktop ci
+      - name: Build the complete Windows application
+        run: node desktop/build.mjs site/dist windows-out
+      - name: Start the real Windows executable and verify offline assets and contact
+        shell: pwsh
+        run: |
+          $env:AERO_SMOKE_RESULT = "$env:RUNNER_TEMP\aero-smoke33.json"
+          $exe = (Resolve-Path "windows-out/AERO ECHO-win32-x64/AERO ECHO.exe").Path
+          $p = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Windows executable smoke test failed: $($p.ExitCode)" }
+          if (!(Test-Path $env:AERO_SMOKE_RESULT)) { throw "Missing executable verification result" }
+          Get-Content $env:AERO_SMOKE_RESULT
+          Copy-Item $env:AERO_SMOKE_RESULT windows-out/AERO_ECHO_WINDOWS_TEST.json
+      - name: Compress the portable application
+        shell: pwsh
+        run: Compress-Archive -Path "windows-out/AERO ECHO-win32-x64", "windows-out/AERO_ECHO_WINDOWS_TEST.json" -DestinationPath AERO_ECHO_WINDOWS_BUILD33.zip -CompressionLevel Optimal
+      - name: Publish the verified Windows build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view build-33 >/dev/null 2>&1 || gh release create build-33 --title "AERO ECHO Build 33" --notes "Aircraft body contact and impact feedback; persistent online transport; full Windows runtime."
+          gh release upload build-33 AERO_ECHO_WINDOWS_BUILD33.zip --clobber
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aero-windows-verification-33
+          path: windows-out/AERO_ECHO_WINDOWS_TEST.json
+          retention-days: 30

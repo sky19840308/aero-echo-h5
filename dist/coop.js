@@ -1,10 +1,12 @@
-import {Game} from './engine.js?v=32';
-import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=32';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=32';
-import {hazardImpactArt} from './weapons.js?v=32';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=32';
-import {CoopPeer} from './coop-peer.js?v=32';
-import {normalizeProfile} from './profile.js?v=32';
+import {CoopStream} from './coop-stream.js?v=33';
+import {playerBulletContact} from './player-contact.js?v=33';
+import {Game} from './engine.js?v=33';
+import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=33';
+import {hazardImpactArt} from './weapons.js?v=33';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=33';
+import {CoopPeer} from './coop-peer.js?v=33';
+import {normalizeProfile} from './profile.js?v=33';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -118,8 +120,8 @@ export class CoopGame extends Game {
     if(wingman){this.withPilot(this.crew.find(pilot=>pilot.role===wingman.role)||this.crew[0],()=>this.damageWingman(wingman));b.alive=false;}
     else for(const pilot of this.living()){
      if(!b.alive)break;const p=pilot.player,d=segmentPointDistance(b.px,b.py,b.x,b.y,p.x,p.y);this.withPilot(pilot,()=>{
-      if(d<b.r+p.r){if(p.invulnerable<=0){this.hurtPlayer(b.damage);b.alive=false;if(b.shock)this.ring(b.x,b.y,12,140,b.damage*.6);}}
-      else if(!b.grazed&&d<b.r+p.r+15+5*(pilot.talents.mobility_graze||0)){b.grazed=true;this.grazes++;this.score+=15;this.energy((pilot.ship.id==='WraithX'?11:5)+3*(pilot.talents.mobility_feedback||0));if(pilot.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
+      const contact=playerBulletContact(b,p);if(contact){this.hitByBullet(b,contact);}
+      else if(!b.grazed&&playerBulletContact({...b,r:b.r+15+5*(pilot.talents.mobility_graze||0)},p)){b.grazed=true;this.grazes++;this.score+=15;this.energy((pilot.ship.id==='WraithX'?11:5)+3*(pilot.talents.mobility_feedback||0));if(pilot.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
      });
     }
    }
@@ -159,8 +161,8 @@ export class CoopGame extends Game {
   pilot.points--;pilot.upgrades[node]++;pilot.talents={...pilot.upgrades};pilot.dps=pilot.baseDps*(1+.10*pilot.upgrades.fire);this.selectPilot(this.localRole);return true;
  }
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){const pilot=this.living().sort((a,b)=>distance(item,a.player)-distance(item,b.player))[0];if(pilot&&!item.collected)this.withPilot(pilot,()=>super.collect(item));}this.pickups=[];}this.state='finished';this.emit({type:'coop-stage-over',win,mission:this.mission});}
- snapshot(){
-  const game={};for(const key of WORLD_KEYS)game[key]=plain(this[key]);for(const key of WORLD_ARRAYS)game[key]=this[key].slice(0,key==='bullets'?1280:key==='particles'?160:key==='texts'?24:120).map(item=>{
+ snapshot({cosmetic=true}={}){
+  const game={};for(const key of WORLD_KEYS)game[key]=plain(this[key]);for(const key of WORLD_ARRAYS)game[key]=(!cosmetic&&['particles','texts'].includes(key)?[]:this[key]).slice(0,key==='bullets'?1280:key==='particles'?160:key==='texts'?24:120).map(item=>{
    const record=plain(item);if(key==='wingmen')record.ship=item.ship;if(key==='bullets'&&item.hit?.size)record.hitIds=[...item.hit].filter(id=>integer(id,0,Number.MAX_SAFE_INTEGER)).slice(0,120);if(key==='bullets'&&item.target){const pilot=this.crew.find(p=>p.player===item.target);if(pilot)record.targetPilot=pilot.role;else if(item.target===this.boss)record.targetBoss=true;else if(this.enemies.includes(item.target))record.targetEnemy=item.target.id;else record.targetPoint={x:item.target.x,y:item.target.y};}return record;
   });game.boss=this.boss?plain(this.boss):null;
   const crew=this.crew.map(pilot=>({role:pilot.role,shipIndex:pilot.shipIndex,skin:pilot.skin,alive:pilot.alive,points:pilot.points,upgrades:{...pilot.upgrades},ready:pilot.ready,ack:pilot.ack,commandAck:pilot.commandAck,weaponLevel:pilot.weaponLevel,weaponXp:pilot.weaponXp,bombFragments:pilot.bombFragments,energyAnnounced:pilot.energyAnnounced,player:plain(pilot.player)}));
@@ -186,7 +188,7 @@ export class CoopSession {
   if(!account)throw new Error('A signed-in account is required');this.account=account;this.emit=onEvent;this.onChange=onChange;this.onStage=onStage;this.now=now;this.autoSync=autoSync;this.interval=clamp(interval,100,2000);
   this.state='closed';this.baseState='closed';this.role=null;this.room=null;this.code='';this.game=null;this.local=null;this.mission=0;this.seq=0;this.lastSnapshotSeq=-1;this.lastGuestSeq=-1;this.commands=[];this.commandSeq=0;this.readyRequested=false;this.pauseFlags={host:false,guest:false};this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;this.failureReason='';this.transitionLeft=0;this.target=null;this.identity=null;this.inflight=null;this.closedEpoch=0;this.stageEpoch=0;this.snapshotAge=0;this.interpolation=[];this.lastPeerAt=this.now();this.lastSuccessAt=this.now();this.stageLoading=null;this.lastStamp='';
   this.guestCompact=false;this.peerEventAck=0;this.serverSamples=new Map();this.rtt=0;this.inputTimer=null;this.lastInputSendAt=-Infinity;
-  this.peer=null;this.lastHTTPAt=-Infinity;this.directFrameSeq=0;this.lastDirectSnapshotSeq=-1;this.directInputSeq=0;this.lastDirectInputSeq=-1;this.peerFrameTime=0;this.peerInputTime=0;
+  this.stream=null;this.peer=null;this.lastHTTPAt=-Infinity;this.directFrameSeq=0;this.lastDirectSnapshotSeq=-1;this.directInputSeq=0;this.lastDirectInputSeq=-1;this.peerFrameTime=0;this.peerInputTime=0;
   this.eventSerial=0;this.lastEventSerial=0;this.eventLog=[];this.soundTimes=new Map();const dispatch=this.emit;this.localDispatch=dispatch;this.emit=event=>{
    if(this.role==='host'&&RELAY_EVENTS.has(event.type)){
     const key=event.type==='sound'&&NOISY_SOUNDS.has(event.name)?`${event.name}:${event.ship||event.boss||event.enemy||''}`:null,now=this.now();
@@ -213,18 +215,26 @@ export class CoopSession {
  }
  openPeer(){
   this.peer?.close();this.lastDirectSnapshotSeq=-1;this.lastDirectInputSeq=-1;this.directFrameSeq=0;this.directInputSeq=0;
-  if(!this.autoSync||!globalThis.RTCPeerConnection)return;
-  this.peer=new CoopPeer({role:this.role,code:this.code,now:this.now,request:body=>this.request(`/api/rooms/${this.code}/signal`,body),onState:()=>this.onChange(this),onPacket:packet=>{
-   if(!this.assertIdentity()||packet.code!==this.code)return;this.lastPeerAt=this.now();this.peerStale=false;
-   if(packet.type==='leave'){this.fail('room-closed');return;}
-   if(this.role==='host'&&packet.type==='input'&&packet.mission===this.mission&&integer(packet.seq,0,Number.MAX_SAFE_INTEGER)&&packet.seq>this.lastDirectInputSeq){this.lastDirectInputSeq=packet.seq;this.receiveInput(packet.input,'guest');}
-   if(this.role==='guest'&&packet.type==='frame')this.applySnapshot(packet.snapshot,packet.seq,{source:'direct',age:clamp(this.peer.rtt/2000,0,.15)});
-   this.refresh();
-  }});void this.peer.start().catch(()=>{if(this.peer)this.peer.state='relay';});
+  if(!this.autoSync)return;
+  this.stream?.close();this.stream=new CoopStream({origin:this.account.origin,role:this.role,code:this.code,accessToken:this.account.accessToken,now:this.now,onState:()=>this.onChange(this),onPacket:packet=>this.networkPacket(packet,'stream')});this.stream.start();
+  if(!globalThis.RTCPeerConnection)return;
+  this.peer=new CoopPeer({role:this.role,code:this.code,now:this.now,trickle:true,request:body=>this.request(`/api/rooms/${this.code}/signal`,body),onState:()=>this.onChange(this),onPacket:packet=>this.networkPacket(packet,'direct')
+  });void this.peer.start().catch(()=>{if(this.peer)this.peer.state='relay';});
  }
- peerHealthy(){return !!this.peer?.open&&this.now()-this.peer.lastSeen<2000;}
+ networkPacket(packet,source){
+  if(!this.assertIdentity()||packet.code!==this.code)return;this.lastPeerAt=this.now();this.peerStale=false;
+  if(packet.type==='leave'){this.fail('room-closed');return;}
+  if(this.role==='host'&&packet.type==='input'&&packet.mission===this.mission&&integer(packet.seq,0,Number.MAX_SAFE_INTEGER)&&packet.seq>this.lastDirectInputSeq){this.lastDirectInputSeq=packet.seq;this.receiveInput(packet.input,'guest');}
+  if(this.role==='guest'&&packet.type==='frame')this.applySnapshot(packet.snapshot,packet.seq,{source:'direct',age:clamp((source==='direct'?this.peer?.rtt:this.stream?.rtt)/2000+(Number(packet.age)||0),0,.25)});
+  this.refresh();
+ }
+ directHealthy(){return !!this.peer?.open&&this.now()-this.peer.lastSeen<2000;}
+ streamHealthy(){return !!this.stream?.open&&this.now()-this.stream.lastSeen<2500;}
+ peerHealthy(){return this.directHealthy()||this.streamHealthy();}
+ get networkRtt(){return this.directHealthy()?this.peer.rtt:this.streamHealthy()?this.stream.rtt:this.rtt;}
+ get transport(){return this.directHealthy()?'direct':this.streamHealthy()?'stream':'relay';}
  inputPacket(){return {target:this.target?{...this.target}:null,commands:this.commands.slice(0,24).map(item=>({...item})),pause:!!this.pauseFlags[this.role],ready:this.readyRequested||!!this.local?.ready,ack:this.local?.ack??-1,protocol:2,eventAck:this.lastEventSerial};}
- sendPeerInput(){return this.peer?.send({type:'input',seq:++this.directInputSeq,mission:this.mission,input:this.inputPacket()});}
+ sendPeerInput(){if(this.now()-(this.lastPeerInputSendAt??-Infinity)<12)return false;this.lastPeerInputSendAt=this.now();const packet={type:'input',seq:++this.seq,mission:this.mission,input:this.inputPacket()};return this.directHealthy()?this.peer.send(packet):this.stream?.send(packet);}
  async start(){if(this.role!=='host'||this.baseState!=='waiting')return false;const result=await this.request(`/api/rooms/${this.code}/start`);if(!this.assertIdentity())return false;this.room=result.room||result;this.beginStage(0);this.refresh();await this.sync();return true;}
  startTimer(){this.stopTimer();if(this.autoSync)this.timer=setInterval(()=>{this.checkNetwork();void this.sync().catch(()=>{});},this.interval);}
  stopTimer(){if(this.timer)clearInterval(this.timer);this.timer=null;if(this.inputTimer)clearTimeout(this.inputTimer);this.inputTimer=null;}
@@ -332,14 +342,14 @@ export class CoopSession {
    else if(this.baseState==='intermission'&&this.game?.crew.every(pilot=>pilot.ready)&&!this.networkPaused&&!this.pauseFlags.host&&!this.pauseFlags.guest)this.beginStage(this.mission+1);
   }else if(this.game&&this.state==='playing')this.predict(dt);
   this.refresh();
-  if(this.peer?.open){
+  if(this.peerHealthy()){
    this.peerInputTime+=dt;this.peerFrameTime+=dt;
-   if(this.role==='guest'&&this.peerInputTime>=(this.mode==='lan'?1/60:.05)){this.peerInputTime=0;this.sendPeerInput();}
-   if(this.role==='host'&&this.game&&this.peerFrameTime>=(this.mode==='lan'?1/30:1/15)){this.peerFrameTime=0;void this.peer.sendFrame({type:'frame',seq:++this.directFrameSeq,snapshot:this.snapshot(true)});}
+   if(this.role==='guest'&&this.peerInputTime>=1/60){this.peerInputTime=0;this.sendPeerInput();}
+   if(this.role==='host'&&this.game&&this.peerFrameTime>=1/30){this.peerFrameTime=0;const transport=this.directHealthy()?this.peer:this.stream;void transport.sendFrame({type:'frame',seq:++this.seq,mission:this.mission,snapshot:this.snapshot(true)});}
   }
  }
  predict(dt){
-  this.snapshotAge=Math.min(1.25,this.snapshotAge+dt);this.game.clock+=dt;this.game.time+=dt;
+  this.snapshotAge=Math.min(.28,this.snapshotAge+dt);this.game.clock+=dt;this.game.time+=dt;
   for(const entry of this.interpolation){
    if(entry.item===this.local.player&&this.target&&this.local.alive&&!this.local.player.hitCrash)continue;
    const {item,x,y,vx,vy}=entry,travel=Math.max(0,this.snapshotAge-(entry.hold||0));let nextX=x+vx*travel,nextY=y+vy*travel;
@@ -358,16 +368,18 @@ export class CoopSession {
   for(const unit of this.game.wingmen){if(unit.crash)unit.crash.age=Math.min(unit.crash.duration,unit.crash.age+dt);else unit.age+=dt;}for(const pilot of this.game.crew){if(pilot.player.heroBomb)pilot.player.heroBomb.age+=dt;if(pilot.player.wingmanCall)pilot.player.wingmanCall.age+=dt;if(crashing.has(pilot.role))continue;for(const key of ['invulnerable','respawnTime','bombReturn','skillCd','skillTime','ultTime','armorCd'])if(Number.isFinite(pilot.player[key]))pilot.player[key]=Math.max(0,pilot.player[key]-dt);}
  }
  snapshot(compact=false){
-  const snapshot={v:1,mission:this.mission,state:this.baseState,pauseFlags:{...this.pauseFlags},networkPaused:this.networkPaused,failureReason:this.failureReason,transitionLeft:this.transitionLeft,...this.game.snapshot(),events:this.eventLog.map(record=>({...record,event:{...record.event}}))};
+  const snapshot={v:1,mission:this.mission,state:this.baseState,pauseFlags:{...this.pauseFlags},networkPaused:this.networkPaused,failureReason:this.failureReason,transitionLeft:this.transitionLeft,...this.game.snapshot({cosmetic:!compact}),events:this.eventLog.map(record=>({...record,event:{...record.event}}))};
   // Keep the complete authoritative combat data below the relay's 400 KiB cap.
   // Only expendable cosmetic particles are discarded, never live projectiles.
   if(new TextEncoder().encode(JSON.stringify(snapshot)).byteLength>390000){snapshot.game.particles=[];snapshot.game.texts=[];snapshot.game.effects=snapshot.game.effects.slice(-24);snapshot.game.weaponEffects=snapshot.game.weaponEffects.slice(-24);snapshot.events=snapshot.events.filter(record=>record.event.type!=='sound').slice(-24);}
+  if(compact){snapshot.game.particles=[];snapshot.game.texts=[];snapshot.game.effects=snapshot.game.effects.slice(-28);snapshot.game.weaponEffects=snapshot.game.weaponEffects.slice(-24);}
   if(compact)snapshot.events=snapshot.events.filter(record=>record.serial>this.peerEventAck);
   return compact?packCoopSnapshot(snapshot):snapshot;
  }
  applySnapshot(snapshot,seq,{age=0,source='relay'}={}){
   snapshot=unpackCoopSnapshot(snapshot);
   if(!snapshot||snapshot.v!==1||!integer(snapshot.mission,0,26)||!integer(seq,0,Number.MAX_SAFE_INTEGER)||seq<=(source==='direct'?this.lastDirectSnapshotSeq:this.lastSnapshotSeq)||!Array.isArray(snapshot.crew)||!snapshot.game)return false;
+  if(this.game&&snapshot.mission<this.mission)return false;if(this.game&&snapshot.mission===this.mission&&Number(snapshot.game.clock)<(this.lastAuthorityClock??-1)-.001)return false;this.lastAuthorityClock=Number(snapshot.game.clock)||0;
   const states=['loading','playing','transition','intermission','finished','failed'];if(!states.includes(snapshot.state))return false;if(source==='direct')this.lastDirectSnapshotSeq=seq;else this.lastSnapshotSeq=seq;
   const initial=!this.game,changed=initial||snapshot.mission!==this.mission,previousBoss=changed?null:this.game.boss&&{dead:this.game.boss.dead,phase:this.game.boss.phase};const oldPositions=new Map();if(!changed){for(const key of ['enemies','bullets','pickups','wingmen'])for(const item of this.game[key])oldPositions.set(`${key}:${item.id}`,{x:item.x,y:item.y});for(const pilot of this.game.crew)oldPositions.set(`pilot:${pilot.role}`,{x:pilot.player.x,y:pilot.player.y});if(this.game.boss)oldPositions.set('boss',{x:this.game.boss.x,y:this.game.boss.y});}
   const ownPause=this.pauseFlags[this.role];
@@ -415,7 +427,7 @@ export class CoopSession {
   if(boss?.dead&&!previousBoss?.dead&&!delivered.has('boss-end'))restoreLocal({type:'boss-end',result:'victory',chapter:this.game.stage.chapter});
  }
  async close(){
-  const code=this.code,owned=String(this.account.user?.id||'')===this.identity;this.peer?.send({type:'leave'});this.peer?.close();this.peer=null;this.stopTimer();++this.closedEpoch;++this.stageEpoch;this.syncController?.abort();this.syncController=null;this.inflight=null;this.stageLoading=null;this.code='';this.baseState='closed';this.state='closed';this.target=null;this.commands=[];this.interpolation=[];this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;if(this.game)this.game.state='finished';this.refresh();
+  const code=this.code,owned=String(this.account.user?.id||'')===this.identity;this.peer?.send({type:'leave'});this.peer?.close();this.peer=null;this.stream?.close();this.stream=null;this.stopTimer();++this.closedEpoch;++this.stageEpoch;this.syncController?.abort();this.syncController=null;this.inflight=null;this.stageLoading=null;this.code='';this.baseState='closed';this.state='closed';this.target=null;this.commands=[];this.interpolation=[];this.networkPaused=false;this.peerStale=false;this.remoteNetworkPaused=false;if(this.game)this.game.state='finished';this.refresh();
   if(code&&owned){try{await this.request(`/api/rooms/${code}/leave`);}catch(error){this.emit({type:'coop-issue',message:String(error?.message||error)});}}
  }
 }

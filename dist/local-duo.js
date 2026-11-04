@@ -1,4 +1,4 @@
-import {CoopGame} from './coop.js?v=32';
+import {CoopGame} from './coop.js?v=33';
 
 export const LOCAL_DUO_MOVEMENT={
  host:{up:'KeyW',left:'KeyA',down:'KeyS',right:'KeyD'},

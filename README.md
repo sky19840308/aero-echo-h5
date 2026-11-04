@@ -2,7 +2,9 @@
 
 [立即试玩](https://sky19840308.github.io/aero-echo-h5/) · [账户与双人协作版](https://aero-echo-sky.spy-liver.chatgpt.site/game)
 
-Build 32：修复图片失败后的恢复与解码检查，手机首页显示战机预览；电脑原生横屏，主界面与战斗画面铺满窗口。简体中文、日本語、English；9 章、27 关、3 位飞行员、9 位 Boss。
+Build 33：机体中弹判定与反馈、持续连接的互联网协作传输、完整 Windows 可执行版。
+
+[Build 33 修复与验证](BUILD33.md)
 
 [Build 32 图片恢复与手机预览](BUILD32.md)：预览失败可切换完整图，素材解码后才进入战斗；手机头像与战机可见。
 

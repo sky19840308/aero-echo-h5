@@ -1,12 +1,12 @@
-import {CoopSession} from './coop.js?v=32';
-import {CoopPeer} from './coop-peer.js?v=32';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=32';
-import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=32';
-import {settleEconomy,upgradeHull} from './economy.js?v=32';
-import {upgradeWeapon,upgradeResearch} from './progression.js?v=32';
-import {rememberClear,unlockAchievements} from './campaign.js?v=32';
-import {SHIPS} from './data.js?v=32';
-import {learnTalent} from './talent-tree.js?v=32';
+import {CoopSession} from './coop.js?v=33';
+import {CoopPeer} from './coop-peer.js?v=33';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=33';
+import {createProfile,normalizeProfile,STORAGE} from './profile.js?v=33';
+import {settleEconomy,upgradeHull} from './economy.js?v=33';
+import {upgradeWeapon,upgradeResearch} from './progression.js?v=33';
+import {rememberClear,unlockAchievements} from './campaign.js?v=33';
+import {SHIPS} from './data.js?v=33';
+import {learnTalent} from './talent-tree.js?v=33';
 
 export const LAN_STORAGE='aero-echo.lan.v1';
 const CAPABILITY='aero-echo.lan-capability';
@@ -107,7 +107,7 @@ export class LanSession extends CoopSession {
   if(this.role==='guest'&&packet.type==='frame')this.applySnapshot(packet.snapshot,packet.seq,{source:'direct',age:Math.max(0,Math.min(.06,this.peer.rtt/2000))});
   this.refresh();
  }
- sendPeerInput(){return this.peer?.sendFrame({type:'input',seq:++this.directInputSeq,mission:this.mission,input:this.inputPacket()});}
+ sendPeerInput(){return this.peer?.sendFrame({type:'input',seq:++this.seq,mission:this.mission,input:this.inputPacket()});}
  inputPacket(){return {...super.inputPacket(),loadoutVersion:this.loadoutVersion,lanPauseVersion:this.lanPauseVersions[this.role]};}
  receiveInput(input,role){
   if(input?.ready&&input.loadoutVersion!==this.remoteVersion)input={...input,ready:false};
@@ -181,7 +181,7 @@ export class LanSession extends CoopSession {
    if(!steps)super.update(0);
   }else super.update(dt);
   // Credits deliberately call update(0); final state/rewards must still arrive.
-  if(this.role==='host'&&['finished','failed'].includes(this.baseState)&&!this.terminalAck&&this.peer?.open&&this.now()-this.lastTerminalAt>=200){this.lastTerminalAt=this.now();void this.peer.sendFrame({type:'frame',seq:++this.directFrameSeq,snapshot:this.snapshot(true)});}
+  if(this.role==='host'&&['finished','failed'].includes(this.baseState)&&!this.terminalAck&&this.peer?.open&&this.now()-this.lastTerminalAt>=200){this.lastTerminalAt=this.now();void this.peer.sendFrame({type:'frame',seq:++this.seq,snapshot:this.snapshot(true)});}
  }
  checkNetwork(){
   super.checkNetwork();

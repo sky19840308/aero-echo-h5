@@ -1,13 +1,14 @@
-import {chapterCalibration} from './economy.js?v=32';
-import {resizeBattlefield} from './battlefield-layout.js?v=32';
-import {missionWavePlan} from './mission-flow.js?v=32';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=32';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=32';
-import {growthStats,weaponTier} from './progression.js?v=32';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=32';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=32';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=32';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=32';
+import {playerBulletContact} from './player-contact.js?v=33';
+import {chapterCalibration} from './economy.js?v=33';
+import {resizeBattlefield} from './battlefield-layout.js?v=33';
+import {missionWavePlan} from './mission-flow.js?v=33';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=33';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=33';
+import {growthStats,weaponTier} from './progression.js?v=33';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=33';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=33';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=33';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -94,7 +95,7 @@ export class Game {
   }else{if(this.player.hitCrash)this.updatePlayer(dt);this.updateEnemies(dt);this.updatePickups(dt);if(this.player.lives<=0){if(!this.player.hitCrash)this.finish(false);}else{this.ending-=dt;if(this.ending<=0)this.finish(true);}}
   this.updateVisuals(dt);
  }
- updatePlayer(dt){const p=this.player;
+ updatePlayer(dt){const p=this.player;p.previousX=p.x;p.previousY=p.y;p.impactCooldown=Math.max(0,(p.impactCooldown||0)-dt);
   if(p.hitCrash){const crash=p.hitCrash;crash.age+=dt;p.x=clamp(crash.x+crash.vx*crash.age,22,this.width-22);p.y=Math.min(this.height+24,crash.y+crash.vy*crash.age+270*crash.age*crash.age);p.invulnerable=Math.max(0,p.invulnerable-dt);if(crash.age>=crash.duration){this.effect('Explosion_Small',p.x,p.y,82,.38);this.sparks(p.x,p.y,'#ff9c62',18);p.hitCrash=null;p.x=clamp(crash.x,35,this.width-35);p.y=this.height*.77;p.targetX=p.x;p.targetY=p.y;p.respawnTime=p.lives>0?5+.2*(this.talents.survival_core||0):0;p.invulnerable=p.respawnTime;}return;}
   if(p.heroBomb){p.heroBomb.age+=dt;this.clearBullets(true);if(!p.heroBomb.attacked&&p.heroBomb.age>=HERO_BOMB_STRIKE_TIME){p.heroBomb.attacked=true;this.heroBombStrike();}if(p.heroBomb.age>=HERO_BOMB_DURATION){p.heroBomb=null;p.invulnerable=5;p.bombReturn=5;return;}else return;}
   p.bombReturn=Math.max(0,p.bombReturn-dt);p.respawnTime=Math.max(0,(p.respawnTime||0)-dt);const oldX=p.x,oldY=p.y;let slow=this.hazards.some(h=>(h.type==='freeze'||h.type==='time')&&h.age>h.warn&&Math.hypot(h.x-p.x,h.y-p.y)<h.r)?.65:1;const dx=p.targetX-p.x,dy=p.targetY-p.y,len=Math.hypot(dx,dy);if(len>0){const step=Math.min(len,p.speed*slow*dt*1.5);p.x+=dx/len*step;p.y+=dy/len*step;}p.vx=dt>0?(p.x-oldX)/dt:0;p.vy=dt>0?(p.y-oldY)/dt:0;p.bank+=(clamp(dx/60,-1,1)-p.bank)*Math.min(1,dt*12);
@@ -327,8 +328,8 @@ export class Game {
    }else{
     const target=this.wingmen.filter(unit=>['active','entering'].includes(unit.mode)&&!unit.crash).sort((a,c)=>dist(b,a)-dist(b,c)).find(unit=>dist(b,unit)<b.r+unit.r);
     if(target){this.damageWingman(target);b.alive=false;}
-    else{const d=segmentPointDistance(b.px,b.py,b.x,b.y,p.x,p.y);if(d<b.r+p.r){if(p.invulnerable<=0){this.hurtPlayer(b.damage);b.alive=false;if(b.shock)this.ring(b.x,b.y,12,140,b.damage*.6);}}
-    else if(!b.grazed&&d<b.r+p.r+15+5*(this.talents.mobility_graze||0)){b.grazed=true;this.grazes++;this.score+=15;this.energy((this.ship.id==='WraithX'?11:5)+3*(this.talents.mobility_feedback||0));if(this.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
+    else{const d=segmentPointDistance(b.px,b.py,b.x,b.y,p.x,p.y),contact=playerBulletContact(b,p);if(contact){this.hitByBullet(b,contact);}
+    else if(!b.grazed&&playerBulletContact({...b,r:b.r+15+5*(this.talents.mobility_graze||0)},p)){b.grazed=true;this.grazes++;this.score+=15;this.energy((this.ship.id==='WraithX'?11:5)+3*(this.talents.mobility_feedback||0));if(this.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
     }
    }
   }
@@ -355,6 +356,15 @@ export class Game {
   }this.combatSound('pickup',{pickup:i.kind});
  }
  clearBullets(includeUnclearable=false){for(const b of this.bullets)if(b.owner==='enemy'&&(includeUnclearable||!b.unclearable))b.alive=false;}
+ hitByBullet(b,contact){
+  const p=this.player;if(!contact||p.hitCrash||p.heroBomb||p.lives<=0)return false;
+  // Protected aircraft intercept the round too, instead of looking intangible.
+  b.alive=false;const protectedHit=p.invulnerable>0||this.ship.id==='Bastion3'&&p.skillTime>0||this.ship.id==='WraithX'&&p.skillTime>0;
+  if((p.impactCooldown||0)<=0){p.impactCooldown=.055;this.effects.push({name:protectedHit?'Player_ShieldContact':'Player_HullContact',x:contact.x,y:contact.y,size:protectedHit?38:57,duration:protectedHit?.24:.32,age:0});this.sparks(contact.x,contact.y,protectedHit?'#9eeeff':'#ffc18c',protectedHit?5:13);if(protectedHit)this.combatSound('shield-hit',{x:contact.x});}
+  this.hurtPlayer(b.damage,b.art||'');
+  if(!protectedHit&&b.shock)this.ring(contact.x,contact.y,12,140*this.difficulty.speed,b.damage*.6);
+  return true;
+ }
  hurtPlayer(damage,art=''){const p=this.player;if(this.state!=='playing'||p.heroBomb||p.hitCrash)return;
   if(this.ship.id==='Bastion3'&&p.skillTime>0){if((p.shieldPulseCd||0)<=0){p.shieldPulseCd=.12;this.effects.push({name:'Bastion3_ShieldImpact',x:p.x,y:p.y,size:132,duration:.42,age:0});this.weaponEffect('P_BASTION_blast',p.x,p.y,86,.26);this.energy(Math.min(5,damage/this.dps*2));}return;}
   if(this.ship.id==='WraithX'&&p.skillTime>0)return;if(p.invulnerable>0)return;
@@ -383,4 +393,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=32';
+export {AssetStore} from './asset-loader.js?v=33';

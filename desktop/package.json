@@ -1,0 +1,12 @@
+{
+  "name": "aero-echo",
+  "productName": "AERO ECHO",
+  "version": "1.33.0",
+  "private": true,
+  "main": "main.cjs",
+  "description": "AERO ECHO desktop shooting game",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@electron/packager": "20.3.0"
+  }
+}
