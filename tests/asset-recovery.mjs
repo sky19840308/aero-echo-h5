@@ -8,7 +8,7 @@ import {gameIcon} from '../dist/ui-art.js?v=33';
 assert.deepEqual(imageSources({src:'full.png',fallback:'preview.png',originalSrc:'original.jpg'}),['preview.png','full.png','original.jpg']);
 assert.deepEqual(imageSources({src:'full.png',fallback:'undefined'}),['full.png']);
 assert.equal(imageKey('full.png?v=24'),imageKey('full.png?v=33&retry=1'));
-assert.equal(new URL(resourceUrl('full.png?v=24')).searchParams.get('v'),'32');
+assert.equal(new URL(resourceUrl('full.png?v=24')).searchParams.get('v'),'33');
 
 const manifest=JSON.parse(fs.readFileSync(new URL('../dist/assets/manifest.json',import.meta.url)));
 const requested=[],blocked=new Set(),badDecode=new Set();
