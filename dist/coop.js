@@ -1,12 +1,12 @@
-import {CoopStream} from './coop-stream.js?v=33';
-import {playerBulletContact} from './player-contact.js?v=33';
-import {Game} from './engine.js?v=33';
-import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33';
-import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=33';
-import {hazardImpactArt} from './weapons.js?v=33';
-import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=33';
-import {CoopPeer} from './coop-peer.js?v=33';
-import {normalizeProfile} from './profile.js?v=33';
+import {CoopStream} from './coop-stream.js?v=33.1';
+import {playerBulletContact} from './player-contact.js?v=33.1';
+import {Game} from './engine.js?v=33.1';
+import {segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33.1';
+import {W,H,SHIPS,ENEMIES,stageConfig} from './data.js?v=33.1';
+import {hazardImpactArt} from './weapons.js?v=33.1';
+import {packCoopSnapshot,unpackCoopSnapshot} from './coop-wire.js?v=33.1';
+import {CoopPeer} from './coop-peer.js?v=33.1';
+import {normalizeProfile} from './profile.js?v=33.1';
 
 // One authoritative world, two independent, disposable pilots. This module never
 // imports the campaign profile or emits the single-player settlement event.
@@ -116,12 +116,12 @@ export class CoopGame extends Game {
      const boss=this.boss,bossHit=boss&&b.accelerated?segmentHitsAabb(b.px,b.py,b.x,b.y,boss.x-boss.w*.42,boss.y-boss.h*.3,boss.x+boss.w*.42,boss.y+boss.h*.3):boss&&Math.abs(b.x-boss.x)<boss.w*.42&&Math.abs(b.y-boss.y)<boss.h*.3;if(b.alive&&boss&&!boss.dead&&bossHit){this.damageBoss(b.damage,b.x,b.y);b.alive=false;if(!b.wingman){owner.player.consecutive++;owner.player.lastShotHit=this.time;}}
     });
    }else{
-    const wingman=this.wingmen.filter(unit=>['active','entering'].includes(unit.mode)&&!unit.crash).sort((a,c)=>distance(b,a)-distance(b,c)).find(unit=>distance(b,unit)<b.r+unit.r);
+    const wingman=this.bulletWingman(b);
     if(wingman){this.withPilot(this.crew.find(pilot=>pilot.role===wingman.role)||this.crew[0],()=>this.damageWingman(wingman));b.alive=false;}
     else for(const pilot of this.living()){
-     if(!b.alive)break;const p=pilot.player,d=segmentPointDistance(b.px,b.py,b.x,b.y,p.x,p.y);this.withPilot(pilot,()=>{
+     if(!b.alive)break;const p=pilot.player;this.withPilot(pilot,()=>{
       const contact=playerBulletContact(b,p);if(contact){this.hitByBullet(b,contact);}
-      else if(!b.grazed&&playerBulletContact({...b,r:b.r+15+5*(pilot.talents.mobility_graze||0)},p)){b.grazed=true;this.grazes++;this.score+=15;this.energy((pilot.ship.id==='WraithX'?11:5)+3*(pilot.talents.mobility_feedback||0));if(pilot.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
+      else if(!b.grazed&&playerBulletContact(b,p,15+5*(pilot.talents.mobility_graze||0))){b.grazed=true;this.grazes++;this.score+=15;this.energy((pilot.ship.id==='WraithX'?11:5)+3*(pilot.talents.mobility_feedback||0));if(pilot.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
      });
     }
    }
@@ -229,7 +229,7 @@ export class CoopSession {
   this.refresh();
  }
  directHealthy(){return !!this.peer?.open&&this.now()-this.peer.lastSeen<2000;}
- streamHealthy(){return !!this.stream?.open&&this.now()-this.stream.lastSeen<2500;}
+ streamHealthy(){return !!this.stream?.open&&this.now()-this.stream.lastSeen<2500&&(!this.game||this.now()-this.lastPeerAt<2000);}
  peerHealthy(){return this.directHealthy()||this.streamHealthy();}
  get networkRtt(){return this.directHealthy()?this.peer.rtt:this.streamHealthy()?this.stream.rtt:this.rtt;}
  get transport(){return this.directHealthy()?'direct':this.streamHealthy()?'stream':'relay';}
@@ -276,7 +276,7 @@ export class CoopSession {
  }
  checkNetwork(){
   if(!this.code||['closed','finished','failed','waiting'].includes(this.baseState)||!this.room?.guest)return;
-  if(this.peerHealthy()){this.lastPeerAt=this.now();this.peerStale=false;this.refresh();return;}
+  if(this.directHealthy()){this.lastPeerAt=this.now();this.peerStale=false;this.refresh();return;}
   const age=this.now()-this.lastPeerAt;this.peerStale=age>5000;if(age>45000)this.fail('peer-timeout');else this.refresh();
  }
  async sync(){
@@ -342,7 +342,7 @@ export class CoopSession {
    else if(this.baseState==='intermission'&&this.game?.crew.every(pilot=>pilot.ready)&&!this.networkPaused&&!this.pauseFlags.host&&!this.pauseFlags.guest)this.beginStage(this.mission+1);
   }else if(this.game&&this.state==='playing')this.predict(dt);
   this.refresh();
-  if(this.peerHealthy()){
+  if(this.peer?.open||this.stream?.open){
    this.peerInputTime+=dt;this.peerFrameTime+=dt;
    if(this.role==='guest'&&this.peerInputTime>=1/60){this.peerInputTime=0;this.sendPeerInput();}
    if(this.role==='host'&&this.game&&this.peerFrameTime>=1/30){this.peerFrameTime=0;const transport=this.directHealthy()?this.peer:this.stream;void transport.sendFrame({type:'frame',seq:++this.seq,mission:this.mission,snapshot:this.snapshot(true)});}

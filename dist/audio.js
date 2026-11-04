@@ -1,6 +1,6 @@
-import {CHAPTER_MUSIC,BOSS_MUSIC,MENU_MUSIC,ENDING_MUSIC} from './music.js?v=33';
-import {CombatAudio} from './combat-audio.js?v=33';
-import {audioVolume} from './audio-levels.js?v=33';
+import {CHAPTER_MUSIC,BOSS_MUSIC,MENU_MUSIC,ENDING_MUSIC} from './music.js?v=33.1';
+import {CombatAudio} from './combat-audio.js?v=33.1';
+import {audioVolume} from './audio-levels.js?v=33.1';
 
 export class AudioSynth {
  constructor(settings,{createMusic,onMusicIssue=()=>{},onSfxIssue=()=>{},sfxOptions={}}={}){

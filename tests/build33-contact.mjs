@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import {Game} from '../dist/engine.js?v=33';
-import {CoopGame} from '../dist/coop.js?v=33';
-import {stageConfig} from '../dist/data.js?v=33';
-import {playerBulletContact} from '../dist/player-contact.js?v=33';
+import {Game} from '../dist/engine.js?v=33.1';
+import {CoopGame} from '../dist/coop.js?v=33.1';
+import {stageConfig} from '../dist/data.js?v=33.1';
+import {playerBulletContact} from '../dist/player-contact.js?v=33.1';
 let checks=0;const ok=(v,label)=>{assert.ok(v,label);checks++;};
 for(let ship=0;ship<3;ship++)for(const mode of ['solo','local','online']){
  const g=mode==='solo'?new Game({stage:stageConfig(0,0,'campaign','quick'),ship}):new CoopGame({mission:0,room:{mode:mode==='local'?'local':'online',host:{choice:{shipIndex:ship}},guest:{choice:{shipIndex:(ship+1)%3}}}});g.start();

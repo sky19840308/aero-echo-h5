@@ -6,7 +6,7 @@ export class CoopStream {
  }
  get open(){return !this.closed&&this.ws?.readyState===1;}
  start(){
-  if(this.closed||!this.socket)return;clearTimeout(this.retry);this.state='connecting';this.onState();
+  if(this.closed||!this.socket||!this.origin)return;clearTimeout(this.retry);this.state='connecting';this.onState();
   const url=new URL(`/api/rooms/${this.code}/stream`,this.origin);url.protocol=url.protocol==='https:'?'wss:':'ws:';
   try{const ws=this.ws=new this.socket(url.href,['aero-v1',...(this.accessToken?['token.'+this.accessToken]:[])]);
    ws.onopen=()=>{if(this.ws!==ws)return;this.retries=0;this.lastSeen=this.now();this.state='stream';this.onState();this.send({type:'ping',at:this.now()});};

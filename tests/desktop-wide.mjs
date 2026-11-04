@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {battlefieldForViewport,fitBattlefield} from '../dist/battlefield-layout.js?v=33';
-import {Game} from '../dist/engine.js?v=33';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=33';
-import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=33';
-import {createLocalDuoGame,moveLocalDuoPilots} from '../dist/local-duo.js?v=33';
-import {Renderer} from '../dist/renderer.js?v=33';
-import {stageConfig,SHIPS} from '../dist/data.js?v=33';
-import {REFERENCE_LOADOUTS} from '../dist/economy.js?v=33';
+import {battlefieldForViewport,fitBattlefield} from '../dist/battlefield-layout.js?v=33.1';
+import {Game} from '../dist/engine.js?v=33.1';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=33.1';
+import {packCoopSnapshot,unpackCoopSnapshot} from '../dist/coop-wire.js?v=33.1';
+import {createLocalDuoGame,moveLocalDuoPilots} from '../dist/local-duo.js?v=33.1';
+import {Renderer} from '../dist/renderer.js?v=33.1';
+import {stageConfig,SHIPS} from '../dist/data.js?v=33.1';
+import {REFERENCE_LOADOUTS} from '../dist/economy.js?v=33.1';
 
 for(const [pw,ph] of [[1366,768],[1920,1080],[2560,1440],[1920,1200],[3440,1440]]){
  const world=battlefieldForViewport(pw,ph),fit=fitBattlefield(pw,ph,world.width,world.height);

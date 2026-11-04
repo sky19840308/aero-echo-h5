@@ -18,10 +18,14 @@ function edgeContact(ax,ay,bx,by,cx,cy,dx,dy,r){
  const a=pointSegment(ax,ay,cx,cy,dx,dy),b=pointSegment(bx,by,cx,cy,dx,dy),c=pointSegment(cx,cy,ax,ay,bx,by),d=pointSegment(dx,dy,ax,ay,bx,by);
  const ts=[];if(a.d<=r)ts.push(0);if(b.d<=r)ts.push(1);if(c.d<=r)ts.push(c.t);if(d.d<=r)ts.push(d.t);return ts.length?Math.min(...ts):null;
 }
-export function playerBulletContact(b,p){
+export function playerBulletContact(b,p,margin=0){
  if(p.hitCrash||p.heroBomb||p.lives<=0)return null;
- const angle=-(p.bank||0)*.13,c=Math.cos(angle),s=Math.sin(angle),x0=(b.px??b.x)-(p.previousX??p.x),y0=(b.py??b.y)-(p.previousY??p.y),x1=b.x-p.x,y1=b.y-p.y;
- const ax=x0*c-y0*s,ay=x0*s+y0*c,bx=x1*c-y1*s,by=x1*s+y1*c,r=Math.max(0,b.r||0)+1;
+ const x0=(b.px??b.x)-(p.previousX??p.x),y0=(b.py??b.y)-(p.previousY??p.y),x1=b.x-p.x,y1=b.y-p.y,r=Math.max(0,b.r||0)+Math.max(0,margin)+1;
+ // Broad phase: almost all rounds are far away. Avoid trig, edge tests and
+ // allocations for them, even while both pilots have active support wings.
+ if(Math.max(x0,x1)<-50-r||Math.min(x0,x1)>50+r||Math.max(y0,y1)<-50-r||Math.min(y0,y1)>50+r)return null;
+ const angle=-(p.bank||0)*.13,c=Math.cos(angle),s=Math.sin(angle);
+ const ax=x0*c-y0*s,ay=x0*s+y0*c,bx=x1*c-y1*s,by=x1*s+y1*c;
  let t=inside(ax,ay)?0:inside(bx,by)?1:null;
  for(let i=0;i<PLAYER_HULL.length;i++){const a=PLAYER_HULL[i],d=PLAYER_HULL[(i+1)%PLAYER_HULL.length],n=edgeContact(ax,ay,bx,by,...a,...d,r);if(n!==null)t=t===null?n:Math.min(t,n);}
  if(t===null)return null;

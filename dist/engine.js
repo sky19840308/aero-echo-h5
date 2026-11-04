@@ -1,14 +1,14 @@
-import {playerBulletContact} from './player-contact.js?v=33';
-import {chapterCalibration} from './economy.js?v=33';
-import {resizeBattlefield} from './battlefield-layout.js?v=33';
-import {missionWavePlan} from './mission-flow.js?v=33';
-import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=33';
-import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=33';
-import {growthStats,weaponTier} from './progression.js?v=33';
-import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=33';
-import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=33';
-import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33';
-import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=33';
+import {playerBulletContact} from './player-contact.js?v=33.1';
+import {chapterCalibration} from './economy.js?v=33.1';
+import {resizeBattlefield} from './battlefield-layout.js?v=33.1';
+import {missionWavePlan} from './mission-flow.js?v=33.1';
+import {W,H,SHIPS,CHAPTERS,ENEMIES,DIFFICULTIES} from './data.js?v=33.1';
+import {ITEM_BY_KIND,TIERS,tierIndex,containerLoot} from './items.js?v=33.1';
+import {growthStats,weaponTier} from './progression.js?v=33.1';
+import {BOSS_ARSENALS,BOSS_COLORS,bossShotArt,enemyShotArt,playerShotArt,playerEffectArt,enemyHazardArt,enemyBeamParts,enemyFireArt,enemyMuzzleArt,enemyImpactArt,bossHazardArt,bossTelegraphArt,bossImpactArt,bossBeamParts,hazardImpactArt} from './weapons.js?v=33.1';
+import {HERO_BOMB_FX,HERO_BOMB_STRIKE_TIME,HERO_BOMB_DURATION} from './hero-bombs.js?v=33.1';
+import {bastionSatellitePosition,bastionUltimateTarget,segmentHitsAabb,segmentPointDistance} from './combat-geometry.js?v=33.1';
+import {WINGMEN,WINGMAN_COUNT,WINGMAN_EXIT,WINGMAN_PRELAUNCH,WINGMAN_SORTIE} from './wingmen.js?v=33.1';
 
 export const BOSS_SKILLS=['潮汐夹击','熔岩封锁','螺旋追击','冰棱风暴','轨道清扫','雷狱连锁','双生交叉','棱镜折返','终焉递归'];
 const TAU=Math.PI*2, clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -326,10 +326,10 @@ export class Game {
     for(const e of this.enemies){if(!b.alive)break;if(!e.alive||e.phaseOut||b.hit.has(e.id))continue;const hit=b.accelerated?segmentHitsAabb(b.px,b.py,b.x,b.y,e.x-e.r-b.r,e.y-e.r-b.r,e.x+e.r+b.r,e.y+e.r+b.r):Math.abs(b.x-e.x)<e.r+b.r&&Math.abs(b.y-e.y)<e.r+b.r;if(hit){b.hit.add(e.id);this.damageEnemy(e,b.damage,b.x);if(!b.wingman){p.consecutive++;p.lastShotHit=this.time;}if(b.pierce>0)b.pierce--;else b.alive=false;}}
     const boss=this.boss,bossHit=boss&&b.accelerated?segmentHitsAabb(b.px,b.py,b.x,b.y,boss.x-boss.w*.42,boss.y-boss.h*.3,boss.x+boss.w*.42,boss.y+boss.h*.3):boss&&Math.abs(b.x-boss.x)<boss.w*.42&&Math.abs(b.y-boss.y)<boss.h*.3;if(b.alive&&boss&&!boss.dead&&bossHit){this.damageBoss(b.damage,b.x,b.y);b.alive=false;if(!b.wingman){p.consecutive++;p.lastShotHit=this.time;}}
    }else{
-    const target=this.wingmen.filter(unit=>['active','entering'].includes(unit.mode)&&!unit.crash).sort((a,c)=>dist(b,a)-dist(b,c)).find(unit=>dist(b,unit)<b.r+unit.r);
+    const target=this.bulletWingman(b);
     if(target){this.damageWingman(target);b.alive=false;}
-    else{const d=segmentPointDistance(b.px,b.py,b.x,b.y,p.x,p.y),contact=playerBulletContact(b,p);if(contact){this.hitByBullet(b,contact);}
-    else if(!b.grazed&&playerBulletContact({...b,r:b.r+15+5*(this.talents.mobility_graze||0)},p)){b.grazed=true;this.grazes++;this.score+=15;this.energy((this.ship.id==='WraithX'?11:5)+3*(this.talents.mobility_feedback||0));if(this.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
+    else{const contact=playerBulletContact(b,p);if(contact){this.hitByBullet(b,contact);}
+    else if(!b.grazed&&playerBulletContact(b,p,15+5*(this.talents.mobility_graze||0))){b.grazed=true;this.grazes++;this.score+=15;this.energy((this.ship.id==='WraithX'?11:5)+3*(this.talents.mobility_feedback||0));if(this.ship.id==='WraithX')p.stacks=Math.min(20,p.stacks+1);if(this.grazes%5===0){this.combatSound('graze');this.float('擦弹 +',p.x,p.y-45,'#bba5ff');}}
     }
    }
   }
@@ -356,6 +356,7 @@ export class Game {
   }this.combatSound('pickup',{pickup:i.kind});
  }
  clearBullets(includeUnclearable=false){for(const b of this.bullets)if(b.owner==='enemy'&&(includeUnclearable||!b.unclearable))b.alive=false;}
+ bulletWingman(b){let nearest=null,best=Infinity;for(const unit of this.wingmen){if(unit.crash||unit.mode!=='active'&&unit.mode!=='entering')continue;const d=(unit.x-b.x)**2+(unit.y-b.y)**2;if(d<(b.r+unit.r)**2&&d<best){best=d;nearest=unit;}}return nearest;}
  hitByBullet(b,contact){
   const p=this.player;if(!contact||p.hitCrash||p.heroBomb||p.lives<=0)return false;
   // Protected aircraft intercept the round too, instead of looking intangible.
@@ -393,4 +394,4 @@ export class Game {
  finish(win){if(this.state==='finished')return;if(win&&this.bossDefeated){for(const item of this.pickups){if(!item.collected)this.collect(item);}this.pickups=[];}this.state='finished';const ratio=this.kills/Math.max(1,this.spawned);const stars=win?1+(ratio>=.65?1:0)+(this.hits===0?1:0):0;this.emit({type:'result',win,stage:this.stage,score:Math.round(this.score),kills:this.kills,grazes:this.grazes,hits:this.hits,coins:this.coins,materials:{...this.materials},time:this.time,stars,seen:[...this.seen],difficulty:this.difficulty.id,pace:this.pace,ship:this.ship.id,level:this.level});}
 }
 
-export {AssetStore} from './asset-loader.js?v=33';
+export {AssetStore} from './asset-loader.js?v=33.1';

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {CoopGame,CoopSession} from '../dist/coop.js?v=33';
-import {CoopStream} from '../dist/coop-stream.js?v=33';
+import {CoopGame,CoopSession} from '../dist/coop.js?v=33.1';
+import {CoopStream} from '../dist/coop-stream.js?v=33.1';
 const room={code:'ABCDEFGH',status:'playing',host:{id:'a',choice:{shipIndex:0}},guest:{id:'b',choice:{shipIndex:2}}};
 const game=new CoopGame({mission:0,room,width:1422,height:800,seed:33});game.start();
 const host=new CoopSession({account:{user:{id:'a'}},autoSync:false});Object.assign(host,{room,role:'host',code:room.code,identity:'a',game,local:game.selectPilot('host'),baseState:'playing',state:'playing'});for(const p of game.crew)p.ack=0;
@@ -26,4 +26,6 @@ class Socket{constructor(url,protocols){this.url=url;this.protocols=protocols;th
 let now=1000;const stream=new CoopStream({origin:'https://aero.test',role:'guest',code:room.code,accessToken:'a'.repeat(43),socket:Socket,now:()=>now});stream.start();const ws=stream.ws;ws.readyState=1;ws.onopen();
 ok(ws.url==='wss://aero.test/api/rooms/ABCDEFGH/stream','TLS stream URL contains no credential');ok(ws.protocols[1]==='token.'+'a'.repeat(43),'credential uses the protected handshake header');
 ws.bufferedAmount=50000;ok(stream.sendFrame({type:'frame'})===false,'backpressure never queues a stale world');ws.bufferedAmount=0;ok(stream.send({type:'input'}),'input resumes as soon as buffer clears');stream.close();
+// A heartbeat from the relay is not evidence that the other pilot still sends.
+let staleNow=1000;const staleSession=new CoopSession({account:{user:{id:'a'}},autoSync:false,now:()=>staleNow});Object.assign(staleSession,{room,code:room.code,role:'host',identity:'a',game,local:game.selectPilot('host'),baseState:'playing',state:'playing',lastPeerAt:1000,stream:{open:true,lastSeen:1000,rtt:10}});staleNow=8000;staleSession.stream.lastSeen=staleNow;staleSession.checkNetwork();ok(!staleSession.peerHealthy()&&staleSession.peerStale,'server pongs cannot hide a silent teammate');staleNow=47001;staleSession.stream.lastSeen=staleNow;staleSession.checkNetwork();ok(staleSession.failureReason==='peer-timeout','a dropped teammate reaches the normal disconnect state');
 console.log(JSON.stringify({passed:true,checks,scenarios,scope:'deterministic latency, jitter, packet loss and real transport logic; no physical two-device claim'}));
